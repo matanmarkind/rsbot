@@ -16,6 +16,19 @@ pub struct Config {
 
     #[structopt(long, parse(try_from_str), default_value = "30")]
     pub max_rows_per_batch: usize,
+
+    // Sanity checks that a delta isn't too large to avoid the mouse making a huge jump.
+    #[structopt(long, parse(try_from_str), default_value = "4500")]
+    pub min_time_delta_us: usize,
+    #[structopt(long, parse(try_from_str), default_value = "6500")]
+    pub max_time_delta_us: usize,
+    // Max number of pixels the mouse can move in a single delta in a given dimension.
+    #[structopt(long, parse(try_from_str), default_value = "100")]
+    pub max_1d_delta: usize,
+
+    // Used to only parse part of the CSV. This is useful for testing to shorten time.
+    #[structopt(long, parse(try_from_str), default_value = "0")]
+    pub max_rows_to_read: usize,
 }
 pub static CONFIG: Lazy<RwLock<Option<Config>>> = Lazy::new(|| RwLock::new(None));
 
@@ -155,13 +168,13 @@ fn parse_mouse_path(delta_mouse_locs: &[Location]) -> (PathSummary, MousePath) {
 
 // Take a stream of mouse Locations, and parse them into the actual mouse movements within.
 // 'delta_mouse_locs' is expected to be long enough to contain multiple full mouse movements.
-fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>) -> MousePaths {
+fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
+    dbg!(&delta_mouse_locs);
     let max_no_move_time_us = CONFIG.read().unwrap().as_ref().unwrap().max_no_move_time_us;
     if delta_mouse_locs.is_empty() {
-        return MousePaths::new();
+        return;
     }
 
-    let mut mouse_paths: MousePaths = MousePaths::new();
     // Start of the movement. First non 0 Delta in the path.
     let mut path_start_index = 0;
     // Used to ignore trailing 0's when parsing a path.
@@ -178,6 +191,13 @@ fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>) -> MousePaths {
     ) in delta_mouse_locs.iter().enumerate()
     {
         if dx == &0 && dy == &0 {
+            if i == delta_mouse_locs.len() - 1 {
+                // Special case when the final delta in the batch is 0 to make sure we record the path.
+                let (summary, path) =
+                    parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]);
+                mouse_paths.insert(summary, path);
+            }
+
             // Track for how long there has been no movement to determine when the mouse is at rest, and
             // therefore a path is complete. Don't update 'last_move_index' as a way of automatically
             // truncating trailing 0's when the path completes.
@@ -205,30 +225,16 @@ fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>) -> MousePaths {
         last_move_index = i;
     }
 
-    match delta_mouse_locs.last() {
-        Some(Location {
-            time_us: _,
-            x: dx,
-            y: dy,
-        }) => {
-            // If the final entry has (dx, dy) == (0, 0) we would have skipped parsing to the end
-            // and not parsed the final path. Parse it here.
-            if dx == &0 && dy == &0 {
-                let (summary, path) =
-                    parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]);
-                mouse_paths.insert(summary, path);
-            }
-        }
-        _ => println!("unexpected..."),
-    }
     println!("{:#?}", mouse_paths);
-    mouse_paths
 }
 
 // Performs the logic of reading from the CSV and parsing it into a map.
 // This is where tests should hook in.
-fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) {
+fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) -> MousePaths {
+    println!("parse_csv_input");
     let max_rows_per_batch = CONFIG.read().unwrap().as_ref().unwrap().max_rows_per_batch;
+    let max_rows_to_read = CONFIG.read().unwrap().as_ref().unwrap().max_rows_to_read;
+    let mut mouse_paths = MousePaths::new();
     // Loop over each record.
     let mut old_mouse_loc = ZERO_LOC;
     let mut delta_mouse_locs = Vec::<Location>::new();
@@ -239,6 +245,10 @@ fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) {
         // An error may occur, so abort the program in an unfriendly way.
         // We will make this more friendly later!
         let mouse_loc: Location = result.expect("a Record");
+        println!("{}. {:?}", i, mouse_loc);
+
+        // Sanity check that the delta isn't too large. If it is this should be a restart.
+        let delta = &mouse_loc - &old_mouse_loc;
 
         if old_mouse_loc == ZERO_LOC {
             // This element is the beginning of a new movement. Therefore we can't generate
@@ -248,20 +258,24 @@ fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) {
         } else if mouse_loc == ZERO_LOC || delta_mouse_locs.len() >= max_rows_per_batch {
             println!("11111111");
             old_mouse_loc = mouse_loc;
-            parse_mouse_deltas(delta_mouse_locs);
+            parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
             delta_mouse_locs = Vec::<Location>::new();
             continue;
         }
 
-        // Append the change and continue.
-        delta_mouse_locs.push(&mouse_loc - &old_mouse_loc);
+        // TODO - Sanity check on the delta time and distance.
+        delta_mouse_locs.push(delta);
         old_mouse_loc = mouse_loc;
-        if i > 2 * max_rows_per_batch + 1 {
-            // println!("{:#?}", delta_mouse_locs);
+
+        // DO NOT SUBMIT
+        if max_rows_to_read > 0 && i > max_rows_to_read {
             println!("break");
             break;
         }
     }
+    // If we finished the file parse anything left.
+    parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
+    mouse_paths
 }
 
 // The `main` function is where your program starts executing.
@@ -279,27 +293,32 @@ pub fn parse() {
 
 #[cfg(test)]
 mod tests {
+    // Remember not to have any leading whitespace on the CSV raw string.
     #[test]
     fn single_path() {
         let data = "\
-        time_us,x,y
-        1,1,1
-        2000,1,1
-        3000,2,1
-        4000,10,20
-        5000,13,23
-        10000,10,25
-        15000,15,31
-        ";
+time_us,x,y
+1,1,1
+2000,1,1
+3000,2,1
+4000,10,20
+5000,13,23
+10000,10,25
+15000,15,31
+";
+
         let config = super::Config {
             filename: String::from(""),
             max_no_move_time_us: 10000,
             max_rows_per_batch: 10,
+            max_rows_to_read: 0,
         };
         *super::CONFIG.write().unwrap() = Some(config);
+
         let reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .from_reader(data.as_bytes());
-        super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        println!("{:#?}", mouse_paths);
     }
 }
