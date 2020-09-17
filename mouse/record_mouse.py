@@ -21,7 +21,11 @@ from absl import logging
 FLAGS = flags.FLAGS
 
 flags.DEFINE_string('ofpath', None, 'Path to output file')
-flags.DEFINE_float('sampling_period', 0.005,
+# 'sampling_period' offers a tradeoff. The higher rate creates more mouselike movement to avoid teleporting
+# mouse detection. The downside is that the recording takes time so the shorter we make this the less
+# stable the actual sampling period becomes. We face the same problem on the replay end, since the usage
+# has to be able to keep up with the rate being fed in. It also means more data so more memory.
+flags.DEFINE_float('sampling_period', 0.01,
                    'Minimum wait time between recording mouse position (seconds). get_location seem to take a bit under 1ms.')
 flags.DEFINE_float('batch_period', 1,
                    'Period between writing out recordings to a file (seconds).')
@@ -37,7 +41,7 @@ def setup_logging():
 
 
 def main(argv):
-    del argv  # Unused.thon
+    del argv  # Unused
     setup_logging()
 
     Row = namedtuple('Row', ['dt', 'x', 'y'])
