@@ -72,6 +72,7 @@ impl Sub for &Location {
     }
 }
 
+
 // Ordering and equality is done by the distance only.
 #[derive(PartialOrd, Debug, Serialize)]
 pub struct PathSummary {
@@ -80,17 +81,22 @@ pub struct PathSummary {
     // Angle of the line from x axis in radians [0, 2PI)
     angle_rads: f32,
 }
+
 impl PartialEq for PathSummary {
     fn eq(&self, other: &PathSummary) -> bool {
         self.distance == other.distance
     }
 }
+
 impl Eq for PathSummary {}
+
 impl Ord for PathSummary {
     fn cmp(&self, other: &Self) -> Ordering {
         self.distance.cmp(&other.distance)
     }
 }
+
+j
 #[derive(PartialEq, PartialOrd, Debug, Serialize)]
 pub struct DeltaPosition {
     dx: i32,
@@ -102,6 +108,7 @@ impl DeltaPosition {
         DeltaPosition { dx: 0, dy: 0 }
     }
 }
+
 impl Add for &DeltaPosition {
     type Output = DeltaPosition;
 
@@ -112,8 +119,12 @@ impl Add for &DeltaPosition {
         }
     }
 }
+
+
 type MousePath = Vec<DeltaPosition>;
 type MousePaths = BTreeMap<PathSummary, MousePath>;
+
+
 fn mean(data: &[f32]) -> Option<f32> {
     let sum = data.iter().sum::<f32>();
     let count = data.len();
