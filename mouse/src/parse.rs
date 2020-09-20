@@ -1,15 +1,20 @@
 use once_cell::sync::Lazy;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::cmp::{Ord, Ordering};
 use std::collections::BTreeMap;
 use std::fs::File;
-use std::ops::Sub;
+use std::io::prelude::*;
+use std::ops::{Add, Sub};
 use std::sync::RwLock;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
-    pub filename: String,
+    #[structopt(long)]
+    pub in_fpath: String, // CSV file to read mouse positions from.
+
+    #[structopt(long)]
+    pub out_fpath: String, // Serialized output of mouse paths.
 
     #[structopt(long, parse(try_from_str), default_value = "50000")]
     pub max_no_move_time_us: i64,
@@ -17,16 +22,24 @@ pub struct Config {
     #[structopt(long, parse(try_from_str), default_value = "30")]
     pub max_rows_per_batch: usize,
 
-    // Sanity checks that a delta isn't too large to avoid the mouse making a huge jump.
-    #[structopt(long, parse(try_from_str), default_value = "4500")]
-    pub min_time_delta_us: usize,
-    #[structopt(long, parse(try_from_str), default_value = "6500")]
-    pub max_time_delta_us: usize,
-    // Max number of pixels the mouse can move in a single delta in a given dimension.
+    // Sanity checks that a delta isn't too large to avoid the mouse making a
+    // huge jump. Time is in micro seconds.
+    #[structopt(long, parse(try_from_str), default_value = "9500")]
+    pub min_time_delta_us: i64,
+    #[structopt(long, parse(try_from_str), default_value = "11500")]
+    pub max_time_delta_us: i64,
+    // Max number of pixels the mouse can move in a single delta in a given
+    // dimension.
     #[structopt(long, parse(try_from_str), default_value = "100")]
-    pub max_1d_delta: usize,
+    pub max_1d_delta: i32,
 
-    // Used to only parse part of the CSV. This is useful for testing to shorten time.
+    // Sanity checks for a path. Max total time a single path can take in
+    // seconds.
+    #[structopt(long, parse(try_from_str), default_value = "10")]
+    pub max_total_path_time_s: i64,
+
+    // Used to only parse part of the CSV. This is useful for testing to shorten
+    // time.
     #[structopt(long, parse(try_from_str), default_value = "0")]
     pub max_rows_to_read: usize,
 }
@@ -45,10 +58,10 @@ const ZERO_LOC: Location = Location {
     y: 0,
 };
 
-// Implementing subtraction by reference to avoid:
-// a. consume values on subtraction, which is surprising and annoying.
-// b. Automatically copying which is also surprising to user and seems inefficient.
-// The downside is that this creates a weird usage syntax (&a - &b).
+// Implementing subtraction by reference to avoid: a. consume values on
+// subtraction, which is surprising and annoying. b. Automatically copying which
+// is also surprising to user and seems inefficient. The downside is that this
+// creates a weird usage syntax (&a - &b).
 impl Sub for &Location {
     type Output = Location;
 
@@ -62,11 +75,10 @@ impl Sub for &Location {
 }
 
 // Ordering and equality is done by the distance only.
-#[derive(PartialOrd, Debug)]
+#[derive(PartialOrd, Debug, Serialize)]
 struct PathSummary {
     distance: i32,
     avg_time_us: i32,
-    time_stdev: i32,
     // Angle of the line from x axis in radians [0, 2PI)
     angle_rads: f32,
 }
@@ -81,10 +93,26 @@ impl Ord for PathSummary {
         self.distance.cmp(&other.distance)
     }
 }
-#[derive(PartialEq, PartialOrd, Debug)]
+#[derive(PartialEq, PartialOrd, Debug, Serialize)]
 struct DeltaPosition {
     dx: i32,
     dy: i32,
+}
+
+impl DeltaPosition {
+    fn new() -> DeltaPosition {
+        DeltaPosition { dx: 0, dy: 0 }
+    }
+}
+impl Add for &DeltaPosition {
+    type Output = DeltaPosition;
+
+    fn add(self, other: &DeltaPosition) -> DeltaPosition {
+        DeltaPosition {
+            dx: self.dx + other.dx,
+            dy: self.dy + other.dy,
+        }
+    }
 }
 type MousePath = Vec<DeltaPosition>;
 type MousePaths = BTreeMap<PathSummary, MousePath>;
@@ -98,29 +126,12 @@ fn mean(data: &[f32]) -> Option<f32> {
     }
 }
 
-fn std_deviation(data: &[f32]) -> Option<f32> {
-    match (mean(data), data.len()) {
-        (Some(data_mean), count) if count > 0 => {
-            let variance = data
-                .iter()
-                .map(|value| {
-                    let diff = data_mean - (*value as f32);
-
-                    diff * diff
-                })
-                .sum::<f32>()
-                / count as f32;
-
-            Some(variance.sqrt())
-        }
-        _ => None,
-    }
-}
-
-// Calculate the angle from the positive x axis to a line pointed from (0, 0) to (dx, dy).
-// Results are on the range [0, 2PI)
-// Correctly converts dy=0 to an angle of 0.
-fn dx_dy_to_angle_rads(dx: f32, dy: f32) -> f32 {
+// Calculate the angle from the positive x axis to a line pointed from (0, 0) to
+// (dx, dy). Results are on the range [0, 2PI) Correctly converts dy=0 to an
+// angle of 0.
+fn delta_angle_rads(delta: &DeltaPosition) -> f32 {
+    let dx = delta.dx as f32;
+    let dy = delta.dy as f32;
     let slope = (dx / dy).atan();
     if dx >= 0.0 {
         if dy >= 0.0 {
@@ -133,43 +144,63 @@ fn dx_dy_to_angle_rads(dx: f32, dy: f32) -> f32 {
     }
 }
 
-// Takes in a list of changes in the mouse location that correspond to a single path and
-// encodes in a way that can be looked up and followed in the future for replay.
-// Doesn't check for leading/trailing 0's.
-fn parse_mouse_path(delta_mouse_locs: &[Location]) -> (PathSummary, MousePath) {
+// Calculate the net distance covered by the path. Not the total distance
+// covered by all deltas.
+fn delta_length(net_delta: &DeltaPosition) -> i32 {
+    ((net_delta.dx.pow(2) + net_delta.dy.pow(2)) as f32)
+        .sqrt()
+        .round() as i32
+}
+
+fn get_net_delta(deltas: &MousePath) -> DeltaPosition {
+    deltas
+        .iter()
+        .fold(DeltaPosition::new(), |cum, delta| &cum + delta)
+}
+
+// Takes in a list of changes in the mouse location that correspond to a single
+// path and encodes in a way that can be looked up and followed in the future
+// for replay. Also performs sanity checks on the path. Doesn't check for
+// leading/trailing 0's.
+fn parse_mouse_path(delta_mouse_locs: &[Location]) -> Option<(PathSummary, MousePath)> {
+    let max_total_path_time_us = (1e6 as i64)
+        * CONFIG
+            .read()
+            .unwrap()
+            .as_ref()
+            .unwrap()
+            .max_total_path_time_s;
+
     let mut path: MousePath = MousePath::new();
     let mut times_us = Vec::<f32>::new();
-    let mut total_dx = 0;
-    let mut total_dy = 0;
     for Location {
         time_us: dt_us,
         x: dx,
         y: dy,
     } in delta_mouse_locs
     {
-        // Iterate through the deltas and parse where movements begin and end.
         times_us.push(*dt_us as f32);
-        total_dx += dx;
-        total_dy += dy;
         path.push(DeltaPosition { dx: *dx, dy: *dy });
     }
 
-    // Get the net angle of the path drawn by the mouse.
-    let angle_rads = dx_dy_to_angle_rads(total_dx as f32, total_dy as f32);
+    if times_us.iter().sum::<f32>().round() as i64 > max_total_path_time_us {
+        return None;
+    }
+
+    let net_delta = get_net_delta(&path);
 
     let summary = PathSummary {
-        distance: ((total_dx.pow(2) + total_dy.pow(2)) as f32).sqrt().round() as i32,
+        distance: delta_length(&net_delta),
         avg_time_us: mean(&times_us[..]).unwrap().round() as i32,
-        time_stdev: std_deviation(&times_us[..]).unwrap().round() as i32,
-        angle_rads: angle_rads,
+        angle_rads: delta_angle_rads(&net_delta),
     };
-    (summary, path)
+    Some((summary, path))
 }
 
-// Take a stream of mouse Locations, and parse them into the actual mouse movements within.
-// 'delta_mouse_locs' is expected to be long enough to contain multiple full mouse movements.
+// Take a stream of mouse Locations, and parse them into the actual mouse
+// movements within 'delta_mouse_locs' is expected to be long enough to contain
+// multiple full mouse movements.
 fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
-    dbg!(&delta_mouse_locs);
     let max_no_move_time_us = CONFIG.read().unwrap().as_ref().unwrap().max_no_move_time_us;
     if delta_mouse_locs.is_empty() {
         return;
@@ -179,7 +210,8 @@ fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePa
     let mut path_start_index = 0;
     // Used to ignore trailing 0's when parsing a path.
     let mut last_move_index = 0;
-    // If the position doesn't change for long enough, this indicates the end of a movement
+    // If the position doesn't change for long enough, this indicates the end of
+    // a movement
     let mut time_since_last_delta_us = 0;
     for (
         i,
@@ -191,32 +223,28 @@ fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePa
     ) in delta_mouse_locs.iter().enumerate()
     {
         if dx == &0 && dy == &0 {
-            if i == delta_mouse_locs.len() - 1 {
-                // Special case when the final delta in the batch is 0 to make sure we record the path.
-                let (summary, path) =
-                    parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]);
-                mouse_paths.insert(summary, path);
-            }
-
-            // Track for how long there has been no movement to determine when the mouse is at rest, and
-            // therefore a path is complete. Don't update 'last_move_index' as a way of automatically
-            // truncating trailing 0's when the path completes.
+            // Track for how long there has been no movement to determine when
+            // the mouse is at rest, and therefore a path is complete. Don't
+            // update 'last_move_index' as a way of automatically truncating
+            // trailing 0's when the path completes.
             time_since_last_delta_us += dt_us;
             continue;
         }
 
         if path_start_index == 0 {
-            // Special case to truncate leading 0's at the beginning of the batch.
+            // Special case to truncate leading 0's at the beginning of the
+            // batch. This can result in us missing the first delta in a batch,
+            // but that's not a big deal since mouse paths don't need to be
+            // exactly as recorded.
             path_start_index = i;
         }
 
-        if path_start_index < last_move_index
-            && (time_since_last_delta_us > max_no_move_time_us || i == delta_mouse_locs.len() - 1)
-        {
+        if path_start_index < last_move_index && (time_since_last_delta_us > max_no_move_time_us) {
             // We are now at the end of a single path.
-            let (summary, path) =
-                parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]);
-            mouse_paths.insert(summary, path);
+            match parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
+                Some((summary, path)) => mouse_paths.insert(summary, path),
+                None => None,
+            };
             // Reset the new path beginning.
             path_start_index = i;
         }
@@ -225,45 +253,56 @@ fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePa
         last_move_index = i;
     }
 
-    println!("{:#?}", mouse_paths);
+    // Parse the path that ends at the end of the batch.
+    if path_start_index < last_move_index {
+        match parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
+            Some((summary, path)) => mouse_paths.insert(summary, path),
+            None => None,
+        };
+    }
 }
 
-// Performs the logic of reading from the CSV and parsing it into a map.
-// This is where tests should hook in.
+// Performs the logic of reading from the CSV and parsing it into a map. This is
+// where tests should hook in.
 fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) -> MousePaths {
-    println!("parse_csv_input");
     let max_rows_per_batch = CONFIG.read().unwrap().as_ref().unwrap().max_rows_per_batch;
     let max_rows_to_read = CONFIG.read().unwrap().as_ref().unwrap().max_rows_to_read;
+    let min_time_delta_us = CONFIG.read().unwrap().as_ref().unwrap().min_time_delta_us;
+    let max_time_delta_us = CONFIG.read().unwrap().as_ref().unwrap().max_time_delta_us;
+    let max_1d_delta = CONFIG.read().unwrap().as_ref().unwrap().max_1d_delta;
+
     let mut mouse_paths = MousePaths::new();
-    // Loop over each record.
+
+    // Loop over each record to calculate how the mouse moved. Parsing adjacent
+    // rows into deltas and groups of rows into mouse paths.
     let mut old_mouse_loc = ZERO_LOC;
     let mut delta_mouse_locs = Vec::<Location>::new();
     for (i, result) in reader.deserialize().enumerate() {
-        // Create diff
-        // Once reach 0,0,0 parse diff.
-
-        // An error may occur, so abort the program in an unfriendly way.
-        // We will make this more friendly later!
+        // An error may occur, so abort the program in an unfriendly way. We
+        // will make this more friendly later!
         let mouse_loc: Location = result.expect("a Record");
-        println!("{}. {:?}", i, mouse_loc);
-
-        // Sanity check that the delta isn't too large. If it is this should be a restart.
-        let delta = &mouse_loc - &old_mouse_loc;
 
         if old_mouse_loc == ZERO_LOC {
-            // This element is the beginning of a new movement. Therefore we can't generate
-            // a diff yet.
+            // This element is the beginning of a new movement. Therefore we
+            // can't generate a diff yet.
             old_mouse_loc = mouse_loc;
             continue;
         } else if mouse_loc == ZERO_LOC || delta_mouse_locs.len() >= max_rows_per_batch {
-            println!("11111111");
             old_mouse_loc = mouse_loc;
             parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
             delta_mouse_locs = Vec::<Location>::new();
             continue;
         }
 
-        // TODO - Sanity check on the delta time and distance.
+        let mut delta = &mouse_loc - &old_mouse_loc;
+        if delta.time_us < min_time_delta_us
+            || delta.time_us > max_time_delta_us
+            || delta.x > max_1d_delta
+            || delta.y > max_1d_delta
+        {
+            // Invalid delta, rewrite as a 0 delta.
+            delta = ZERO_LOC;
+        }
         delta_mouse_locs.push(delta);
         old_mouse_loc = mouse_loc;
 
@@ -283,42 +322,309 @@ pub fn parse() {
     println!("{:?}", CONFIG);
 
     // Read the list of timestamps and mouse locations in.
-    let file = File::open(&CONFIG.read().unwrap().as_ref().unwrap().filename).unwrap();
+    let input_file = File::open(&CONFIG.read().unwrap().as_ref().unwrap().in_fpath).unwrap();
     let reader = csv::ReaderBuilder::new()
         .has_headers(true)
-        .from_reader(file);
+        .from_reader(input_file);
 
-    parse_csv_input::<File>(reader);
+    // Parse the input and convert the record to a list of mouse paths.
+    let mouse_paths = parse_csv_input::<File>(reader);
+    // dbg!(&mouse_paths);
+
+    // Serialize the map that is parsed out from the CSV input and save it to a file.
+    let serpaths = bincode::serialize(&mouse_paths).unwrap();
+    let mut output_file =
+        File::create(&CONFIG.read().unwrap().as_ref().unwrap().out_fpath).unwrap();
+    output_file.write_all(&serpaths[..]).unwrap();
 }
 
 #[cfg(test)]
 mod tests {
     // Remember not to have any leading whitespace on the CSV raw string.
+    use super::DeltaPosition;
+    use structopt::StructOpt;
+
+    // This function takes in the mouse_paths output from 'parse_csv_input' and
+    // checks that it contains the expected path.
+    fn check_paths(expected: Vec<(super::MousePath, usize)>, actual: super::MousePaths) {
+        assert_eq!(actual.len(), expected.len());
+
+        for (expected_path, total_expected_time) in expected {
+            let net_delta_expected = super::get_net_delta(&expected_path);
+            let expected_summary = super::PathSummary {
+                distance: super::delta_length(&net_delta_expected),
+                avg_time_us: (total_expected_time / expected_path.len()) as i32,
+                angle_rads: super::delta_angle_rads(&net_delta_expected),
+            };
+            let (actual_summary, actual_path) = actual.get_key_value(&expected_summary).unwrap();
+
+            assert_eq!(actual_summary.distance, expected_summary.distance);
+            assert!((actual_summary.avg_time_us - expected_summary.avg_time_us).abs() <= 1);
+            assert!((actual_summary.angle_rads - expected_summary.angle_rads).abs() < 0.01);
+            assert_eq!(actual_path, &expected_path);
+        }
+    }
+
     #[test]
     fn single_path() {
         let data = "\
 time_us,x,y
-1,1,1
-2000,1,1
-3000,2,1
-4000,10,20
-5000,13,23
-10000,10,25
-15000,15,31
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+32300,10,20
+42000,13,23
+52000,10,25
+61500,15,31
 ";
 
-        let config = super::Config {
-            filename: String::from(""),
-            max_no_move_time_us: 10000,
-            max_rows_per_batch: 10,
-            max_rows_to_read: 0,
-        };
-        *super::CONFIG.write().unwrap() = Some(config);
+        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
 
         let reader = csv::ReaderBuilder::new()
             .has_headers(true)
             .from_reader(data.as_bytes());
         let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
-        println!("{:#?}", mouse_paths);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas = vec![
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ];
+        check_paths(vec![(expected_deltas, 61500 - 11000)], mouse_paths);
+    }
+
+    #[test]
+    fn zero_padding() {
+        // Check that both leading and trailing 0's are truncated.
+        let data = "\
+time_us,x,y
+0,0,0
+0,0,0
+0,0,0
+1000,1,1
+1000,1,1
+1000,1,1
+1000,1,1
+1000,1,1
+11000,2,2
+22000,3,1
+33300,10,20
+43000,13,23
+53000,10,25
+63000,15,31
+63000,15,31
+63000,15,31
+63000,15,31
+63000,15,31
+63000,15,31
+";
+
+        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
+
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(data.as_bytes());
+        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas = vec![
+            DeltaPosition { dx: 1, dy: 1 },
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ];
+        check_paths(vec![(expected_deltas, 63000 - 1000)], mouse_paths);
+    }
+
+    #[test]
+    fn ignore_timeing_error() {
+        // Check that if there's an issue with a single recording that takes too
+        // A single batch with 2 paths. Indicated by a long pause of 0 deltas.
+
+        let data = "\
+time_us,x,y
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33300,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+193000,20,20
+203000,10,20
+214000,15,25
+223500,25,34
+234000,30,34
+244000,32,37
+254000,37,50
+";
+
+        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
+
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(data.as_bytes());
+        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas1 = vec![
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+            // Single gap of 50k us gets zeroed out. Cosidered a recording error in the path
+            DeltaPosition { dx: 0, dy: 0 },
+            DeltaPosition { dx: -10, dy: 0 },
+            DeltaPosition { dx: 5, dy: 5 },
+            DeltaPosition { dx: 10, dy: 9 },
+            DeltaPosition { dx: 5, dy: 0 },
+            DeltaPosition { dx: 2, dy: 3 },
+            DeltaPosition { dx: 5, dy: 13 },
+        ];
+        check_paths(
+            vec![(expected_deltas1, (64000 - 11000) + (254000 - 193000))],
+            mouse_paths,
+        );
+    }
+
+    #[test]
+    fn multiple_paths() {
+        // A single batch with 2 paths. Indicated by a long pause of 0 deltas.
+        let data = "\
+time_us,x,y
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33300,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+74000,15,31
+84000,15,31
+94000,15,31
+104000,15,31
+114000,15,31
+124000,15,31
+134000,15,31
+144000,15,31
+154000,15,31
+164000,15,31
+174000,15,31
+184000,15,31
+193500,20,20
+203000,10,20
+214000,15,25
+223500,25,34
+234000,30,34
+244000,32,37
+254000,37,50
+";
+
+        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
+
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(data.as_bytes());
+        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas1 = vec![
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ];
+        let expected_deltas2 = vec![
+            DeltaPosition { dx: 5, dy: -11 },
+            DeltaPosition { dx: -10, dy: 0 },
+            DeltaPosition { dx: 5, dy: 5 },
+            DeltaPosition { dx: 10, dy: 9 },
+            DeltaPosition { dx: 5, dy: 0 },
+            DeltaPosition { dx: 2, dy: 3 },
+            DeltaPosition { dx: 5, dy: 13 },
+        ];
+        check_paths(
+            vec![
+                (expected_deltas1, 64000 - 11000),
+                (expected_deltas2, 254000 - 184000),
+            ],
+            mouse_paths,
+        );
+    }
+
+    #[test]
+    fn multiple_batches() {
+        // Multiple batches, separated by ZER_LOC.
+        let data = "\
+time_us,x,y
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33300,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+0,0,0
+184000,15,31
+193500,20,20
+203000,10,20
+214000,15,25
+223500,25,34
+234000,30,34
+244000,32,37
+254000,37,50
+";
+
+        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
+
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(data.as_bytes());
+        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas1 = vec![
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ];
+        let expected_deltas2 = vec![
+            DeltaPosition { dx: -10, dy: 0 },
+            DeltaPosition { dx: 5, dy: 5 },
+            DeltaPosition { dx: 10, dy: 9 },
+            DeltaPosition { dx: 5, dy: 0 },
+            DeltaPosition { dx: 2, dy: 3 },
+            DeltaPosition { dx: 5, dy: 13 },
+        ];
+        check_paths(
+            vec![
+                (expected_deltas1, 64000 - 11000),
+                (expected_deltas2, 254000 - 193500),
+            ],
+            mouse_paths,
+        );
     }
 }
