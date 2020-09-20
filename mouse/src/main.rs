@@ -2,10 +2,9 @@ use structopt::StructOpt;
 
 pub mod parse;
 
-use parse::CONFIG;
-
 fn main() {
-    let args = parse::Config::from_args();
-    *CONFIG.write().unwrap() = Some(args);
-    parse::parse();
+    let parser = parse::MousePathParser {
+        config: parse::Config::from_args(),
+    };
+    parser.parse();
 }

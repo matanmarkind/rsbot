@@ -1,11 +1,9 @@
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use std::cmp::{Ord, Ordering};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::ops::{Add, Sub};
-use std::sync::RwLock;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -23,7 +21,8 @@ pub struct Config {
     pub max_rows_per_batch: usize,
 
     // Sanity checks that a delta isn't too large to avoid the mouse making a
-    // huge jump. Time is in micro seconds.
+    // huge jump. We expect time between recordings to be 10us. We bias to
+    // there being extra delay. Time is in micro seconds.
     #[structopt(long, parse(try_from_str), default_value = "9500")]
     pub min_time_delta_us: i64,
     #[structopt(long, parse(try_from_str), default_value = "11500")]
@@ -43,10 +42,9 @@ pub struct Config {
     #[structopt(long, parse(try_from_str), default_value = "0")]
     pub max_rows_to_read: usize,
 }
-pub static CONFIG: Lazy<RwLock<Option<Config>>> = Lazy::new(|| RwLock::new(None));
 
 #[derive(Debug, Deserialize, PartialEq)]
-struct Location {
+pub struct Location {
     time_us: i64,
     x: i32,
     y: i32,
@@ -76,7 +74,7 @@ impl Sub for &Location {
 
 // Ordering and equality is done by the distance only.
 #[derive(PartialOrd, Debug, Serialize)]
-struct PathSummary {
+pub struct PathSummary {
     distance: i32,
     avg_time_us: i32,
     // Angle of the line from x axis in radians [0, 2PI)
@@ -94,7 +92,7 @@ impl Ord for PathSummary {
     }
 }
 #[derive(PartialEq, PartialOrd, Debug, Serialize)]
-struct DeltaPosition {
+pub struct DeltaPosition {
     dx: i32,
     dy: i32,
 }
@@ -158,191 +156,204 @@ fn get_net_delta(deltas: &MousePath) -> DeltaPosition {
         .fold(DeltaPosition::new(), |cum, delta| &cum + delta)
 }
 
-// Takes in a list of changes in the mouse location that correspond to a single
-// path and encodes in a way that can be looked up and followed in the future
-// for replay. Also performs sanity checks on the path. Doesn't check for
-// leading/trailing 0's.
-fn parse_mouse_path(delta_mouse_locs: &[Location]) -> Option<(PathSummary, MousePath)> {
-    let max_total_path_time_us = (1e6 as i64)
-        * CONFIG
-            .read()
-            .unwrap()
-            .as_ref()
-            .unwrap()
-            .max_total_path_time_s;
-
-    let mut path: MousePath = MousePath::new();
-    let mut times_us = Vec::<f32>::new();
-    for Location {
-        time_us: dt_us,
-        x: dx,
-        y: dy,
-    } in delta_mouse_locs
-    {
-        times_us.push(*dt_us as f32);
-        path.push(DeltaPosition { dx: *dx, dy: *dy });
-    }
-
-    if times_us.iter().sum::<f32>().round() as i64 > max_total_path_time_us {
-        return None;
-    }
-
-    let net_delta = get_net_delta(&path);
-
-    let summary = PathSummary {
-        distance: delta_length(&net_delta),
-        avg_time_us: mean(&times_us[..]).unwrap().round() as i32,
-        angle_rads: delta_angle_rads(&net_delta),
-    };
-    Some((summary, path))
+pub struct MousePathParser {
+    pub config: Config,
 }
 
-// Take a stream of mouse Locations, and parse them into the actual mouse
-// movements within 'delta_mouse_locs' is expected to be long enough to contain
-// multiple full mouse movements.
-fn parse_mouse_deltas(delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
-    let max_no_move_time_us = CONFIG.read().unwrap().as_ref().unwrap().max_no_move_time_us;
-    if delta_mouse_locs.is_empty() {
-        return;
-    }
+impl MousePathParser {
+    // Takes in a list of changes in the mouse location that correspond to a single
+    // path and encodes in a way that can be looked up and followed in the future
+    // for replay. Also performs sanity checks on the path. Doesn't check for
+    // leading/trailing 0's.
+    fn parse_mouse_path(&self, delta_mouse_locs: &[Location]) -> Option<(PathSummary, MousePath)> {
+        let max_total_path_time_us = (1e6 as i64) * self.config.max_total_path_time_s;
 
-    // Start of the movement. First non 0 Delta in the path.
-    let mut path_start_index = 0;
-    // Used to ignore trailing 0's when parsing a path.
-    let mut last_move_index = 0;
-    // If the position doesn't change for long enough, this indicates the end of
-    // a movement
-    let mut time_since_last_delta_us = 0;
-    for (
-        i,
-        Location {
+        let mut path: MousePath = MousePath::new();
+        let mut times_us = Vec::<f32>::new();
+        for Location {
             time_us: dt_us,
             x: dx,
             y: dy,
-        },
-    ) in delta_mouse_locs.iter().enumerate()
-    {
-        if dx == &0 && dy == &0 {
-            // Track for how long there has been no movement to determine when
-            // the mouse is at rest, and therefore a path is complete. Don't
-            // update 'last_move_index' as a way of automatically truncating
-            // trailing 0's when the path completes.
-            time_since_last_delta_us += dt_us;
-            continue;
+        } in delta_mouse_locs
+        {
+            times_us.push(*dt_us as f32);
+            path.push(DeltaPosition { dx: *dx, dy: *dy });
         }
 
-        if path_start_index == 0 {
-            // Special case to truncate leading 0's at the beginning of the
-            // batch. This can result in us missing the first delta in a batch,
-            // but that's not a big deal since mouse paths don't need to be
-            // exactly as recorded.
-            path_start_index = i;
+        if times_us.iter().sum::<f32>().round() as i64 > max_total_path_time_us {
+            return None;
         }
 
-        if path_start_index < last_move_index && (time_since_last_delta_us > max_no_move_time_us) {
-            // We are now at the end of a single path.
-            match parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
+        let net_delta = get_net_delta(&path);
+
+        let summary = PathSummary {
+            distance: delta_length(&net_delta),
+            avg_time_us: mean(&times_us[..]).unwrap().round() as i32,
+            angle_rads: delta_angle_rads(&net_delta),
+        };
+        Some((summary, path))
+    }
+
+    // Take a stream of mouse Locations, and parse them into the actual mouse
+    // movements within 'delta_mouse_locs' is expected to be long enough to contain
+    // multiple full mouse movements.
+    fn parse_mouse_deltas(&self, delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
+        let max_no_move_time_us = self.config.max_no_move_time_us;
+        if delta_mouse_locs.is_empty() {
+            return;
+        }
+
+        // Start of the movement. First non 0 Delta in the path.
+        let mut path_start_index = 0;
+        // Used to ignore trailing 0's when parsing a path.
+        let mut last_move_index = 0;
+        // If the position doesn't change for long enough, this indicates the end of
+        // a movement
+        let mut time_since_last_delta_us = 0;
+        for (
+            i,
+            Location {
+                time_us: dt_us,
+                x: dx,
+                y: dy,
+            },
+        ) in delta_mouse_locs.iter().enumerate()
+        {
+            if dx == &0 && dy == &0 {
+                // Track for how long there has been no movement to determine when
+                // the mouse is at rest, and therefore a path is complete. Don't
+                // update 'last_move_index' as a way of automatically truncating
+                // trailing 0's when the path completes.
+                time_since_last_delta_us += dt_us;
+                continue;
+            }
+
+            if path_start_index == 0 {
+                // Special case to truncate leading 0's at the beginning of the
+                // batch. This can result in us missing the first delta in a batch,
+                // but that's not a big deal since mouse paths don't need to be
+                // exactly as recorded.
+                path_start_index = i;
+            }
+
+            if path_start_index < last_move_index
+                && (time_since_last_delta_us > max_no_move_time_us)
+            {
+                // We are now at the end of a single path.
+                match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
+                    Some((summary, path)) => mouse_paths.insert(summary, path),
+                    None => None,
+                };
+                // Reset the new path beginning.
+                path_start_index = i;
+            }
+
+            time_since_last_delta_us = 0;
+            last_move_index = i;
+        }
+
+        // Parse the path that ends at the end of the batch.
+        if path_start_index < last_move_index {
+            match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
                 Some((summary, path)) => mouse_paths.insert(summary, path),
                 None => None,
             };
-            // Reset the new path beginning.
-            path_start_index = i;
         }
-
-        time_since_last_delta_us = 0;
-        last_move_index = i;
     }
 
-    // Parse the path that ends at the end of the batch.
-    if path_start_index < last_move_index {
-        match parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
-            Some((summary, path)) => mouse_paths.insert(summary, path),
-            None => None,
-        };
-    }
-}
+    // Performs the logic of reading from the CSV and parsing it into a map. This is
+    // where tests should hook in.
+    pub fn parse_csv_input<ReaderT: std::io::Read>(
+        &self,
+        mut reader: csv::Reader<ReaderT>,
+    ) -> MousePaths {
+        let mut mouse_paths = MousePaths::new();
 
-// Performs the logic of reading from the CSV and parsing it into a map. This is
-// where tests should hook in.
-fn parse_csv_input<ReaderT: std::io::Read>(mut reader: csv::Reader<ReaderT>) -> MousePaths {
-    let max_rows_per_batch = CONFIG.read().unwrap().as_ref().unwrap().max_rows_per_batch;
-    let max_rows_to_read = CONFIG.read().unwrap().as_ref().unwrap().max_rows_to_read;
-    let min_time_delta_us = CONFIG.read().unwrap().as_ref().unwrap().min_time_delta_us;
-    let max_time_delta_us = CONFIG.read().unwrap().as_ref().unwrap().max_time_delta_us;
-    let max_1d_delta = CONFIG.read().unwrap().as_ref().unwrap().max_1d_delta;
+        // Loop over each record to calculate how the mouse moved. Parsing adjacent
+        // rows into deltas and groups of rows into mouse paths.
+        let mut old_mouse_loc = ZERO_LOC;
+        let mut delta_mouse_locs = Vec::<Location>::new();
+        for (i, result) in reader.deserialize().enumerate() {
+            // An error may occur, so abort the program in an unfriendly way. We
+            // will make this more friendly later!
+            let mouse_loc: Location = result.expect("a Record");
 
-    let mut mouse_paths = MousePaths::new();
+            if old_mouse_loc == ZERO_LOC {
+                // This element is the beginning of a new movement. Therefore we
+                // can't generate a diff yet.
+                old_mouse_loc = mouse_loc;
+                continue;
+            } else if mouse_loc == ZERO_LOC
+                || delta_mouse_locs.len() >= self.config.max_rows_per_batch
+            {
+                old_mouse_loc = mouse_loc;
+                self.parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
+                delta_mouse_locs = Vec::<Location>::new();
+                continue;
+            }
 
-    // Loop over each record to calculate how the mouse moved. Parsing adjacent
-    // rows into deltas and groups of rows into mouse paths.
-    let mut old_mouse_loc = ZERO_LOC;
-    let mut delta_mouse_locs = Vec::<Location>::new();
-    for (i, result) in reader.deserialize().enumerate() {
-        // An error may occur, so abort the program in an unfriendly way. We
-        // will make this more friendly later!
-        let mouse_loc: Location = result.expect("a Record");
-
-        if old_mouse_loc == ZERO_LOC {
-            // This element is the beginning of a new movement. Therefore we
-            // can't generate a diff yet.
+            let mut delta = &mouse_loc - &old_mouse_loc;
+            if delta.time_us < self.config.min_time_delta_us
+                || delta.time_us > self.config.max_time_delta_us
+                || delta.x > self.config.max_1d_delta
+                || delta.y > self.config.max_1d_delta
+            {
+                // Invalid delta, rewrite as a 0 delta.
+                delta = ZERO_LOC;
+            }
+            delta_mouse_locs.push(delta);
             old_mouse_loc = mouse_loc;
-            continue;
-        } else if mouse_loc == ZERO_LOC || delta_mouse_locs.len() >= max_rows_per_batch {
-            old_mouse_loc = mouse_loc;
-            parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
-            delta_mouse_locs = Vec::<Location>::new();
-            continue;
-        }
 
-        let mut delta = &mouse_loc - &old_mouse_loc;
-        if delta.time_us < min_time_delta_us
-            || delta.time_us > max_time_delta_us
-            || delta.x > max_1d_delta
-            || delta.y > max_1d_delta
-        {
-            // Invalid delta, rewrite as a 0 delta.
-            delta = ZERO_LOC;
+            // DO NOT SUBMIT
+            if self.config.max_rows_to_read > 0 && i > self.config.max_rows_to_read {
+                println!("break");
+                break;
+            }
         }
-        delta_mouse_locs.push(delta);
-        old_mouse_loc = mouse_loc;
-
-        // DO NOT SUBMIT
-        if max_rows_to_read > 0 && i > max_rows_to_read {
-            println!("break");
-            break;
-        }
+        // If we finished the file parse anything left.
+        self.parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
+        mouse_paths
     }
-    // If we finished the file parse anything left.
-    parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
-    mouse_paths
-}
 
-// The `main` function is where your program starts executing.
-pub fn parse() {
-    println!("{:?}", CONFIG);
+    // The `main` function is where your program starts executing.
+    pub fn parse(&self) {
+        println!("{:#?}", self.config);
 
-    // Read the list of timestamps and mouse locations in.
-    let input_file = File::open(&CONFIG.read().unwrap().as_ref().unwrap().in_fpath).unwrap();
-    let reader = csv::ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(input_file);
+        // Read the list of timestamps and mouse locations in.
+        let input_file = File::open(&self.config.in_fpath).unwrap();
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(input_file);
 
-    // Parse the input and convert the record to a list of mouse paths.
-    let mouse_paths = parse_csv_input::<File>(reader);
-    // dbg!(&mouse_paths);
+        // Parse the input and convert the record to a list of mouse paths.
+        let mouse_paths = self.parse_csv_input::<File>(reader);
+        // dbg!(&mouse_paths);
 
-    // Serialize the map that is parsed out from the CSV input and save it to a file.
-    let serpaths = bincode::serialize(&mouse_paths).unwrap();
-    let mut output_file =
-        File::create(&CONFIG.read().unwrap().as_ref().unwrap().out_fpath).unwrap();
-    output_file.write_all(&serpaths[..]).unwrap();
+        // Serialize the map that is parsed out from the CSV input and save it to a file.
+        let serpaths = bincode::serialize(&mouse_paths).unwrap();
+        let mut output_file = File::create(&self.config.out_fpath).unwrap();
+        output_file.write_all(&serpaths[..]).unwrap();
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    // Remember not to have any leading whitespace on the CSV raw string.
+    // Remember not to have any leading whitespace in rows for the CSV raw string.
     use super::DeltaPosition;
     use structopt::StructOpt;
+
+    // Pass in a string of a CSV of mouse locations. Create a local reader and parse the input.
+    fn parse_str(data: &str) -> super::MousePaths {
+        let reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(data.as_bytes());
+
+        // Unittests don't read/write from/to files so leave the fields blank. Other fields are left as default values.
+        let parser = super::MousePathParser {
+            config: super::Config::from_iter(&["", "--in-fpath", "", "--out-fpath", ""]),
+        };
+        parser.parse_csv_input::<&[u8]>(reader)
+    }
 
     // This function takes in the mouse_paths output from 'parse_csv_input' and
     // checks that it contains the expected path.
@@ -379,12 +390,7 @@ time_us,x,y
 61500,15,31
 ";
 
-        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
-
-        let reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
-        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = parse_str(data);
 
         // The first delta is not (1, 1). This is as a result of skipping 0
         // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
@@ -425,12 +431,7 @@ time_us,x,y
 63000,15,31
 ";
 
-        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
-
-        let reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
-        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = parse_str(data);
 
         // The first delta is not (1, 1). This is as a result of skipping 0
         // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
@@ -470,12 +471,7 @@ time_us,x,y
 254000,37,50
 ";
 
-        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
-
-        let reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
-        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = parse_str(data);
 
         // The first delta is not (1, 1). This is as a result of skipping 0
         // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
@@ -535,12 +531,7 @@ time_us,x,y
 254000,37,50
 ";
 
-        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
-
-        let reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
-        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = parse_str(data);
 
         // The first delta is not (1, 1). This is as a result of skipping 0
         // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
@@ -594,12 +585,7 @@ time_us,x,y
 254000,37,50
 ";
 
-        *super::CONFIG.write().unwrap() = Some(super::Config::from_iter(&["", ""]));
-
-        let reader = csv::ReaderBuilder::new()
-            .has_headers(true)
-            .from_reader(data.as_bytes());
-        let mouse_paths = super::parse_csv_input::<&[u8]>(reader);
+        let mouse_paths = parse_str(data);
 
         // The first delta is not (1, 1). This is as a result of skipping 0
         // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
