@@ -1,9 +1,6 @@
-use serde::{Deserialize, Serialize};
-use std::cmp::{Ord, Ordering};
-use std::collections::BTreeMap;
+use crate::types::*;
 use std::fs::File;
 use std::io::prelude::*;
-use std::ops::{Add, Sub};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -42,84 +39,6 @@ pub struct Config {
     #[structopt(long, parse(try_from_str), default_value = "0")]
     pub max_rows_to_read: usize,
 }
-
-#[derive(Debug, Deserialize, PartialEq)]
-pub struct Location {
-    time_us: i64,
-    x: i32,
-    y: i32,
-}
-
-const ZERO_LOC: Location = Location {
-    time_us: 0,
-    x: 0,
-    y: 0,
-};
-
-// Implementing subtraction by reference to avoid: a. consume values on
-// subtraction, which is surprising and annoying. b. Automatically copying which
-// is also surprising to user and seems inefficient. The downside is that this
-// creates a weird usage syntax (&a - &b).
-impl Sub for &Location {
-    type Output = Location;
-
-    fn sub(self, other: &Location) -> Location {
-        Location {
-            time_us: self.time_us - other.time_us,
-            x: self.x - other.x,
-            y: self.y - other.y,
-        }
-    }
-}
-
-// Ordering and equality is done by the distance only.
-#[derive(PartialOrd, Debug, Serialize)]
-pub struct PathSummary {
-    distance: i32,
-    avg_time_us: i32,
-    // Angle of the line from x axis in radians [0, 2PI)
-    angle_rads: f32,
-}
-
-impl PartialEq for PathSummary {
-    fn eq(&self, other: &PathSummary) -> bool {
-        self.distance == other.distance
-    }
-}
-
-impl Eq for PathSummary {}
-
-impl Ord for PathSummary {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.distance.cmp(&other.distance)
-    }
-}
-
-#[derive(PartialEq, PartialOrd, Debug, Serialize)]
-pub struct DeltaPosition {
-    dx: i32,
-    dy: i32,
-}
-
-impl DeltaPosition {
-    fn new() -> DeltaPosition {
-        DeltaPosition { dx: 0, dy: 0 }
-    }
-}
-
-impl Add for &DeltaPosition {
-    type Output = DeltaPosition;
-
-    fn add(self, other: &DeltaPosition) -> DeltaPosition {
-        DeltaPosition {
-            dx: self.dx + other.dx,
-            dy: self.dy + other.dy,
-        }
-    }
-}
-
-type MousePath = Vec<DeltaPosition>;
-type MousePaths = BTreeMap<PathSummary, MousePath>;
 
 fn mean(data: &[f32]) -> Option<f32> {
     let sum = data.iter().sum::<f32>();
