@@ -72,7 +72,6 @@ impl Sub for &Location {
     }
 }
 
-
 // Ordering and equality is done by the distance only.
 #[derive(PartialOrd, Debug, Serialize)]
 pub struct PathSummary {
@@ -96,7 +95,6 @@ impl Ord for PathSummary {
     }
 }
 
-j
 #[derive(PartialEq, PartialOrd, Debug, Serialize)]
 pub struct DeltaPosition {
     dx: i32,
@@ -120,10 +118,8 @@ impl Add for &DeltaPosition {
     }
 }
 
-
 type MousePath = Vec<DeltaPosition>;
 type MousePaths = BTreeMap<PathSummary, MousePath>;
-
 
 fn mean(data: &[f32]) -> Option<f32> {
     let sum = data.iter().sum::<f32>();
