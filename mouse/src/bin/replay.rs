@@ -9,6 +9,10 @@ use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 
+const MAX_PATHS_TO_FOLLOW: i32 = 10;
+const EXACT_MOVE_DISTANCE: i32 = 10;
+const EXPECTED_MOVE_PERIOD_US: u64 = 10000;
+
 #[derive(Debug, StructOpt)]
 pub struct Config {
     #[structopt(long)]
@@ -34,48 +38,94 @@ impl MouseMover {
         }
     }
 
+    // MousePaths is indexed via PathSummary, which only uses distance as the
+    // key. Create a min_distance_summary and a max_distance_summary to search
+    // for a matching MousePath.
+    fn boundary_summaries(distance: i32, tolerance: i32) -> (PathSummary, PathSummary) {
+        (
+            PathSummary {
+                distance: distance - tolerance,
+                avg_time_us: 0,
+                angle_rads: 0.0,
+            },
+            PathSummary {
+                distance: distance + tolerance,
+                avg_time_us: 0,
+                angle_rads: 0.0,
+            },
+        )
+    }
+
     // Move the mouse to a point within the box defined by the positions given.
     // Assumes nothing else moves the mouse while running.
     //
     // 'dst' - destination location the mouse should reach.
     //
-    // 'tolerance' - size of the box the mouse needs to be within. distance, in
-    // pixels, the mouse can be from the exact location in 'dst'.
-    fn move_to(&self, dst: &Position, tolerance: u32) {
-        let tolerance = tolerance as i32; // Convert for easier use.
+    // 'tolerance' - size of the box the mouse needs to be within. Distance, in
+    // pixels, that the mouse can be from the exact location in 'dst'. We cannot
+    // promise pixel perfect placement.
+    //
+    // returns the distance the mouse is at the end of the function from 'dst'
+    // in pixels.
+    fn move_to(&self, dst: &Position) {
+        dbg!(&dst);
 
+        for _ in 0..MAX_PATHS_TO_FOLLOW {
+            if self.follow_path_to(&dst, EXACT_MOVE_DISTANCE) <= EXACT_MOVE_DISTANCE {
+                println!("You made it!");
+                break;
+            }
+        }
+
+        // Once we are close, we can move exactly to the location in 1 move.
+        sleep(Duration::from_micros(EXPECTED_MOVE_PERIOD_US));
+        self.move_directly_to(&dst);
+        sleep(Duration::from_micros(EXPECTED_MOVE_PERIOD_US));
+    }
+
+    fn move_directly_to(&self, dst: &Position) {
         let (x, y) = self.device_state.get_mouse().coords;
         let position = Position { x, y };
         let delta = dst - &position;
-        dbg!(&position, &dst, &delta);
+        MouseCursor::move_abs(delta.dx, delta.dy);
+    }
 
-        // Create PathSummarys to lookup in mouse_paths. Only the 'distance' field is used for lookup.
-        let min_distance = PathSummary {
-            distance: std::cmp::max(0, delta.distance() - tolerance),
-            avg_time_us: 0,
-            angle_rads: 0.0,
-        };
-        let max_distance = PathSummary {
-            distance: delta.distance() + tolerance,
-            avg_time_us: 0,
-            angle_rads: 0.0,
-        };
+    fn follow_path_to(&self, dst: &Position, tolerance: i32) -> i32 {
+        let (x, y) = self.device_state.get_mouse().coords;
+        let position = Position { x, y };
+        let delta = dst - &position;
+        dbg!(&position, &dst, &delta, tolerance);
+        if delta.distance() < tolerance {
+            // Mouse is already close enough, no need to move.
+            return delta.distance();
+        }
 
         // Get an iterator to the relevant paths.
+        let (min_distance, max_distance) =
+            MouseMover::boundary_summaries(delta.distance(), tolerance);
         let mut relevant_paths = self
             .mouse_paths
             .range((Included(&min_distance), Included(&max_distance)));
         match relevant_paths.next() {
             Some((summary, path)) => replay_path(summary, path, &delta),
-            None => println!("expand search conditions"),
+            None => {
+                // No path brings the mouse close enough. Expand the tolerance
+                // and try again.
+                self.follow_path_to(&dst, tolerance + tolerance);
+            }
         }
-        dbg!(self.device_state.get_mouse().coords);
+
+        // Calculate the current distance the mouse is from dst.
+        let (x, y) = self.device_state.get_mouse().coords;
+        let position = Position { x, y };
+        let delta = dst - &position;
+        delta.distance()
     }
 }
 
 fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPosition) {
     let rotation_needed = net_delta.angle_rads() - summary.angle_rads;
-    dbg!(&rotation_needed, &summary, &path);
+    dbg!(&rotation_needed, &summary);
 
     let mut rng = thread_rng();
     let min_wait_us = (0.9 * summary.avg_time_us as f32).round() as i32;
@@ -96,7 +146,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mouse_mover = MouseMover::new(&config);
     loop {
-        println!("Enter location (x,y,tolerance): ");
+        println!("Enter location (x,y): ");
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer)?;
         println!("{}", buffer);
@@ -105,14 +155,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut reader = csv::ReaderBuilder::new()
             .has_headers(false)
             .from_reader(buffer.as_bytes());
-        for result in reader.deserialize::<(Position, u32)>() {
+        for result in reader.deserialize::<Position>() {
             match result {
-                Ok((dst, tolerance)) => {
-                    dbg!(&dst, tolerance);
-                    mouse_mover.move_to(&dst, tolerance);
-                }
+                Ok(dst) => mouse_mover.move_to(&dst),
                 _ => println!("invalid input"),
             }
         }
+        dbg!(mouse_mover.device_state.get_mouse().coords);
     }
 }
