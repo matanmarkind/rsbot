@@ -20,9 +20,9 @@ pub struct Config {
     // Sanity checks that a delta isn't too large to avoid the mouse making a
     // huge jump. We expect time between recordings to be 10us. We bias to
     // there being extra delay. Time is in micro seconds.
-    #[structopt(long, parse(try_from_str), default_value = "9500")]
+    #[structopt(long, parse(try_from_str), default_value = "9000")]
     pub min_time_delta_us: i64,
-    #[structopt(long, parse(try_from_str), default_value = "11500")]
+    #[structopt(long, parse(try_from_str), default_value = "12000")]
     pub max_time_delta_us: i64,
     // Max number of pixels the mouse can move in a single delta in a given
     // dimension.
@@ -48,32 +48,6 @@ fn mean(data: &[f32]) -> Option<f32> {
         positive if positive > 0 => Some(sum / count as f32),
         _ => None,
     }
-}
-
-// Calculate the angle from the positive x axis to a line pointed from (0, 0) to
-// (dx, dy). Results are on the range [0, 2PI) Correctly converts dy=0 to an
-// angle of 0.
-fn delta_angle_rads(delta: &DeltaPosition) -> f32 {
-    let dx = delta.dx as f32;
-    let dy = delta.dy as f32;
-    let slope = (dx / dy).atan();
-    if dx >= 0.0 {
-        if dy >= 0.0 {
-            slope
-        } else {
-            2.0 * std::f32::consts::PI + slope
-        }
-    } else {
-        std::f32::consts::PI + slope
-    }
-}
-
-// Calculate the net distance covered by the path. Not the total distance
-// covered by all deltas.
-fn delta_length(net_delta: &DeltaPosition) -> i32 {
-    ((net_delta.dx.pow(2) + net_delta.dy.pow(2)) as f32)
-        .sqrt()
-        .round() as i32
 }
 
 fn get_net_delta(deltas: &MousePath) -> DeltaPosition {
@@ -113,9 +87,9 @@ impl MousePathParser {
         let net_delta = get_net_delta(&path);
 
         let summary = PathSummary {
-            distance: delta_length(&net_delta),
+            distance: net_delta.distance(),
             avg_time_us: mean(&times_us[..]).unwrap().round() as i32,
-            angle_rads: delta_angle_rads(&net_delta),
+            angle_rads: net_delta.angle_rads(),
         };
         Some((summary, path))
     }
@@ -124,7 +98,6 @@ impl MousePathParser {
     // movements within 'delta_mouse_locs' is expected to be long enough to contain
     // multiple full mouse movements.
     fn parse_mouse_deltas(&self, delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
-        let max_no_move_time_us = self.config.max_no_move_time_us;
         if delta_mouse_locs.is_empty() {
             return;
         }
@@ -145,7 +118,7 @@ impl MousePathParser {
             },
         ) in delta_mouse_locs.iter().enumerate()
         {
-            if dx == &0 && dy == &0 {
+            if *dx == 0 && *dy == 0 {
                 // Track for how long there has been no movement to determine when
                 // the mouse is at rest, and therefore a path is complete. Don't
                 // update 'last_move_index' as a way of automatically truncating
@@ -163,7 +136,7 @@ impl MousePathParser {
             }
 
             if path_start_index < last_move_index
-                && (time_since_last_delta_us > max_no_move_time_us)
+                && (time_since_last_delta_us > self.config.max_no_move_time_us)
             {
                 // We are now at the end of a single path.
                 match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
@@ -200,8 +173,6 @@ impl MousePathParser {
         let mut old_mouse_loc = ZERO_LOC;
         let mut delta_mouse_locs = Vec::<Location>::new();
         for (i, result) in reader.deserialize().enumerate() {
-            // An error may occur, so abort the program in an unfriendly way. We
-            // will make this more friendly later!
             let mouse_loc: Location = result.expect("a Record");
 
             if old_mouse_loc == ZERO_LOC {
@@ -243,8 +214,6 @@ impl MousePathParser {
 
     // The `main` function is where your program starts executing.
     pub fn parse(&self) {
-        println!("{:#?}", self.config);
-
         // Read the list of timestamps and mouse locations in.
         let input_file = File::open(&self.config.in_fpath).unwrap();
         let reader = csv::ReaderBuilder::new()
@@ -253,7 +222,7 @@ impl MousePathParser {
 
         // Parse the input and convert the record to a list of mouse paths.
         let mouse_paths = self.parse_csv_input::<File>(reader);
-        // dbg!(&mouse_paths);
+        dbg!(mouse_paths.len());
 
         // Serialize the map that is parsed out from the CSV input and save it to a file.
         let serpaths = bincode::serialize(&mouse_paths).unwrap();
@@ -289,9 +258,9 @@ mod tests {
         for (expected_path, total_expected_time) in expected {
             let net_delta_expected = super::get_net_delta(&expected_path);
             let expected_summary = super::PathSummary {
-                distance: super::delta_length(&net_delta_expected),
+                distance: net_delta_expected.distance(),
                 avg_time_us: (total_expected_time / expected_path.len()) as i32,
-                angle_rads: super::delta_angle_rads(&net_delta_expected),
+                angle_rads: net_delta_expected.angle_rads(),
             };
             let (actual_summary, actual_path) = actual.get_key_value(&expected_summary).unwrap();
 
@@ -346,7 +315,7 @@ time_us,x,y
 1000,1,1
 11000,2,2
 22000,3,1
-33300,10,20
+33000,10,20
 43000,13,23
 53000,10,25
 63000,15,31
@@ -384,7 +353,7 @@ time_us,x,y
 1000,1,1
 11000,2,2
 22000,3,1
-33300,10,20
+33000,10,20
 44000,13,23
 54000,10,25
 64000,15,31
@@ -432,7 +401,7 @@ time_us,x,y
 1000,1,1
 11000,2,2
 22000,3,1
-33300,10,20
+33000,10,20
 44000,13,23
 54000,10,25
 64000,15,31
@@ -496,7 +465,7 @@ time_us,x,y
 1000,1,1
 11000,2,2
 22000,3,1
-33300,10,20
+33000,10,20
 44000,13,23
 54000,10,25
 64000,15,31
