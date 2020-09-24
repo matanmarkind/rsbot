@@ -86,6 +86,7 @@ impl MouseMover {
         }
 
         // Once we are close, we can move exactly to the location in 1 move.
+        // This helps avoid stuttering near 'dst' with a bunch of short paths.
         MouseMover::sleep_between_moves();
         self.move_directly_to(&dst);
         &self.current_position() == dst
@@ -173,7 +174,7 @@ impl MouseMover {
 /// gives the angle that 'path' must be rotated to.
 fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPosition) {
     let rotation_needed = net_delta.angle_rads() - summary.angle_rads;
-    dbg!(&rotation_needed, &summary);
+    println!("rotation_needed={}, summary={:?}", rotation_needed, summary);
 
     for delta in path {
         // Move the value an absolute distance across the screen (ie num

@@ -1,10 +1,8 @@
+use mouse::controller::MouseMover;
 use mouse::types::*;
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
-
-extern crate mouse;
-use mouse::controller;
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
@@ -16,7 +14,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_args();
     dbg!(&config);
 
-    let mouse_mover = controller::MouseMover::new(&config.in_fpath);
+    let mouse_mover = MouseMover::new(&config.in_fpath);
     loop {
         println!("Enter location (x,y): ");
         let mut buffer = String::new();
