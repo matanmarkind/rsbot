@@ -10,12 +10,6 @@ pub struct Location {
     pub y: i32,
 }
 
-pub const ZERO_LOC: Location = Location {
-    time_us: 0,
-    x: 0,
-    y: 0,
-};
-
 // Implementing subtraction by reference to avoid: a. consume values on
 // subtraction, which is surprising and annoying. b. Automatically copying which
 // is also surprising to user and seems inefficient. The downside is that this
@@ -60,7 +54,7 @@ impl Ord for PathSummary {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct Position {
     pub x: i32,
     pub y: i32,

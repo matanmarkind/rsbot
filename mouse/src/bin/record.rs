@@ -1,6 +1,7 @@
 // This file is dedicated to recording mouse movements.
 // Tracks the location of the mouse as it moves on the screen and saves it to a CSV.
 use device_query::{DeviceQuery, DeviceState};
+use mouse::constants::*;
 use mouse::types::*;
 use std::error::Error;
 use std::fs::OpenOptions;
