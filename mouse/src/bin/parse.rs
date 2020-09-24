@@ -232,6 +232,13 @@ impl MousePathParser {
     }
 }
 
+fn main() {
+    let config = Config::from_args();
+    dbg!(&config);
+    let parser = MousePathParser { config };
+    parser.parse();
+}
+
 #[cfg(test)]
 mod tests {
     // Remember not to have any leading whitespace in rows for the CSV raw string.
@@ -509,10 +516,4 @@ time_us,x,y
             mouse_paths,
         );
     }
-}
-fn main() {
-    let config = Config::from_args();
-    dbg!(&config);
-    let parser = MousePathParser { config };
-    parser.parse();
 }
