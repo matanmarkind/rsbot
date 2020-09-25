@@ -35,7 +35,6 @@ impl Sub for &Location {
 #[derive(PartialOrd, Debug, Serialize, Deserialize)]
 pub struct PathSummary {
     pub distance: i32,
-    pub avg_time_us: i32,
     // Angle of the line from x axis in radians [0, 2PI)
     pub angle_rads: f32,
 }

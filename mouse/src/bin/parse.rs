@@ -2,7 +2,14 @@ use mouse::constants::*;
 use mouse::types::*;
 use std::fs::File;
 use std::io::prelude::*;
+use std::num::ParseIntError;
+use std::time::Duration;
 use structopt::StructOpt;
+
+fn parse_duration_from_secs(src: &str) -> Result<Duration, ParseIntError> {
+    let seconds: u64 = src.parse()?;
+    Ok(Duration::from_secs(seconds))
+}
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
@@ -23,25 +30,18 @@ pub struct Config {
     #[structopt(long, parse(try_from_str), default_value = "100")]
     pub max_1d_delta: i32,
 
-    // Sanity checks for a path. Max total time a single path can take in
-    // seconds.
-    #[structopt(long, parse(try_from_str), default_value = "10")]
-    pub max_total_path_time_s: i64,
+    #[structopt(
+        long,
+        parse(try_from_str = parse_duration_from_secs),
+        default_value = "10",
+        about = "Sanity checks for a path. Max total time a single path can take in seconds."
+    )]
+    pub max_total_path_time_s: Duration,
 
     // Used to only parse part of the CSV. This is useful for testing to shorten
     // time.
     #[structopt(long, parse(try_from_str), default_value = "0")]
     pub max_rows_to_read: usize,
-}
-
-fn mean(data: &[f32]) -> Option<f32> {
-    let sum = data.iter().sum::<f32>();
-    let count = data.len();
-
-    match count {
-        positive if positive > 0 => Some(sum / count as f32),
-        _ => None,
-    }
 }
 
 fn get_net_delta(deltas: &MousePath) -> DeltaPosition {
@@ -60,29 +60,25 @@ impl MousePathParser {
     // for replay. Also performs sanity checks on the path. Doesn't check for
     // leading/trailing 0's.
     fn parse_mouse_path(&self, delta_mouse_locs: &[Location]) -> Option<(PathSummary, MousePath)> {
-        let max_total_path_time_us = (1e6 as i64) * self.config.max_total_path_time_s;
-
         let mut path: MousePath = MousePath::new();
-        let mut times_us = Vec::<f32>::new();
+        let mut total_time = Duration::from_secs(0);
         for Location {
             time_us: dt_us,
             x: dx,
             y: dy,
         } in delta_mouse_locs
         {
-            times_us.push(*dt_us as f32);
+            total_time += Duration::from_micros(*dt_us as u64);
             path.push(DeltaPosition { dx: *dx, dy: *dy });
         }
 
-        if times_us.iter().sum::<f32>().round() as i64 > max_total_path_time_us {
+        if total_time > self.config.max_total_path_time_s {
             return None;
         }
 
         let net_delta = get_net_delta(&path);
-
         let summary = PathSummary {
             distance: net_delta.distance(),
-            avg_time_us: mean(&times_us[..]).unwrap().round() as i32,
             angle_rads: net_delta.angle_rads(),
         };
         Some((summary, path))

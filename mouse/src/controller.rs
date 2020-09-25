@@ -117,12 +117,10 @@ impl MouseMover {
         (
             PathSummary {
                 distance: std::cmp::max(0, distance - tolerance),
-                avg_time_us: 0,
                 angle_rads: 0.0,
             },
             PathSummary {
                 distance: distance + tolerance,
-                avg_time_us: 0,
                 angle_rads: 0.0,
             },
         )
@@ -191,7 +189,6 @@ fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPositio
 fn cheat_towards(net_delta: &DeltaPosition) {
     let summary = PathSummary {
         distance: MAX_CHEAT_DISTANCE,
-        avg_time_us: 0,
         angle_rads: 0.0,
     };
     let path: MousePath = vec![DeltaPosition {
