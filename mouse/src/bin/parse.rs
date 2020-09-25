@@ -27,7 +27,15 @@ pub struct Config {
     #[structopt(long, parse(try_from_str = parse_duration_from_micros), default_value = "50000")]
     pub max_no_move_time_us: Duration,
 
-    #[structopt(long, parse(try_from_str), default_value = "30")]
+    // This technically caps the number of deltas in a path, but it should be
+    // much longer than any path would be. More of an implementation detail that
+    // users aren't expected to change, but may be useful for testing.
+    #[structopt(
+        long,
+        about = "Max number of rows to that can be put in a batch together.",
+        parse(try_from_str),
+        default_value = "60000"  // 60s * 1000 samples/second
+    )]
     pub max_rows_per_batch: usize,
 
     // Max number of pixels the mouse can move in a single delta in a given
