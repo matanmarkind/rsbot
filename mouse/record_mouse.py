@@ -1,4 +1,6 @@
 """
+DEPRECATED, USE RUST VERSION.
+
 This file is used to track the mouses location and record it out to a file.
 
 Output colums in order are:
