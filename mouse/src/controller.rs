@@ -7,10 +7,6 @@ use rand::thread_rng;
 use std::ops::Bound::Included;
 use std::thread::sleep;
 
-// Maximum distance we can teleport the mouse. This should be on the order of a
-// normal DeltaPosition.
-const MAX_CHEAT_DISTANCE: i32 = 20;
-
 // Struct used to moe the mouse around on the screen.
 //
 // The quality of the mover is highly dependent on the set of MousePaths given
