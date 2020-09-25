@@ -9,7 +9,7 @@ use std::thread::sleep;
 
 // Maximum distance we can teleport the mouse. This should be on the order of a
 // normal DeltaPosition.
-const MAX_EXACT_MOVE_DISTANCE: i32 = 20;
+const MAX_CHEAT_DISTANCE: i32 = 20;
 
 // Struct used to moe the mouse around on the screen.
 //
@@ -66,8 +66,8 @@ impl MouseMover {
         let mut just_cheated = false;
         loop {
             let distance = self.distance_from(&dst);
-            self.follow_path_to(&dst, MAX_EXACT_MOVE_DISTANCE);
-            if distance <= MAX_EXACT_MOVE_DISTANCE {
+            self.follow_path_to(&dst, MAX_CHEAT_DISTANCE);
+            if distance <= MAX_CHEAT_DISTANCE {
                 println!("Close enough. distance={}", distance);
                 break;
             } else if self.distance_from(&dst) >= distance {
@@ -190,12 +190,12 @@ fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPositio
 // relevant when on the edge of the screen.
 fn cheat_towards(net_delta: &DeltaPosition) {
     let summary = PathSummary {
-        distance: MAX_EXACT_MOVE_DISTANCE,
+        distance: MAX_CHEAT_DISTANCE,
         avg_time_us: 0,
         angle_rads: 0.0,
     };
     let path: MousePath = vec![DeltaPosition {
-        dx: MAX_EXACT_MOVE_DISTANCE,
+        dx: MAX_CHEAT_DISTANCE,
         dy: 0,
     }];
     replay_path(&summary, &path, net_delta);

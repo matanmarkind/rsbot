@@ -18,13 +18,6 @@ pub struct Config {
     #[structopt(long, parse(try_from_str), default_value = "30")]
     pub max_rows_per_batch: usize,
 
-    // Sanity checks that a delta isn't too large to avoid the mouse making a
-    // huge jump. We expect time between recordings to be 10us. We bias to
-    // there being extra delay. Time is in micro seconds.
-    #[structopt(long, parse(try_from_str), default_value = "9000")]
-    pub min_time_delta_us: i64,
-    #[structopt(long, parse(try_from_str), default_value = "12000")]
-    pub max_time_delta_us: i64,
     // Max number of pixels the mouse can move in a single delta in a given
     // dimension.
     #[structopt(long, parse(try_from_str), default_value = "100")]
@@ -169,12 +162,24 @@ impl MousePathParser {
     ) -> MousePaths {
         let mut mouse_paths = MousePaths::new();
 
+        // Used to print out info to the user.
+        let mut max_delta_location = Location {
+            x: 0,
+            y: 0,
+            time_us: 0,
+        };
         // Loop over each record to calculate how the mouse moved. Parsing adjacent
         // rows into deltas and groups of rows into mouse paths.
         let mut old_mouse_loc = ZERO_LOC;
         let mut delta_mouse_locs = Vec::<Location>::new();
         for (i, result) in reader.deserialize().enumerate() {
-            let mouse_loc: Location = result.expect("a Record");
+            let mouse_loc: Location = match result {
+                Ok(mouse_loc) => mouse_loc,
+                _ => {
+                    println!("bad line, i={}", i);
+                    continue;
+                }
+            };
 
             if old_mouse_loc == ZERO_LOC {
                 // This element is the beginning of a new movement. Therefore we
@@ -191,8 +196,11 @@ impl MousePathParser {
             }
 
             let mut delta = &mouse_loc - &old_mouse_loc;
-            if delta.time_us < self.config.min_time_delta_us
-                || delta.time_us > self.config.max_time_delta_us
+            if (delta.x + delta.y) > (max_delta_location.x + max_delta_location.y) {
+                max_delta_location = delta.clone();
+            }
+            if (delta.time_us as u128) < MIN_TIME_BETWEEN_LOCATIONS.as_micros()
+                || (delta.time_us as u128) > MAX_TIME_BETWEEN_LOCATIONS.as_micros()
                 || delta.x > self.config.max_1d_delta
                 || delta.y > self.config.max_1d_delta
             {
@@ -202,12 +210,12 @@ impl MousePathParser {
             delta_mouse_locs.push(delta);
             old_mouse_loc = mouse_loc;
 
-            // DO NOT SUBMIT
             if self.config.max_rows_to_read > 0 && i > self.config.max_rows_to_read {
                 println!("break");
                 break;
             }
         }
+        dbg!(max_delta_location);
         // If we finished the file parse anything left.
         self.parse_mouse_deltas(delta_mouse_locs, &mut mouse_paths);
         mouse_paths
