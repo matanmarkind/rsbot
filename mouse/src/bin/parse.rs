@@ -11,6 +11,11 @@ fn parse_duration_from_secs(src: &str) -> Result<Duration, ParseIntError> {
     Ok(Duration::from_secs(seconds))
 }
 
+fn parse_duration_from_micros(src: &str) -> Result<Duration, ParseIntError> {
+    let microseconds: u64 = src.parse()?;
+    Ok(Duration::from_micros(microseconds))
+}
+
 #[derive(Debug, StructOpt)]
 pub struct Config {
     #[structopt(long)]
@@ -19,8 +24,8 @@ pub struct Config {
     #[structopt(long)]
     pub out_fpath: String, // Serialized output of mouse paths.
 
-    #[structopt(long, parse(try_from_str), default_value = "50000")]
-    pub max_no_move_time_us: i64,
+    #[structopt(long, parse(try_from_str = parse_duration_from_micros), default_value = "50000")]
+    pub max_no_move_time_us: Duration,
 
     #[structopt(long, parse(try_from_str), default_value = "30")]
     pub max_rows_per_batch: usize,
@@ -98,7 +103,7 @@ impl MousePathParser {
         let mut last_move_index = 0;
         // If the position doesn't change for long enough, this indicates the end of
         // a movement
-        let mut time_since_last_delta_us = 0;
+        let mut time_since_last_delta = Duration::from_micros(0);
         for (
             i,
             Location {
@@ -113,7 +118,7 @@ impl MousePathParser {
                 // the mouse is at rest, and therefore a path is complete. Don't
                 // update 'last_move_index' as a way of automatically truncating
                 // trailing 0's when the path completes.
-                time_since_last_delta_us += dt_us;
+                time_since_last_delta += Duration::from_micros(*dt_us as u64);
                 continue;
             }
 
@@ -126,7 +131,7 @@ impl MousePathParser {
             }
 
             if path_start_index < last_move_index
-                && (time_since_last_delta_us > self.config.max_no_move_time_us)
+                && (time_since_last_delta > self.config.max_no_move_time_us)
             {
                 // We are now at the end of a single path.
                 match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
@@ -137,7 +142,7 @@ impl MousePathParser {
                 path_start_index = i;
             }
 
-            time_since_last_delta_us = 0;
+            time_since_last_delta = Duration::from_micros(0);
             last_move_index = i;
         }
 
