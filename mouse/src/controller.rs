@@ -75,7 +75,7 @@ impl MouseMover {
                 // cheat a little and try again. If we just cheated, exit to
                 // avoid an infinite loop.
                 if just_cheated {
-                    return false;
+                    return &self.current_position() == dst;
                 }
                 println!("cheater");
                 cheat_towards(&(dst - &self.current_position()));
