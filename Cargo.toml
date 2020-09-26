@@ -3,4 +3,5 @@
 members = [
     "mouse",
     "screen",
+    "util",
 ]

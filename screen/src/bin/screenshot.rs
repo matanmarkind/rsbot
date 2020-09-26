@@ -2,8 +2,10 @@
 
 use std::fs::File;
 use std::io::ErrorKind::WouldBlock;
+use std::ops::Deref;
 use std::thread;
 use std::time::Duration;
+use util::*;
 
 // Each pixel is represented by 4 u8's, BGRA.
 const PIXEL_SIZE: usize = 4;
@@ -30,6 +32,7 @@ impl Capturer {
         capturer
     }
 
+    /// Will block until a screencapture is achieved. May panic.
     fn frame(&mut self) -> scrap::Frame {
         // This function requires compiling with:
         //
@@ -51,6 +54,18 @@ impl Capturer {
                 }
             }
         }
+    }
+
+    // Produces a new vector, not a new frame, since the data must be owned.
+    // TODO: I think I could produce a Frame if I boxed the vector. May create a
+    // simpler interface, but not sure it's worth it. Idk if I plan to do
+    // subframe.subframe.
+    fn subframe(frame: &scrap::Frame, top_left: Position, bottom_right: Position) -> Vec<u8> {
+        let delta = &bottom_right - &top_left;
+        let mut buffer = Vec::with_capacity(delta.dx * delta.dy * PIXEL_SIZE);
+        // Copy in each row segment.
+
+        buffer
     }
 
     // The width and height of the screen in pixels.
@@ -118,4 +133,6 @@ fn main() {
         &bitflipped,
     )
     .unwrap();
+
+    dbg!(util::Position { x: 100, y: 100 });
 }
