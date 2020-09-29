@@ -10,3 +10,5 @@ edition = "2018"
 scrap = "0.5.0"
 repng = "0.2.2"
 util = {path="../util"}
+device_query = "0.2.5"
+rand = "0.7.3"
