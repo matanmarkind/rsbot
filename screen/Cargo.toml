@@ -12,3 +12,5 @@ repng = "0.2.2"
 util = {path="../util"}
 device_query = "0.2.5"
 rand = "0.7.3"
+structopt = "0.3.17"
+csv = "1.1"

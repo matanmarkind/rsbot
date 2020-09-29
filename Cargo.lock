@@ -510,10 +510,12 @@ dependencies = [
 name = "screen"
 version = "0.1.0"
 dependencies = [
+ "csv",
  "device_query",
  "rand",
  "repng",
  "scrap",
+ "structopt",
  "util",
 ]
 

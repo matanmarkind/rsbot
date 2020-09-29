@@ -13,13 +13,13 @@ pub const PIXEL_SIZE: usize = 4;
 // Amount of time to wait between attempts to capture a Frame.
 pub const FRAME_PERIOD: Duration = Duration::from_micros(1e6 as u64 / 60);
 
-const ATTEMPTS_TO_FIND_PIXEL: u32 = 1000;
+const ATTEMPTS_TO_FIND_PIXEL: u32 = 10000;
 
 /// Search the screen for a desired pixel.
 ///
 /// 'capturer' - used to take a screenshot.
 ///
-/// 'bgr_pixels' - set of pixels to match against (aka find within the frame).
+/// 'desired_bgr_pixels' - set of pixels to match against (aka find within the frame).
 ///
 /// 'top_left' - top left corner of the image (included). (x,y) represent the
 /// top/leftmost row/column of the frame to search in.
@@ -29,9 +29,9 @@ const ATTEMPTS_TO_FIND_PIXEL: u32 = 1000;
 ///
 /// Returns the position of the first pixel found which matches the criteria. If
 /// no pixel is found return None.
-pub fn find_pixel(
+pub fn find_pixel_exact(
     capturer: &mut Capturer,
-    bgr_pixels: &HashSet<(u8, u8, u8)>,
+    desired_bgr_pixels: &HashSet<(u8, u8, u8)>,
     top_left: &Position,
     past_bottom_right: &Position,
 ) -> Option<Position> {
@@ -63,7 +63,73 @@ pub fn find_pixel(
         // Get the BGR pixel from the frame at this Position.
         let pixel = get_pixel_from_frame(&frame, &position);
 
-        if bgr_pixels.contains(&pixel) {
+        if desired_bgr_pixels.contains(&pixel) {
+            return Some(position);
+        }
+    }
+
+    None
+}
+
+/// Search the screen for a desired pixel.
+///
+/// 'capturer' - used to take a screenshot.
+///
+/// 'bgr_pixels' - set of pixels ranges to match against (aka find within the
+/// frame). Each element is a pair of [min, max] to apply to each channel of the
+/// pixel.
+///
+/// 'top_left' - top left corner of the image (included). (x,y) represent the
+/// top/leftmost row/column of the frame to search in.
+///
+/// 'past_bottom_right' - bottom right of the image (excluded). (x,y) represent
+/// one past the bottom/rightmost row/column of the frame to search in.
+///
+/// Returns the position of the first pixel found which matches the criteria. If
+/// no pixel is found return None.
+pub fn find_pixel_fuzzy(
+    capturer: &mut Capturer,
+    desired_bgr_pixel: &((u8, u8), (u8, u8), (u8, u8)),
+    top_left: &Position,
+    past_bottom_right: &Position,
+) -> Option<Position> {
+    // Get a frame.
+    let frame;
+    loop {
+        // Wait until there's a frame.
+        match capturer.frame() {
+            Ok(f) => {
+                frame = f;
+                break;
+            }
+            Err(error) => {
+                if error.kind() == WouldBlock {
+                    // Keep spinning.
+                    sleep(FRAME_PERIOD);
+                    continue;
+                } else {
+                    panic!("Error: {}", error);
+                }
+            }
+        }
+    }
+
+    for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
+        // Randomly generate positions in the provided range.
+        let position = random_position(top_left, past_bottom_right);
+
+        // Get the BGR pixel from the frame at this Position.
+        let pixel = get_pixel_from_frame(&frame, &position);
+
+        // Compiles without the parents around desired_bgr_pixel.X, but cargo
+        // fmt doesn't work.
+        if pixel.0 >= (desired_bgr_pixel.0).0
+            && pixel.0 <= (desired_bgr_pixel.0).1
+            && pixel.1 >= (desired_bgr_pixel.1).0
+            && pixel.1 <= (desired_bgr_pixel.1).1
+            && pixel.2 >= (desired_bgr_pixel.2).0
+            && pixel.2 <= (desired_bgr_pixel.2).1
+        {
             return Some(position);
         }
     }
