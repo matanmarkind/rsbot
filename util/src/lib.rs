@@ -1,6 +1,19 @@
 use serde::{Deserialize, Serialize};
 use std::ops::{Add, Sub};
 
+pub fn parse_position(src: &str) -> Result<Position, csv::Error> {
+    // TODO: Find an easier way to deserialize...
+    let mut reader = csv::ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(src.as_bytes());
+    let mut ret = Ok(Position { x: 0, y: 0 });
+    for result in reader.deserialize::<Position>() {
+        ret = result;
+        break;
+    }
+    ret
+}
+
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Position {
     pub x: i32,
