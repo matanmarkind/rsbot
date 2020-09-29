@@ -1,8 +1,8 @@
 use mouse::controller::MouseMover;
-use mouse::types::*;
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
+use util::*;
 
 #[derive(Debug, StructOpt)]
 pub struct Config {

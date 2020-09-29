@@ -5,6 +5,7 @@ use std::io::prelude::*;
 use std::num::ParseIntError;
 use std::time::Duration;
 use structopt::StructOpt;
+use util::*;
 
 fn parse_duration_from_secs(src: &str) -> Result<Duration, ParseIntError> {
     let seconds: u64 = src.parse()?;

@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::cmp::{Ord, Ordering};
 use std::collections::BTreeMap;
-use std::ops::{Add, Sub};
+use std::ops::Sub;
+use util::*;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct Location {

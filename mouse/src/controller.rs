@@ -6,6 +6,7 @@ use rand::distributions::{Distribution, Uniform};
 use rand::thread_rng;
 use std::ops::Bound::Included;
 use std::thread::sleep;
+use util::*;
 
 // Struct used to moe the mouse around on the screen.
 //
