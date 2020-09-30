@@ -60,9 +60,8 @@ impl MouseMover {
     pub fn move_to(&self, dst: &Position) -> bool {
         let mut just_cheated = false;
         loop {
-            println!("move_to - loop");
-            let distance = self.distance_from(&dst);
             self.follow_path_to(&dst, MAX_CHEAT_DISTANCE);
+            let distance = self.distance_from(&dst);
             if distance <= MAX_CHEAT_DISTANCE {
                 println!("Close enough. distance={}", distance);
                 break;
@@ -124,7 +123,6 @@ impl MouseMover {
 
     // Find a path to get the mouse closer to 'dst' and follow it.
     fn follow_path_to(&self, dst: &Position, tolerance: i32) {
-        println!("follow_path_to - tolerance={}", tolerance);
         let position = self.current_position();
         let delta = dst - &position;
 

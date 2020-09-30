@@ -8,7 +8,8 @@ use util::*;
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
-    #[structopt(long,
+    #[structopt(
+        long,
         about = "Path to directory to save screenshots to. Should end with a slash (e.g. /path/to/dir/ on linux)"
     )]
     pub out_dir: String,

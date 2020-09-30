@@ -66,11 +66,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         match get_pixel_position(&config, &mut capturer) {
             Some(pos) => {
-                println!("found it! {:?}", pos);
+                let time = std::time::Instant::now();
+                println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
                 if mouse_mover.move_to(&pos) {
-                    println!("You made it!");
+                    println!("{} - You made it!", time.elapsed().as_millis());
                 } else {
-                    println!("At least you failed valiantly while trying.");
+                    println!(
+                        "{} - At least you failed valiantly while trying.",
+                        time.elapsed().as_millis()
+                    );
                 }
             }
             None => println!("didn't find it :("),
