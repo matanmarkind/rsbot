@@ -24,4 +24,4 @@ pub const ZERO_LOC: Location = Location {
 // Maximum distance we can teleport the mouse when 'cheating' towards to a .
 // This should be on the order of a smallish DeltaPosition. Used by the
 // controller.
-pub const MAX_CHEAT_DISTANCE: i32 = 20;
+pub const MAX_CHEAT_DISTANCE: i32 = 10;

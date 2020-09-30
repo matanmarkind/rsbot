@@ -58,10 +58,9 @@ impl MouseMover {
     /// }
     /// ```
     pub fn move_to(&self, dst: &Position) -> bool {
-        dbg!(&dst);
-
         let mut just_cheated = false;
         loop {
+            println!("move_to - loop");
             let distance = self.distance_from(&dst);
             self.follow_path_to(&dst, MAX_CHEAT_DISTANCE);
             if distance <= MAX_CHEAT_DISTANCE {
@@ -125,12 +124,9 @@ impl MouseMover {
 
     // Find a path to get the mouse closer to 'dst' and follow it.
     fn follow_path_to(&self, dst: &Position, tolerance: i32) {
+        println!("follow_path_to - tolerance={}", tolerance);
         let position = self.current_position();
         let delta = dst - &position;
-        println!(
-            "position={:?}, dst={:?}, delta={:?}, tolerance={:?}",
-            position, dst, delta, tolerance
-        );
 
         // Get an iterator to the relevant paths.
         let (min_distance, max_distance) =
@@ -169,7 +165,6 @@ impl MouseMover {
 /// gives the angle that 'path' must be rotated to.
 fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPosition) {
     let rotation_needed = net_delta.angle_rads() - summary.angle_rads;
-    println!("rotation_needed={}, summary={:?}", rotation_needed, summary);
 
     for delta in path {
         // Move the value an absolute distance across the screen (ie num

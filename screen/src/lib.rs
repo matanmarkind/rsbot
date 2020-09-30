@@ -13,7 +13,9 @@ pub const PIXEL_SIZE: usize = 4;
 // Amount of time to wait between attempts to capture a Frame.
 pub const FRAME_PERIOD: Duration = Duration::from_micros(1e6 as u64 / 60);
 
-const ATTEMPTS_TO_FIND_PIXEL: u32 = 10000;
+// One batch of attempts
+const ATTEMPTS_TO_FIND_PIXEL: u32 = 1000;
+pub const TIME_TO_FIND_PIXEL: Duration = Duration::from_millis(100);
 
 /// Search the screen for a desired pixel.
 ///
@@ -35,6 +37,7 @@ pub fn find_pixel_exact(
     top_left: &Position,
     past_bottom_right: &Position,
 ) -> Option<Position> {
+    let time = std::time::Instant::now();
     // Get a frame.
     let frame;
     loop {
@@ -56,15 +59,17 @@ pub fn find_pixel_exact(
         }
     }
 
-    for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
-        // Randomly generate positions in the provided range.
-        let position = random_position(top_left, past_bottom_right);
+    while time.elapsed() < TIME_TO_FIND_PIXEL {
+        for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
+            // Randomly generate positions in the provided range.
+            let position = random_position(top_left, past_bottom_right);
 
-        // Get the BGR pixel from the frame at this Position.
-        let pixel = get_pixel_from_frame(&frame, &position);
+            // Get the BGR pixel from the frame at this Position.
+            let pixel = get_pixel_from_frame(&frame, &position);
 
-        if desired_bgr_pixels.contains(&pixel) {
-            return Some(position);
+            if desired_bgr_pixels.contains(&pixel) {
+                return Some(position);
+            }
         }
     }
 
@@ -93,6 +98,7 @@ pub fn find_pixel_fuzzy(
     top_left: &Position,
     past_bottom_right: &Position,
 ) -> Option<Position> {
+    let time = std::time::Instant::now();
     // Get a frame.
     let frame;
     loop {
@@ -114,23 +120,25 @@ pub fn find_pixel_fuzzy(
         }
     }
 
-    for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
-        // Randomly generate positions in the provided range.
-        let position = random_position(top_left, past_bottom_right);
+    while time.elapsed() < TIME_TO_FIND_PIXEL {
+        for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
+            // Randomly generate positions in the provided range.
+            let position = random_position(top_left, past_bottom_right);
 
-        // Get the BGR pixel from the frame at this Position.
-        let pixel = get_pixel_from_frame(&frame, &position);
+            // Get the BGR pixel from the frame at this Position.
+            let pixel = get_pixel_from_frame(&frame, &position);
 
-        // Compiles without the parents around desired_bgr_pixel.X, but cargo
-        // fmt doesn't work.
-        if pixel.0 >= (desired_bgr_pixel.0).0
-            && pixel.0 <= (desired_bgr_pixel.0).1
-            && pixel.1 >= (desired_bgr_pixel.1).0
-            && pixel.1 <= (desired_bgr_pixel.1).1
-            && pixel.2 >= (desired_bgr_pixel.2).0
-            && pixel.2 <= (desired_bgr_pixel.2).1
-        {
-            return Some(position);
+            // Compiles without the parents around desired_bgr_pixel.X, but cargo
+            // fmt doesn't work.
+            if pixel.0 >= (desired_bgr_pixel.0).0
+                && pixel.0 <= (desired_bgr_pixel.0).1
+                && pixel.1 >= (desired_bgr_pixel.1).0
+                && pixel.1 <= (desired_bgr_pixel.1).1
+                && pixel.2 >= (desired_bgr_pixel.2).0
+                && pixel.2 <= (desired_bgr_pixel.2).1
+            {
+                return Some(position);
+            }
         }
     }
 
