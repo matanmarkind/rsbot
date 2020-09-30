@@ -1,4 +1,4 @@
-This directory is dedicated to mouse movements for the RS bot. In it there are
+This crate is dedicated to mouse movements for the RS bot. In it there are
 2 portions: prep work needed to "seed" the mouse controller, the controller
 used during play.
 
