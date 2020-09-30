@@ -28,13 +28,13 @@ fn main() {
         }
     }
     let subframe = frame.subframe(Position { x: 100, y: 100 }, Position { x: 500, y: 500 });
-    dbg!(&subframe.width(), &subframe.height(), &subframe.len());
+    dbg!(&subframe.width, &subframe.height, &subframe.len());
 
     println!("Captured! Saving...");
     repng::encode(
         File::create("screenshot.png").unwrap(),
-        subframe.width() as u32,
-        subframe.height() as u32,
+        subframe.width as u32,
+        subframe.height as u32,
         subframe.buffer(),
     )
     .unwrap();
@@ -48,8 +48,8 @@ fn main() {
     println!("Saving Flipped...");
     repng::encode(
         File::create("screenshot_flipped.png").unwrap(),
-        flipped.width() as u32,
-        flipped.height() as u32,
+        flipped.width as u32,
+        flipped.height as u32,
         flipped.buffer(),
     )
     .unwrap();

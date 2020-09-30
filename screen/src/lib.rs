@@ -13,8 +13,7 @@ pub const PIXEL_SIZE: usize = 4;
 // Amount of time to wait between attempts to capture a Frame.
 pub const FRAME_PERIOD: Duration = Duration::from_micros(1e6 as u64 / 60);
 
-// One batch of attempts
-const ATTEMPTS_TO_FIND_PIXEL: u32 = 1000;
+// When searching for a pixel in a frame, how many attempts to make.
 pub const TIME_TO_FIND_PIXEL: Duration = Duration::from_millis(100);
 
 /// Search the screen for a desired pixel.
@@ -58,18 +57,17 @@ pub fn find_pixel_exact(
             }
         }
     }
+    assert!(frame.is_bgr);
 
     while time.elapsed() < TIME_TO_FIND_PIXEL {
-        for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
-            // Randomly generate positions in the provided range.
-            let position = random_position(top_left, past_bottom_right);
+        // Randomly generate positions in the provided range.
+        let position = random_position(top_left, past_bottom_right);
 
-            // Get the BGR pixel from the frame at this Position.
-            let pixel = get_pixel_from_frame(&frame, &position);
+        // Get the BGR pixel from the frame at this Position.
+        let pixel = get_pixel_from_frame(&frame, &position);
 
-            if desired_bgr_pixels.contains(&pixel) {
-                return Some(position);
-            }
+        if desired_bgr_pixels.contains(&pixel) {
+            return Some(position);
         }
     }
 
@@ -119,26 +117,25 @@ pub fn find_pixel_fuzzy(
             }
         }
     }
+    assert!(frame.is_bgr);
 
     while time.elapsed() < TIME_TO_FIND_PIXEL {
-        for _ in 0..ATTEMPTS_TO_FIND_PIXEL {
-            // Randomly generate positions in the provided range.
-            let position = random_position(top_left, past_bottom_right);
+        // Randomly generate positions in the provided range.
+        let position = random_position(top_left, past_bottom_right);
 
-            // Get the BGR pixel from the frame at this Position.
-            let pixel = get_pixel_from_frame(&frame, &position);
+        // Get the BGR pixel from the frame at this Position.
+        let pixel = get_pixel_from_frame(&frame, &position);
 
-            // Compiles without the parents around desired_bgr_pixel.X, but cargo
-            // fmt doesn't work.
-            if pixel.0 >= (desired_bgr_pixel.0).0
-                && pixel.0 <= (desired_bgr_pixel.0).1
-                && pixel.1 >= (desired_bgr_pixel.1).0
-                && pixel.1 <= (desired_bgr_pixel.1).1
-                && pixel.2 >= (desired_bgr_pixel.2).0
-                && pixel.2 <= (desired_bgr_pixel.2).1
-            {
-                return Some(position);
-            }
+        // Compiles without the parents around desired_bgr_pixel.X, but cargo
+        // fmt doesn't work.
+        if pixel.0 >= (desired_bgr_pixel.0).0
+            && pixel.0 <= (desired_bgr_pixel.0).1
+            && pixel.1 >= (desired_bgr_pixel.1).0
+            && pixel.1 <= (desired_bgr_pixel.1).1
+            && pixel.2 >= (desired_bgr_pixel.2).0
+            && pixel.2 <= (desired_bgr_pixel.2).1
+        {
+            return Some(position);
         }
     }
 
@@ -163,16 +160,16 @@ fn random_position(top_left: &Position, past_bottom_right: &Position) -> Positio
 
 // Frame must conform to PIXEL_SIZE (4 u8 elements per pixel with the first 3
 // being the ones of interest)
-fn get_pixel_from_frame<DataT>(frame: &BgrFrame<DataT>, position: &Position) -> (u8, u8, u8)
+fn get_pixel_from_frame<DataT>(frame: &Frame<DataT>, position: &Position) -> (u8, u8, u8)
 where
     DataT: Deref<Target = [u8]>,
 {
-    let row_offset = frame.width() * PIXEL_SIZE * position.y as usize;
+    let row_offset = frame.width * PIXEL_SIZE * position.y as usize;
     let pixel_offset = row_offset + position.x as usize * PIXEL_SIZE;
     return (
-        frame.buffer()[pixel_offset],
-        frame.buffer()[pixel_offset + 1],
-        frame.buffer()[pixel_offset + 2],
+        frame.buffer[pixel_offset],
+        frame.buffer[pixel_offset + 1],
+        frame.buffer[pixel_offset + 2],
     );
 }
 
@@ -181,8 +178,9 @@ pub struct Frame<DataT>
 where
     DataT: Deref<Target = [u8]>,
 {
-    width: usize,
-    height: usize,
+    pub is_bgr: bool, // A frame can either be BGRA or RGBA.
+    pub width: usize,
+    pub height: usize,
     // DataT may represent an owned or unowned frame (Vec<u8> or scrap::Frame).
     buffer: DataT,
 }
@@ -222,6 +220,7 @@ where
             buffer: buffer,
             width: delta.dx as usize,
             height: delta.dy as usize,
+            is_bgr: self.is_bgr,
         }
     }
 
@@ -251,111 +250,19 @@ where
             buffer: buffer,
             width: self.width,
             height: self.height,
-        }
-    }
-}
-
-pub struct BgrFrame<DataT>
-where
-    DataT: Deref<Target = [u8]>,
-{
-    pub frame: Frame<DataT>,
-}
-
-pub struct RgbFrame<DataT>
-where
-    DataT: Deref<Target = [u8]>,
-{
-    pub frame: Frame<DataT>,
-}
-
-impl<DataT> BgrFrame<DataT>
-where
-    DataT: Deref<Target = [u8]>,
-{
-    pub fn new(buffer: DataT, width: usize, height: usize) -> BgrFrame<DataT> {
-        BgrFrame {
-            frame: Frame {
-                buffer: buffer,
-                width: width,
-                height: height,
-            },
-        }
-    }
-    pub fn subframe(&self, top_left: Position, past_bottom_right: Position) -> BgrFrame<Vec<u8>> {
-        BgrFrame {
-            frame: self.frame.subframe(top_left, past_bottom_right),
+            is_bgr: !self.is_bgr,
         }
     }
 
-    /// Flip the image from either BGRA to RGBA or back. Always sets alpha to
-    /// 255.
-    ///
-    /// TODO: consider turning this into a mutating function, where it flips its
-    /// own elements.
-    pub fn flip(&self) -> RgbFrame<Vec<u8>> {
-        RgbFrame {
-            frame: self.frame.flip(),
-        }
-    }
-
-    pub fn width(&self) -> usize {
-        self.frame.width
-    }
-    pub fn height(&self) -> usize {
-        self.frame.height
-    }
     pub fn len(&self) -> usize {
-        self.frame.buffer.len()
+        self.buffer.len()
     }
+
+    /// Return the underlying frame data. Accessed via this method instead of
+    /// directly getting the buffer so that calling code doesn't have to care
+    /// about which container exactly is holding the data (Vec of scrap::Frame).
     pub fn buffer(&self) -> &[u8] {
-        &self.frame.buffer[..]
-    }
-}
-
-impl<DataT> RgbFrame<DataT>
-where
-    DataT: Deref<Target = [u8]>,
-{
-    pub fn new(buffer: DataT, width: usize, height: usize) -> RgbFrame<DataT> {
-        RgbFrame {
-            frame: Frame {
-                buffer: buffer,
-                width: width,
-                height: height,
-            },
-        }
-    }
-    pub fn subframe(&self, top_left: Position, past_bottom_right: Position) -> RgbFrame<Vec<u8>> {
-        RgbFrame {
-            frame: self.frame.subframe(top_left, past_bottom_right),
-        }
-    }
-
-    /// Flip the image from either BGRA to RGBA or back. Always sets alpha to
-    /// 255.
-    ///
-    /// TODO: consider turning this into a mutating function, where it flips its
-    /// own elements.
-    pub fn flip(&self) -> RgbFrame<Vec<u8>> {
-        RgbFrame {
-            frame: self.frame.flip(),
-        }
-    }
-
-    pub fn width(&self) -> usize {
-        self.frame.width
-    }
-
-    pub fn height(&self) -> usize {
-        self.frame.height
-    }
-    pub fn len(&self) -> usize {
-        self.frame.buffer.len()
-    }
-
-    pub fn buffer(&self) -> &[u8] {
-        &self.frame.buffer[..]
+        &self.buffer[..]
     }
 }
 
@@ -394,12 +301,18 @@ impl Capturer {
         capturer
     }
 
+    /// Takes a screenshot of the selected display and returns the BGRA frame.
     // TODO: Once I can compile with polonius, switch to '_unused_frame'.
-    pub fn frame(&mut self) -> Result<BgrFrame<scrap::Frame>> {
+    pub fn frame(&mut self) -> Result<Frame<scrap::Frame>> {
         let (width, height) = (self.capturer.width(), self.capturer.height());
         // Wait until there's a frame.
         match self.capturer.frame() {
-            Ok(frame) => Ok(BgrFrame::new(frame, width, height)),
+            Ok(frame) => Ok(Frame {
+                buffer: frame,
+                width,
+                height,
+                is_bgr: true,
+            }),
             Err(err) => Err(err),
         }
     }

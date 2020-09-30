@@ -31,7 +31,7 @@ fn main() {
     let device_state = DeviceState::new();
     let (x, y) = device_state.get_mouse().coords;
 
-    let row_offset = frame.width() * PIXEL_SIZE * y as usize;
+    let row_offset = frame.width * PIXEL_SIZE * y as usize;
     let pixel_offset = row_offset + x as usize * PIXEL_SIZE;
     println!(
         "mouse=({}, {}), pixel={:?}",
