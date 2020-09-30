@@ -21,7 +21,7 @@ pub struct Config {
     #[structopt(
         long,
         parse(try_from_str = parse_position),
-        default_value = "1920,1040",
+        default_value = "1920,625",
         about = "bottom right of the image (excluded). (x,y) represent one past the bottom/rightmost row/column of the frame to search in."
     )]
     pub past_bottom_right: Position,
