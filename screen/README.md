@@ -19,6 +19,8 @@ $ cargo run -p screen --bin print_mouse_pixel
 
 Or you can take a saved image and use https://yangcha.github.io/iview/iview.html.
 
+If you want to translate from pixel values to a visual - https://www.rapidtables.com/web/color/RGB_Color.html
+
 # Find an object
 
 Now that we have decided what to look for, we need to find it. We search for relevant pixels by giving a range of values that each channel can fall within (0-255 for each of blue, green, and red). We also give the region to look in.
