@@ -64,7 +64,6 @@ fn main() -> Result<(), Box<dyn Error>> {
             };
             sleep(MIN_TIME_BETWEEN_LOCATIONS);
         }
-        // dbg!(&locations);
         let mut time_deltas = Vec::<_>::new();
         let mut last_time = locations[0].time_us;
         for Location {
@@ -78,9 +77,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         let bad_deltas: Vec<_> = time_deltas
             .iter()
-            .filter(|&&x| x < 9000 || x > 11000)
+            .filter(|&&x| {
+                x < MIN_TIME_BETWEEN_LOCATIONS.as_micros() as i64
+                    || x > MIN_TIME_BETWEEN_LOCATIONS.as_micros() as i64
+            })
             .collect();
-        dbg!(locations.len(), &bad_deltas);
+        dbg!(locations.len(), &bad_deltas.len());
 
         // Write the csv. Begin each batch with (0,0,0)
         csv_writer.serialize(Location {

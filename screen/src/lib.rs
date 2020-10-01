@@ -92,7 +92,7 @@ pub fn find_pixel_exact(
 /// no pixel is found return None.
 pub fn find_pixel_fuzzy(
     capturer: &mut Capturer,
-    desired_bgr_pixel: &((u8, u8), (u8, u8), (u8, u8)),
+    desired_bgr_pixel: &FuzzyPixel,
     top_left: &Position,
     past_bottom_right: &Position,
 ) -> Option<Position> {
@@ -128,18 +128,21 @@ pub fn find_pixel_fuzzy(
 
         // Compiles without the parents around desired_bgr_pixel.X, but cargo
         // fmt doesn't work.
-        if pixel.0 >= (desired_bgr_pixel.0).0
-            && pixel.0 <= (desired_bgr_pixel.0).1
-            && pixel.1 >= (desired_bgr_pixel.1).0
-            && pixel.1 <= (desired_bgr_pixel.1).1
-            && pixel.2 >= (desired_bgr_pixel.2).0
-            && pixel.2 <= (desired_bgr_pixel.2).1
-        {
+        if pixel_matches(&pixel, desired_bgr_pixel) {
             return Some(position);
         }
     }
 
     None
+}
+
+fn pixel_matches(actual_bgr: &(u8, u8, u8), desired: &FuzzyPixel) -> bool {
+    actual_bgr.0 >= desired.blue_min
+        && actual_bgr.0 <= desired.blue_max
+        && actual_bgr.1 >= desired.green_min
+        && actual_bgr.1 <= desired.green_max
+        && actual_bgr.2 >= desired.red_min
+        && actual_bgr.2 <= desired.red_max
 }
 
 /// 'top_left' - top left corner of the image (included). (x,y) represent the
@@ -258,6 +261,25 @@ where
         self.buffer.len()
     }
 
+    /// Rerutn pixel in BGR format.
+    pub fn get_bgr_pixel(&self, pos: &Position) -> (u8, u8, u8) {
+        let row_offset = self.width * PIXEL_SIZE * pos.y as usize;
+        let pixel_offset = row_offset + pos.x as usize * PIXEL_SIZE;
+        if self.is_bgr {
+            (
+                self.buffer[pixel_offset],
+                self.buffer[pixel_offset + 1],
+                self.buffer[pixel_offset + 2],
+            )
+        } else {
+            (
+                self.buffer[pixel_offset + 2],
+                self.buffer[pixel_offset + 1],
+                self.buffer[pixel_offset],
+            )
+        }
+    }
+
     /// Return the underlying frame data. Accessed via this method instead of
     /// directly getting the buffer so that calling code doesn't have to care
     /// about which container exactly is holding the data (Vec of scrap::Frame).
@@ -299,6 +321,13 @@ impl Capturer {
         assert_eq!(width * height * PIXEL_SIZE, frame.len());
 
         capturer
+    }
+
+    pub fn check_pixel(&mut self, pos: &Position, pixel: &FuzzyPixel) -> bool {
+        let frame = self.frame().unwrap(); // May crash.
+        let actual = frame.get_bgr_pixel(pos);
+        dbg!(&actual, &pixel);
+        pixel_matches(&actual, pixel)
     }
 
     /// Takes a screenshot of the selected display and returns the BGRA frame.

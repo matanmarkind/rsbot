@@ -1,7 +1,12 @@
-/// Test that combines screen's ability to find pizels from the screen and
-/// mouse's ability to move the mouse to a given position.
+/// Builds off of mouse_to_pixel. Now we will move the mouse to the desired
+/// pixel and left click on it. Instead of a config with a single rectangle
+/// bounding the search, we will have multiple rectangles. This is because parts
+/// of the screen are covered by the chatbox or the mini map.
+use inputbot::MouseButton::LeftButton;
 use std::error::Error;
 use std::io;
+use std::thread::sleep;
+use std::time::Duration;
 use structopt::StructOpt;
 use util::*;
 
@@ -9,23 +14,9 @@ use util::*;
 pub struct Config {
     #[structopt(long)]
     pub in_fpath: String, // CSV file to read mouse positions from.
-
-    #[structopt(
-        long,
-        default_value = "960,40",
-        about = "top left corner of the image (included). (x,y) represent the top/leftmost row/column of the frame to search in."
-    )]
-    pub top_left: Position,
-
-    #[structopt(
-        long,
-        default_value = "1920,625",
-        about = "bottom right of the image (excluded). (x,y) represent one past the bottom/rightmost row/column of the frame to search in."
-    )]
-    pub past_bottom_right: Position,
 }
 
-fn get_pixel_position(config: &Config, mut capturer: &mut screen::Capturer) -> Option<Position> {
+fn get_pixel_position(mut capturer: &mut screen::Capturer) -> Option<Position> {
     let mut buffer = String::new();
 
     println!("Enter (blue_min,blue_max,green_min,green_max,red_min,red_max): ");
@@ -33,12 +24,18 @@ fn get_pixel_position(config: &Config, mut capturer: &mut screen::Capturer) -> O
     io::stdin().read_line(&mut buffer).unwrap();
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
 
-    screen::find_pixel_fuzzy(
-        &mut capturer,
-        &desired_pixel,
-        &config.top_left,
-        &config.past_bottom_right,
-    )
+    for BoundingBox {
+        0: top_left,
+        1: past_bottom_right,
+    } in CLEAR_SCREEN_BOUNDS
+    {
+        match screen::find_pixel_fuzzy(&mut capturer, &desired_pixel, &top_left, &past_bottom_right)
+        {
+            Some(pos) => return Some(pos),
+            None => (),
+        }
+    }
+    None
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -49,12 +46,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mouse_mover = mouse::controller::MouseMover::new(&config.in_fpath);
 
     loop {
-        match get_pixel_position(&config, &mut capturer) {
+        match get_pixel_position(&mut capturer) {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
                 if mouse_mover.move_to(&pos) {
                     println!("{} - You made it!", time.elapsed().as_millis());
+                    LeftButton.press();
+                    sleep(Duration::from_millis(50));
+                    LeftButton.release();
                 } else {
                     println!(
                         "{} - At least you failed valiantly while trying.",
