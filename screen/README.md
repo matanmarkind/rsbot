@@ -8,7 +8,7 @@ The basic input to the bot is a screenshot of OSRS. This is done using the scrap
 $ cargo run -p screen --bin screenshot -- --out-dir /path/to/dir/
 ```
 
-# Find a pixel
+# Get pixel value
 
 Now that we can capture screenshots, we need to decide how to find our target within it. The search is done by finding relevant pixels (as opposed to full object detection). This is based on an assumption that OSRS graphics are simple enough for this to work. For this we have 2 options.
 
