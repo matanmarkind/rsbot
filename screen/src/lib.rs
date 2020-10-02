@@ -323,11 +323,16 @@ impl Capturer {
         capturer
     }
 
-    pub fn check_pixel(&mut self, pos: &Position, pixel: &FuzzyPixel) -> bool {
-        let frame = self.frame().unwrap(); // May crash.
-        let actual = frame.get_bgr_pixel(pos);
-        dbg!(&actual, &pixel);
-        pixel_matches(&actual, pixel)
+    pub fn check_pixels(&mut self, position_and_pixels: &[(Position, FuzzyPixel)]) -> bool {
+        let frame = self.frame().unwrap();
+        for (pos, pixel) in position_and_pixels {
+            let actual = frame.get_bgr_pixel(pos);
+            // dbg!(&actual, &pos, &pixel);
+            if !pixel_matches(&actual, pixel) {
+                return false;
+            }
+        }
+        true
     }
 
     /// Takes a screenshot of the selected display and returns the BGRA frame.

@@ -25,3 +25,7 @@ pub const ZERO_LOC: Location = Location {
 // This should be on the order of a smallish DeltaPosition. Used by the
 // controller.
 pub const MAX_CHEAT_DISTANCE: i32 = 20;
+
+/// Time to wait between press and release.
+pub const MIN_CLICK_WAIT: Duration = Duration::from_millis(100);
+pub const MAX_CLICK_WAIT: Duration = Duration::from_millis(150);

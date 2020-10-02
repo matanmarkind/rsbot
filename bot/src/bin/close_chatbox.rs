@@ -1,7 +1,4 @@
-use inputbot::MouseButton::LeftButton;
 use std::error::Error;
-use std::thread::sleep;
-use std::time::Duration;
 use structopt::StructOpt;
 use util::*;
 
@@ -18,20 +15,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut capturer = screen::Capturer::new();
     let mouse_mover = mouse::controller::MouseMover::new(&config.in_fpath);
 
-    // Go click on ALL chat button.
+    while !mouse_mover.move_to(&TOP_BAR) {}
+    mouse::left_click();
+
+    if !capturer.check_pixels(&[
+        CHAT_BOX_TOP_LEFT,
+        CHAT_BOX_BOTTOM_LEFT,
+        CHAT_BOX_TOP_RIGHT,
+        CHAT_BOX_BOTTOM_RIGHT,
+    ]) {
+        return Ok(());
+    }
+    // Go click on the All tab
     while !mouse_mover.move_to(&ALL_CHAT_BUTTON) {}
+    mouse::left_click();
 
-    // left click
-    LeftButton.press();
-    sleep(Duration::from_millis(100));
-    LeftButton.release();
-
-    if capturer.check_pixel(&ALL_CHAT_BUTTON, &ALL_CHAT_ON_HIGHLIGHT) {
-        println!("It's on!");
-        // Go and click once.
-        LeftButton.press();
-        sleep(Duration::from_millis(100));
-        LeftButton.release();
+    // If a different tab was seleected (not All) then the All tab will now be open. Close it.
+    std::thread::sleep(std::time::Duration::from_millis(200));
+    let mut capturer = screen::Capturer::new();
+    if capturer.check_pixels(&[
+        CHAT_BOX_TOP_LEFT,
+        CHAT_BOX_BOTTOM_LEFT,
+        CHAT_BOX_TOP_RIGHT,
+        CHAT_BOX_BOTTOM_RIGHT,
+    ]) {
+        // This is never happening since the top left keeps appearing as 114,137,147.
+        mouse::left_click();
     }
 
     Ok(())

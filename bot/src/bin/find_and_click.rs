@@ -45,6 +45,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut capturer = screen::Capturer::new();
     let mouse_mover = mouse::controller::MouseMover::new(&config.in_fpath);
 
+    while !mouse_mover.move_to(&TOP_BAR) {}
+    mouse::left_click();
+
     loop {
         match get_pixel_position(&mut capturer) {
             Some(pos) => {

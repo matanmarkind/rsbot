@@ -4,6 +4,8 @@ use crate::types::*;
 
 /// Screen based constants. Many of these assume that the screen is in the top
 /// right quarter of the screen.
+///
+/// Beware that colors may change when runelight is the selected screen.
 
 /// This is where we expect the game window to be.
 pub const WINDOW_BOUND: BoundingBox =
@@ -53,3 +55,50 @@ pub const ALL_CHAT_ON_HIGHLIGHT: FuzzyPixel = FuzzyPixel {
     red_min: 58,
     red_max: 61,
 };
+
+pub const CHAT_BOX_TOP_LEFT: (Position, FuzzyPixel) = (
+    Position { x: 970, y: 497 },
+    FuzzyPixel {
+        blue_min: 114,
+        blue_max: 114,
+        green_min: 137,
+        green_max: 137,
+        red_min: 147,
+        red_max: 147,
+    },
+);
+pub const CHAT_BOX_BOTTOM_LEFT: (Position, FuzzyPixel) = (
+    Position { x: 965, y: 630 },
+    FuzzyPixel {
+        blue_min: 147,
+        blue_max: 147,
+        green_min: 169,
+        green_max: 169,
+        red_min: 173,
+        red_max: 173,
+    },
+);
+
+pub const CHAT_BOX_TOP_RIGHT: (Position, FuzzyPixel) = (
+    Position { x: 1478, y: 499 },
+    FuzzyPixel {
+        blue_min: 94,
+        blue_max: 94,
+        green_min: 112,
+        green_max: 112,
+        red_min: 119,
+        red_max: 119,
+    },
+);
+
+pub const CHAT_BOX_BOTTOM_RIGHT: (Position, FuzzyPixel) = (
+    Position { x: 1480, y: 630 },
+    FuzzyPixel {
+        blue_min: 140,
+        blue_max: 140,
+        green_min: 154,
+        green_max: 154,
+        red_min: 162,
+        red_max: 162,
+    },
+);
