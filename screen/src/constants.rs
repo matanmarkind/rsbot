@@ -42,6 +42,19 @@ pub const UPPER_C: ActionLetter = ActionLetter {
     ],
 };
 
+pub const UPPER_T: ActionLetter = ActionLetter {
+    width: 7,
+
+    // Delta from the top left corner of the letters box.
+    checkpoints: &[
+        DeltaPosition { dx: 1, dy: 2 },
+        DeltaPosition { dx: 3, dy: 2 },
+        DeltaPosition { dx: 3, dy: 5 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 5, dy: 2 },
+    ],
+};
+
 pub const LOWER_D: ActionLetter = ActionLetter {
     width: 8,
 
@@ -54,6 +67,21 @@ pub const LOWER_D: ActionLetter = ActionLetter {
         DeltaPosition { dx: 6, dy: 10 },
     ],
 };
+
+pub const LOWER_E: ActionLetter = ActionLetter {
+    width: 8,
+
+    // Delta from the top left corner of the letters box.
+    checkpoints: &[
+        DeltaPosition { dx: 2, dy: 6 },
+        DeltaPosition { dx: 2, dy: 11 },
+        DeltaPosition { dx: 4, dy: 6 },
+        DeltaPosition { dx: 4, dy: 9 },
+        DeltaPosition { dx: 4, dy: 11 },
+        DeltaPosition { dx: 6, dy: 7 },
+    ],
+};
+
 pub const LOWER_H: ActionLetter = ActionLetter {
     width: 8,
 
@@ -104,6 +132,17 @@ pub const LOWER_P: ActionLetter = ActionLetter {
     ],
 };
 
+pub const LOWER_R: ActionLetter = ActionLetter {
+    width: 7,
+
+    // Delta from the top left corner of the letters box.
+    checkpoints: &[
+        DeltaPosition { dx: 2, dy: 6 },
+        DeltaPosition { dx: 2, dy: 11 },
+        DeltaPosition { dx: 4, dy: 6 },
+    ],
+};
+
 pub const LOWER_W: ActionLetter = ActionLetter {
     width: 9,
 
@@ -118,7 +157,7 @@ pub const LOWER_W: ActionLetter = ActionLetter {
 };
 
 pub const SPACE: ActionLetter = ActionLetter {
-    width: 6,
+    width: 5,
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[],

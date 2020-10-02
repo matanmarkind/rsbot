@@ -22,6 +22,7 @@ fn main() {
     // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
     println!("Capturing, cropping, flipping, drawing...");
     let white_matcher = screen::is_pixel_white as fn(&(u8, u8, u8)) -> bool; // Cast needed so fn is reference, not item.
+    let blue_matcher = screen::is_pixel_letter_blue as fn(&(u8, u8, u8)) -> bool; // Cast needed so fn is reference, not item.
     let frame = capturer.frame().unwrap();
     let letter_and_matchers = [
         (&screen::UPPER_C, white_matcher),
@@ -33,6 +34,11 @@ fn main() {
         (&screen::LOWER_O, white_matcher),
         (&screen::LOWER_W, white_matcher),
         (&screen::LOWER_N, white_matcher),
+        (&screen::SPACE, white_matcher),
+        (&screen::UPPER_T, blue_matcher),
+        (&screen::LOWER_R, blue_matcher),
+        (&screen::LOWER_E, blue_matcher),
+        (&screen::LOWER_E, blue_matcher),
     ];
     dbg!(frame.check_action_letters(&letter_and_matchers[..]));
 
@@ -46,7 +52,7 @@ fn main() {
                 x: x_offset + dx,
                 y: screen::TOP_LEFT_ACTION_TEXT.y + dy,
             };
-            img = img.draw_vertical_line(&pos, 1, (0, 255, 0))
+            img = img.draw_vertical_line(&pos, 1, (0, 0, 255))
         }
         x_offset += letter.width;
     }

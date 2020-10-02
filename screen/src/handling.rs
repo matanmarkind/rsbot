@@ -163,7 +163,9 @@ pub fn is_pixel_letter_blue(bgr: &(u8, u8, u8)) -> bool {
     let max = max(bgr.0, bgr.1);
     let min = min(bgr.0, bgr.1);
 
-    (max - min) < 2 && bgr.0 > 150 && bgr.1 > 150 && bgr.2 < 2
+    dbg!(bgr);
+
+    (max - min) <= 5 && bgr.0 > 200 && bgr.1 > 200 && bgr.2 <= 15
 }
 
 /// 'top_left' - top left corner of the image (included). (x,y) represent the
@@ -282,7 +284,6 @@ where
                         if matcher(&self.get_bgr_pixel(&pos)) {
                             does_pixel_match = true;
                             // Found a perfect match at this shift, so we'll take it.
-                            println!("pixel_matches, x_shift={} y_shift={}", x_shift, y_shift);
                             break;
                         }
                     }
@@ -305,21 +306,22 @@ where
             num_pixel_matches += shift_pixel_matches;
             num_pixel_mismatches += shift_pixel_mismatches;
             if does_letter_match {
+                println!("match");
                 num_letter_matches += 1;
             } else {
+                println!("no match");
                 num_letter_mismatches += 1;
             }
 
             x_offset += letter.width;
-            println!("next letter");
         }
 
         // Don't require a perfect match since the placement of the letters
         // changes. We only expect this function to be used as confirmation of a
         // move so caller already has some confidence.
         println!("num_pixel_matches={} num_pixel_mismatches={} num_letter_matches={} num_letter_mismatches={}", num_pixel_matches,num_pixel_mismatches, num_letter_matches, num_letter_mismatches);
-        num_pixel_matches > 10 * num_pixel_mismatches
-            && num_letter_matches > 5 * num_letter_mismatches
+        num_pixel_matches >= 10 * num_pixel_mismatches
+            && num_letter_matches >= 5 * num_letter_mismatches
     }
 
     // Below this are functions which create a new mutated frame. We cannot
@@ -421,7 +423,7 @@ where
             buffer: buf,
             width: self.width,
             height: self.height,
-            is_bgr: !self.is_bgr,
+            is_bgr: self.is_bgr,
         }
     }
 }
