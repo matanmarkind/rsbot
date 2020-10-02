@@ -147,12 +147,23 @@ fn pixel_matches(actual_bgr: &(u8, u8, u8), desired: &FuzzyPixel) -> bool {
         && actual_bgr.2 <= desired.red_max
 }
 
-fn is_pixel_white(bgr: &(u8, u8, u8)) -> bool {
+pub fn is_pixel_white(bgr: &(u8, u8, u8)) -> bool {
     use std::cmp::{max, min};
     let max = max(bgr.0, max(bgr.1, bgr.2));
     let min = min(bgr.0, min(bgr.1, bgr.2));
 
-    (max - min) < 2 && bgr.0 > 150 && bgr.1 > 150 && bgr.2 > 150
+    // It seems that the whites have some significant variation in their pixels.
+    (max - min) <= 10 && bgr.0 > 150 && bgr.1 > 150 && bgr.2 > 150
+}
+
+/// Blue color used to show objects in the top left corner when displaying the
+/// action.
+pub fn is_pixel_letter_blue(bgr: &(u8, u8, u8)) -> bool {
+    use std::cmp::{max, min};
+    let max = max(bgr.0, bgr.1);
+    let min = min(bgr.0, bgr.1);
+
+    (max - min) < 2 && bgr.0 > 150 && bgr.1 > 150 && bgr.2 < 2
 }
 
 /// 'top_left' - top left corner of the image (included). (x,y) represent the
@@ -235,7 +246,7 @@ where
     pub fn check_pixels(&self, position_and_pixels: &[(Position, FuzzyPixel)]) -> bool {
         for (pos, pixel) in position_and_pixels {
             let actual = self.get_bgr_pixel(pos);
-            dbg!(&actual, &pos, &pixel);
+            // dbg!(&actual, &pos, &pixel);
             if !pixel_matches(&actual, pixel) {
                 return false;
             }
@@ -243,20 +254,72 @@ where
         true
     }
 
-    pub fn check_first_action_letter(&self, letter: &ActionLetter) -> bool {
+    pub fn check_action_letters(
+        &self,
+        letter_and_matchers: &[(&ActionLetter, fn(&(u8, u8, u8)) -> bool)],
+    ) -> bool {
         // Convert the letter from relative positions to aboslute positions to check.
-        for DeltaPosition { dx, dy } in letter.checkpoints {
-            let pos = Position {
-                x: TOP_LEFT_ACTION_TEXT.x + dx,
-                y: TOP_LEFT_ACTION_TEXT.y + dy,
-            };
-            let actual = self.get_bgr_pixel(&pos);
-            dbg!(&actual, &pos);
-            if !is_pixel_white(&actual) {
-                return false;
+        let mut x_offset = TOP_LEFT_ACTION_TEXT.x;
+        let mut num_pixel_matches = 0;
+        let mut num_pixel_mismatches = 0;
+        let mut num_letter_matches = 0;
+        let mut num_letter_mismatches = 0;
+
+        for (letter, matcher) in letter_and_matchers {
+            // Attempt to find each pixel of a letter. Letters move a bit so allow for
+            // adjacent pixels to hold.
+            let mut shift_pixel_matches = 0;
+            let mut shift_pixel_mismatches = 0;
+            let mut does_pixel_match = false;
+            let mut does_letter_match = true;
+            for DeltaPosition { dx, dy } in letter.checkpoints {
+                for x_shift in [-1, 1, 0].iter() {
+                    for y_shift in [-1, 1, 0].iter() {
+                        let pos = Position {
+                            x: x_offset + dx + x_shift,
+                            y: TOP_LEFT_ACTION_TEXT.y + dy + y_shift,
+                        };
+                        if matcher(&self.get_bgr_pixel(&pos)) {
+                            does_pixel_match = true;
+                            // Found a perfect match at this shift, so we'll take it.
+                            println!("pixel_matches, x_shift={} y_shift={}", x_shift, y_shift);
+                            break;
+                        }
+                    }
+                    if does_pixel_match {
+                        // We found a match at this shift, no need to keep
+                        // trying other shifts.
+                        break;
+                    }
+                }
+
+                if does_pixel_match {
+                    shift_pixel_matches += 1;
+                } else {
+                    // At no shift, did we find a matching pixel.
+                    does_letter_match = false;
+                    shift_pixel_mismatches += 1;
+                }
             }
+
+            num_pixel_matches += shift_pixel_matches;
+            num_pixel_mismatches += shift_pixel_mismatches;
+            if does_letter_match {
+                num_letter_matches += 1;
+            } else {
+                num_letter_mismatches += 1;
+            }
+
+            x_offset += letter.width;
+            println!("next letter");
         }
-        true
+
+        // Don't require a perfect match since the placement of the letters
+        // changes. We only expect this function to be used as confirmation of a
+        // move so caller already has some confidence.
+        println!("num_pixel_matches={} num_pixel_mismatches={} num_letter_matches={} num_letter_mismatches={}", num_pixel_matches,num_pixel_mismatches, num_letter_matches, num_letter_mismatches);
+        num_pixel_matches > 10 * num_pixel_mismatches
+            && num_letter_matches > 5 * num_letter_mismatches
     }
 
     // Below this are functions which create a new mutated frame. We cannot
@@ -336,7 +399,7 @@ where
         len: i32,
         line_color_bgr: (u8, u8, u8),
     ) -> Frame<Vec<u8>> {
-        dbg!(&top, &len, &line_color_bgr);
+        // dbg!(&top, &len, &line_color_bgr);
         // Make the color pixel match the frams BGR/RGB status.
         let mut buf = self.buffer().to_vec();
         let line_color;

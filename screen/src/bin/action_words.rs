@@ -21,16 +21,34 @@ fn main() {
 
     // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
     println!("Capturing, cropping, flipping, drawing...");
+    let white_matcher = screen::is_pixel_white as fn(&(u8, u8, u8)) -> bool; // Cast needed so fn is reference, not item.
     let frame = capturer.frame().unwrap();
-    dbg!(frame.check_first_action_letter(&screen::C));
+    let letter_and_matchers = [
+        (&screen::UPPER_C, white_matcher),
+        (&screen::LOWER_H, white_matcher),
+        (&screen::LOWER_O, white_matcher),
+        (&screen::LOWER_P, white_matcher),
+        (&screen::SPACE, white_matcher),
+        (&screen::LOWER_D, white_matcher),
+        (&screen::LOWER_O, white_matcher),
+        (&screen::LOWER_W, white_matcher),
+        (&screen::LOWER_N, white_matcher),
+    ];
+    dbg!(frame.check_action_letters(&letter_and_matchers[..]));
 
     let mut img = frame.flip();
-    for DeltaPosition { dx, dy } in screen::C.checkpoints {
-        let pos = Position {
-            x: screen::TOP_LEFT_ACTION_TEXT.x + dx,
-            y: screen::TOP_LEFT_ACTION_TEXT.y + dy,
-        };
-        img = img.draw_vertical_line(&pos, 1, (0, 255, 0));
+
+    // Logir here should look like check_action_letters.
+    let mut x_offset = screen::TOP_LEFT_ACTION_TEXT.x;
+    for (letter, _) in letter_and_matchers.iter() {
+        for DeltaPosition { dx, dy } in letter.checkpoints {
+            let pos = Position {
+                x: x_offset + dx,
+                y: screen::TOP_LEFT_ACTION_TEXT.y + dy,
+            };
+            img = img.draw_vertical_line(&pos, 1, (0, 255, 0))
+        }
+        x_offset += letter.width;
     }
 
     // Save the image.
