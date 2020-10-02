@@ -9,7 +9,7 @@ use crate::types::*;
 
 /// This is where we expect the game window to be.
 pub const WINDOW_BOUND: BoundingBox =
-    BoundingBox(Position { x: 960, y: 40 }, Position { x: 1920, y: 625 });
+    BoundingBox(Position { x: 960, y: 52 }, Position { x: 1920, y: 625 });
 
 /// When the chat window is expanded it is expected to fill in this area.
 pub const CHAT_BOX_BOUND: BoundingBox =
@@ -17,7 +17,7 @@ pub const CHAT_BOX_BOUND: BoundingBox =
 
 /// The mini map and associated info should be within this box.
 pub const MINI_MAP_BOUND: BoundingBox =
-    BoundingBox(Position { x: 1700, y: 40 }, Position { x: 1920, y: 230 });
+    BoundingBox(Position { x: 1700, y: 52 }, Position { x: 1920, y: 230 });
 
 /// When the inventory/skills/etc. are expanded, they should fall within this range.
 pub const INVENTORY_BOUND: BoundingBox =
@@ -26,7 +26,7 @@ pub const INVENTORY_BOUND: BoundingBox =
 /// This is the part of the game that shows the world when the item pouch
 /// (adventure log, skills, etc) is closed, and excluding the chat
 pub const CLEAR_SCREEN_BOUNDS: &[BoundingBox] = &[
-    BoundingBox(Position { x: 960, y: 40 }, Position { x: 1700, y: 625 }),
+    BoundingBox(Position { x: 960, y: 52 }, Position { x: 1700, y: 625 }),
     BoundingBox(Position { x: 1700, y: 230 }, Position { x: 1920, y: 625 }),
 ];
 
@@ -102,3 +102,25 @@ pub const CHAT_BOX_BOTTOM_RIGHT: (Position, FuzzyPixel) = (
         red_max: 162,
     },
 );
+
+/// When selecting an action, the name of the object to act upon appears in the
+/// top left in electric blue.
+pub const OBJECT_NAME_BLUE: FuzzyPixel = FuzzyPixel {
+    blue_min: 221,
+    blue_max: 221,
+    green_min: 221,
+    green_max: 221,
+    red_min: 0,
+    red_max: 0,
+};
+
+pub const ACTION_DESCRIPTION_Y_MAX: i32 = 70;
+
+pub const CHARACTER_WIDTH: i32 = 7;
+
+pub const CHOP_DOWN_TREE_BOUNDS: BoundingBox =
+    BoundingBox(Position { x: 967, y: 40 }, Position { x: 1070, y: 70 });
+
+/// Pixels to check that are in the shape of the word Tree to confirm that object we hover over is in fact a tree for us to chop down.
+pub const CHOP_DOWN_ACTION_OUTLINE: &[Position] = &[];
+pub const TREE_ACTION_OUTLINE: &[Position] = &[];

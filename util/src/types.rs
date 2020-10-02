@@ -4,7 +4,7 @@ use std::ops::{Add, Sub};
 use std::str::FromStr;
 
 //// Type FuzzyPixe w/FromStr
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FuzzyPixel {
     pub blue_min: u8,
     pub blue_max: u8,
@@ -45,6 +45,17 @@ impl Sub for &Position {
         DeltaPosition {
             dx: self.x - other.x,
             dy: self.y - other.y,
+        }
+    }
+}
+
+impl Add for &Position {
+    type Output = Position;
+
+    fn add(self, other: &Position) -> Position {
+        Position {
+            x: self.x + other.x,
+            y: self.y + other.y,
         }
     }
 }

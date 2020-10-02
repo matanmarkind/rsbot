@@ -144,6 +144,9 @@ impl MousePathParser {
             {
                 // We are now at the end of a single path.
                 match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
+                    // TODO: Instead of inserting the last one, insert the
+                    // shortest path for this length (since we only hold 1 path
+                    // per path distance).
                     Some((summary, path)) => mouse_paths.insert(summary, path),
                     None => None,
                 };
