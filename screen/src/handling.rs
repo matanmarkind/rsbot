@@ -165,7 +165,7 @@ pub fn is_pixel_letter_blue(bgr: &(u8, u8, u8)) -> bool {
 
     dbg!(bgr);
 
-    (max - min) <= 5 && bgr.0 > 200 && bgr.1 > 200 && bgr.2 <= 15
+    (max - min) <= 10 && bgr.0 > 200 && bgr.1 > 200 && bgr.2 <= 15
 }
 
 /// 'top_left' - top left corner of the image (included). (x,y) represent the
@@ -260,6 +260,9 @@ where
         &self,
         letter_and_matchers: &[(&ActionLetter, fn(&(u8, u8, u8)) -> bool)],
     ) -> bool {
+        // All matchers are designed for BGR.
+        assert!(self.is_bgr);
+
         // Convert the letter from relative positions to aboslute positions to check.
         let mut x_offset = TOP_LEFT_ACTION_TEXT.x;
         let mut num_pixel_matches = 0;
@@ -296,10 +299,12 @@ where
 
                 if does_pixel_match {
                     shift_pixel_matches += 1;
+                    println!("pixel matches. {}, {}", dx, dy);
                 } else {
                     // At no shift, did we find a matching pixel.
                     does_letter_match = false;
                     shift_pixel_mismatches += 1;
+                    println!("pixel doesn't match. {}, {}", dx, dy);
                 }
             }
 
@@ -320,8 +325,7 @@ where
         // changes. We only expect this function to be used as confirmation of a
         // move so caller already has some confidence.
         println!("num_pixel_matches={} num_pixel_mismatches={} num_letter_matches={} num_letter_mismatches={}", num_pixel_matches,num_pixel_mismatches, num_letter_matches, num_letter_mismatches);
-        num_pixel_matches >= 10 * num_pixel_mismatches
-            && num_letter_matches >= 5 * num_letter_mismatches
+        num_pixel_matches >= 10 * num_pixel_mismatches && num_letter_mismatches < 2
     }
 
     // Below this are functions which create a new mutated frame. We cannot
