@@ -11,6 +11,8 @@ pub struct Pixel {
     pub red: u8,
 }
 
+/// Diecribes the type of pixel we expected, providing bounds on the colors it
+/// will match with. Both min and max are included in matching.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FuzzyPixel {
     pub blue_min: u8,
@@ -40,10 +42,18 @@ impl FuzzyPixel {
     /// Check that 'pixel' is 'contain'ed within this FuzzyPixel and also checks
     /// that the ratio between the colors is acceptable.
     pub fn matches(&self, pixel: &Pixel) -> bool {
-        self.contains(pixel)
+        // dbg!(
+        //     &pixel,
+        //     self.within_bg_ratio(pixel),
+        //     self.within_br_ratio(pixel),
+        //     self.within_gr_ratio(pixel)
+        // );
+        let res = self.contains(pixel)
             && self.within_bg_ratio(pixel)
             && self.within_br_ratio(pixel)
-            && self.within_gr_ratio(pixel)
+            && self.within_gr_ratio(pixel);
+        println!("{:?}, {}", pixel, res);
+        res
     }
 
     fn ratio(n: u8, d: u8) -> f32 {
@@ -52,28 +62,55 @@ impl FuzzyPixel {
         n as f32 / d as f32
     }
 
+    // check the ratio of 2 colors, a and b, is acceptable. min and max are the
+    // boundaries set by this FuzzyPixel, and a and b are the actual values that
+    // are being matches against.
+    fn check_ratio(a_min: u8, a_max: u8, b_min: u8, b_max: u8, a: u8, b: u8) -> bool {
+        let ratios = [
+            Self::ratio(a_min, b_min),
+            Self::ratio(a_min, b_max),
+            Self::ratio(a_max, b_min),
+            Self::ratio(a_max, b_max),
+        ];
+
+        let minratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.min(y));
+        let maxratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.max(y));
+        let actual = Self::ratio(a, b);
+        (1.0 - CHANNEL_RATIO_SLACK) * minratio <= actual
+            && (1.0 + CHANNEL_RATIO_SLACK) * maxratio >= actual
+    }
+
     fn within_bg_ratio(&self, pixel: &Pixel) -> bool {
-        let baseline = Self::ratio(self.blue_min, self.green_min)
-            .max(Self::ratio(self.blue_min, self.green_max));
-        let actual = Self::ratio(pixel.blue, pixel.green);
-        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
-            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
+        Self::check_ratio(
+            self.blue_min,
+            self.blue_max,
+            self.green_min,
+            self.green_max,
+            pixel.blue,
+            pixel.green,
+        )
     }
 
     fn within_br_ratio(&self, pixel: &Pixel) -> bool {
-        let baseline =
-            Self::ratio(self.blue_min, self.red_min).max(Self::ratio(self.blue_min, self.red_max));
-        let actual = Self::ratio(pixel.blue, pixel.red);
-        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
-            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
+        Self::check_ratio(
+            self.blue_min,
+            self.blue_max,
+            self.red_min,
+            self.red_max,
+            pixel.blue,
+            pixel.red,
+        )
     }
 
     fn within_gr_ratio(&self, pixel: &Pixel) -> bool {
-        let baseline = Self::ratio(self.green_min, self.red_min)
-            .max(Self::ratio(self.green_min, self.red_max));
-        let actual = Self::ratio(pixel.green, pixel.red);
-        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
-            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
+        Self::check_ratio(
+            self.green_min,
+            self.green_max,
+            self.red_min,
+            self.red_max,
+            pixel.green,
+            pixel.red,
+        )
     }
 }
 

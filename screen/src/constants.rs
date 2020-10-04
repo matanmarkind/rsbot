@@ -73,17 +73,6 @@ pub const CHAT_BOX_BOTTOM_RIGHT: (Position, FuzzyPixel) = (
     },
 );
 
-/// When selecting an action, the name of the object to act upon appears in the
-/// top left in electric blue.
-pub const OBJECT_NAME_BLUE: FuzzyPixel = FuzzyPixel {
-    blue_min: 221,
-    blue_max: 221,
-    green_min: 221,
-    green_max: 221,
-    red_min: 0,
-    red_max: 0,
-};
-
 pub const ACTION_DESCRIPTION_Y_MAX: i32 = 70;
 
 pub const CHARACTER_WIDTH: i32 = 7;
