@@ -5,7 +5,6 @@
 /// 5. Click.
 /// 6. How do I know when I have completed? Going to have to work on
 ///    understanding my inventory.
-use inputbot::MouseButton::LeftButton;
 use screen::*;
 use std::error::Error;
 use std::thread::sleep;
@@ -21,6 +20,23 @@ pub const TREE_PIXEL: FuzzyPixel = FuzzyPixel {
     red_min: 114,
     red_max: 118,
 };
+
+pub const CHOP_DOWN_TREE_MATCHERS: &[(ActionLetter, FuzzyPixel)] = &[
+    (screen::UPPER_C, ACTION_WHITE),
+    (screen::LOWER_H, ACTION_WHITE),
+    (screen::LOWER_O, ACTION_WHITE),
+    (screen::LOWER_P, ACTION_WHITE),
+    (screen::SPACE, ACTION_WHITE),
+    (screen::LOWER_D, ACTION_WHITE),
+    (screen::LOWER_O, ACTION_WHITE),
+    (screen::LOWER_W, ACTION_WHITE),
+    (screen::LOWER_N, ACTION_WHITE),
+    (screen::SPACE, ACTION_WHITE),
+    (screen::UPPER_T, ACTION_BLUE),
+    (screen::LOWER_R, ACTION_BLUE),
+    (screen::LOWER_E, ACTION_BLUE),
+    (screen::LOWER_E, ACTION_BLUE),
+];
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
@@ -53,26 +69,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     while !mouse_mover.move_to(&TOP_BAR_MIDDLE) {}
     mouse::left_click();
 
-    let frame = capturer.frame().unwrap();
-
     loop {
+        let frame = capturer.frame().unwrap();
+        let time = std::time::Instant::now();
         match get_pixel_position(&frame, &TREE_PIXEL) {
             Some(pos) => {
-                let time = std::time::Instant::now();
-                println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
-                if mouse_mover.move_to(&pos) {
-                    println!("{} - You made it!", time.elapsed().as_millis());
-                    LeftButton.press();
-                    sleep(Duration::from_millis(50));
-                    LeftButton.release();
-                } else {
-                    println!(
-                        "{} - At least you failed valiantly while trying.",
-                        time.elapsed().as_millis()
-                    );
+                println!(
+                    "{} - maybe found it... {:?}",
+                    time.elapsed().as_millis(),
+                    pos
+                );
+                if !mouse_mover.move_to(&pos) {
+                    println!("{} - couldn't make it :(", time.elapsed().as_millis());
+                    continue;
                 }
+                println!("{} - mouse moved!", time.elapsed().as_millis());
+
+                let frame = capturer.frame().unwrap();
+                if !screen::check_action_letters(&frame, CHOP_DOWN_TREE_MATCHERS) {
+                    // TODO: learn to rotate camera to recheck.
+                    println!("{} - action didn't match", time.elapsed().as_millis());
+                    continue;
+                }
+                println!("{} - found it!", time.elapsed().as_millis());
+                mouse::left_click();
+                println!("{} - done!", time.elapsed().as_millis());
             }
             None => println!("didn't find it :("),
         }
+        sleep(Duration::from_secs(10));
     }
 }

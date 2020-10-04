@@ -18,7 +18,7 @@ pub const ACTION_BLUE: FuzzyPixel = FuzzyPixel {
     green_min: 180,
     green_max: 255,
     red_min: 0,
-    red_max: 20,
+    red_max: 25,
 };
 
 /// When the mouse is placed over an object to act on, the top left of the

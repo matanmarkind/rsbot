@@ -1,5 +1,9 @@
 [workspace]
 
+# Structure of crates is:
+# - util is the base and doesn't import any other members.
+# - bot is the product and can import any crats
+# - All other crates are middleware and only import util.
 members = [
     "mouse",
     "screen",
