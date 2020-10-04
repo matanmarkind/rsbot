@@ -1,11 +1,9 @@
 use crate::constants::*;
 use crate::frame::*;
-use crate::types::*;
 use std::io::ErrorKind::WouldBlock;
 use std::io::Result;
 use std::thread::sleep;
 use std::time::Duration;
-use util::*;
 
 // Amount of time to wait between attempts to capture a Frame.
 pub const FRAME_PERIOD: Duration = Duration::from_micros(1e6 as u64 / 60);
@@ -43,11 +41,6 @@ impl Capturer {
         assert_eq!(width * height * RAW_PIXEL_SIZE, frame.buffer().len());
 
         capturer
-    }
-
-    // TODO: deprecate
-    pub fn check_pixels(&mut self, position_and_pixels: &[(Position, FuzzyPixel)]) -> bool {
-        self.frame().unwrap().check_pixels(&position_and_pixels)
     }
 
     /// Takes a screenshot of the selected display and returns the BGRA frame.

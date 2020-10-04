@@ -3,7 +3,7 @@ use crate::types::*;
 use device_query::{DeviceQuery, DeviceState};
 use inputbot::MouseCursor;
 use rand::distributions::{Distribution, Uniform};
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 use std::ops::Bound::Included;
 use std::thread::sleep;
 use util::*;
@@ -85,6 +85,19 @@ impl MouseMover {
         MouseMover::sleep_between_moves();
         self.move_directly_to(&dst);
         &self.current_position() == dst
+    }
+
+    /// Moves the mouse close to 'dst'.
+    ///
+    /// This is used to avoid pixel perfect placement.
+    pub fn move_near(&self, dst: &Position) -> bool {
+        use std::cmp::max;
+
+        let mut rng = thread_rng();
+        self.move_to(&Position {
+            x: dst.x + max(0, rng.gen_range(-1, 2)),
+            y: dst.y + max(0, rng.gen_range(-1, 2)),
+        })
     }
 
     fn sleep_between_moves() {

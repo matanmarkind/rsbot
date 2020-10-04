@@ -1,6 +1,5 @@
 // From scrap github repo. Here for my convenience.
 use screen::{Frame, FRAME_PERIOD};
-use std::fs::File;
 use std::io::ErrorKind::WouldBlock;
 use std::thread;
 use structopt::StructOpt;
@@ -48,13 +47,7 @@ fn main() {
     println!("Captured! Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot.png");
-    repng::encode(
-        File::create(&ofpath).unwrap(),
-        subframe.width as u32,
-        subframe.height as u32,
-        subframe.buffer(),
-    )
-    .unwrap();
+    subframe.save(ofpath.as_str());
 
     // Flip the BGRA image into a RGBA image.
     println!("Flipping...");
@@ -65,11 +58,5 @@ fn main() {
     println!("Saving Flipped...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_flipped.png");
-    repng::encode(
-        File::create(&ofpath).unwrap(),
-        flipped.width as u32,
-        flipped.height as u32,
-        flipped.buffer(),
-    )
-    .unwrap();
+    flipped.save(ofpath.as_str());
 }

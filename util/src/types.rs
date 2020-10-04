@@ -3,34 +3,8 @@ use std::num::ParseIntError;
 use std::ops::{Add, Sub};
 use std::str::FromStr;
 
-//// Type FuzzyPixe w/FromStr
-#[derive(Debug, Clone, PartialEq)]
-pub struct FuzzyPixel {
-    pub blue_min: u8,
-    pub blue_max: u8,
-    pub green_min: u8,
-    pub green_max: u8,
-    pub red_min: u8,
-    pub red_max: u8,
-}
-
-impl FromStr for FuzzyPixel {
-    type Err = ParseIntError;
-
-    /// Input is expected to be "1,2,3,4,5" without anything around (e.g. no
-    /// "(1,2,3,4,5)")
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let coords: Vec<&str> = s.trim().split(",").collect();
-        Ok(FuzzyPixel {
-            blue_min: coords[0].parse::<u8>()?,
-            blue_max: coords[1].parse::<u8>()?,
-            green_min: coords[2].parse::<u8>()?,
-            green_max: coords[3].parse::<u8>()?,
-            red_min: coords[4].parse::<u8>()?,
-            red_max: coords[5].parse::<u8>()?,
-        })
-    }
-}
+/// Types that are used by multiple crates. For example mouse and screen
+/// shouldn't import from each other to we don't put Position in either of them.
 
 #[derive(Debug, Deserialize, PartialEq)]
 pub struct Position {

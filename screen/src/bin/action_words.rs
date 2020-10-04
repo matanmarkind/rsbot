@@ -1,4 +1,4 @@
-use screen::{Frame, Pixel, PixelMatcher};
+use screen::{Frame, Pixel, ACTION_BLUE, ACTION_WHITE};
 /// Take a screenshot of the game and draw lines to separate the characters in
 /// the text that describes an action. This is a test to see if they are regular.
 use std::fs::File;
@@ -20,29 +20,27 @@ fn main() {
 
     let mut capturer = screen::Capturer::new();
 
-    let white_matcher = Pixel::is_white as PixelMatcher; // Cast needed so fn is reference, not item.
-    let blue_matcher = Pixel::is_letter_blue as PixelMatcher; // Cast needed so fn is reference, not item.
     let letter_and_matchers = [
-        (screen::UPPER_C, white_matcher),
-        (screen::LOWER_H, white_matcher),
-        (screen::LOWER_O, white_matcher),
-        (screen::LOWER_P, white_matcher),
-        (screen::SPACE, white_matcher),
-        (screen::LOWER_D, white_matcher),
-        (screen::LOWER_O, white_matcher),
-        (screen::LOWER_W, white_matcher),
-        (screen::LOWER_N, white_matcher),
-        (screen::SPACE, white_matcher),
-        (screen::UPPER_T, blue_matcher),
-        (screen::LOWER_R, blue_matcher),
-        (screen::LOWER_E, blue_matcher),
-        (screen::LOWER_E, blue_matcher),
+        (screen::UPPER_C, ACTION_WHITE),
+        (screen::LOWER_H, ACTION_WHITE),
+        (screen::LOWER_O, ACTION_WHITE),
+        (screen::LOWER_P, ACTION_WHITE),
+        (screen::SPACE, ACTION_WHITE),
+        (screen::LOWER_D, ACTION_WHITE),
+        (screen::LOWER_O, ACTION_WHITE),
+        (screen::LOWER_W, ACTION_WHITE),
+        (screen::LOWER_N, ACTION_WHITE),
+        (screen::SPACE, ACTION_WHITE),
+        (screen::UPPER_T, ACTION_BLUE),
+        (screen::LOWER_R, ACTION_BLUE),
+        (screen::LOWER_E, ACTION_BLUE),
+        (screen::LOWER_E, ACTION_BLUE),
     ];
 
     // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();
-    dbg!(frame.check_action_letters(&letter_and_matchers));
+    dbg!(screen::check_action_letters(&frame, &letter_and_matchers));
 
     let mut img = frame.to_owned().flip();
 

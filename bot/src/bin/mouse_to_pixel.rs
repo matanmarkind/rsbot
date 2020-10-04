@@ -1,5 +1,6 @@
 /// Test that combines screen's ability to find pizels from the screen and
 /// mouse's ability to move the mouse to a given position.
+use screen::{Frame, FuzzyPixel};
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
@@ -25,20 +26,16 @@ pub struct Config {
     pub past_bottom_right: Position,
 }
 
-fn get_pixel_position(config: &Config, mut capturer: &mut screen::Capturer) -> Option<Position> {
+fn get_pixel_position(config: &Config, capturer: &mut screen::Capturer) -> Option<Position> {
     let mut buffer = String::new();
 
     println!("Enter (blue_min,blue_max,green_min,green_max,red_min,red_max): ");
     buffer.clear();
     io::stdin().read_line(&mut buffer).unwrap();
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
+    let frame = capturer.frame().unwrap();
 
-    screen::find_pixel_fuzzy(
-        &mut capturer,
-        &desired_pixel,
-        &config.top_left,
-        &config.past_bottom_right,
-    )
+    frame.find_pixel_random(&desired_pixel, &config.top_left, &config.past_bottom_right)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

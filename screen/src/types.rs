@@ -1,22 +1,6 @@
+use std::cmp::max;
 use std::num::ParseIntError;
 use std::str::FromStr;
-use util::*;
-
-/// When the mouse is placed over an object to act on, the top left of the
-/// screen describes the action. We will "read" the action to confirm me want to
-/// do that action.
-///
-/// These are all expected to be constants, so the lifetimes will be static.
-pub struct ActionLetter<'a> {
-    /// How wide is the letter, use to figure out the offset of the next letter.
-    pub width: i32,
-
-    /// Points checked to confirm this is the expected letter. Each element is
-    /// given as the offset from the top_left of the box. The top is typically
-    /// y=52. Letters are drawn in white, and the background can be of any
-    /// color.
-    pub checkpoints: &'a [DeltaPosition],
-}
 
 /// BGR/RBG pixel. Alpha is left out since I have yet to come across an instance
 /// where I care about it.
@@ -27,32 +11,6 @@ pub struct Pixel {
     pub red: u8,
 }
 
-pub type PixelMatcher = fn(&Pixel) -> bool;
-
-impl Pixel {
-    pub fn is_white(pixel: &Pixel) -> bool {
-        use std::cmp::{max, min};
-        let max = max(pixel.blue, max(pixel.green, pixel.red));
-        let min = min(pixel.blue, min(pixel.green, pixel.red));
-
-        // It seems that the whites have some significant variation in their pixels.
-        (max - min) <= 10 && pixel.blue > 150 && pixel.green > 150 && pixel.red > 150
-    }
-
-    /// Blue color used to show objects in the top left corner when displaying the
-    /// action.
-    pub fn is_letter_blue(pixel: &Pixel) -> bool {
-        use std::cmp::{max, min};
-        // dbg!(bgr);
-
-        max(pixel.blue, pixel.green) - min(pixel.blue, pixel.green) <= 10
-            && pixel.blue > 200
-            && pixel.green > 200
-            && pixel.red <= 15
-    }
-}
-
-//// Type FuzzyPixe w/FromStr
 #[derive(Debug, Clone, PartialEq)]
 pub struct FuzzyPixel {
     pub blue_min: u8,
@@ -63,7 +21,13 @@ pub struct FuzzyPixel {
     pub red_max: u8,
 }
 
+// When chacking if a pixel matches a FuzzyPixel, we also want to restrict by
+// the ratio between the channels, to allow wider absolute limits. The slack
+// between the ratio of the inputs to the actual pixel.
+const CHANNEL_RATIO_SLACK: f32 = 0.1;
+
 impl FuzzyPixel {
+    /// Check that 'pixel' is within the bounds set by the fuzzy pixel.
     pub fn contains(&self, pixel: &Pixel) -> bool {
         pixel.blue >= self.blue_min
             && pixel.blue <= self.blue_max
@@ -71,6 +35,45 @@ impl FuzzyPixel {
             && pixel.green <= self.green_max
             && pixel.red >= self.red_min
             && pixel.red <= self.red_max
+    }
+
+    /// Check that 'pixel' is 'contain'ed within this FuzzyPixel and also checks
+    /// that the ratio between the colors is acceptable.
+    pub fn matches(&self, pixel: &Pixel) -> bool {
+        self.contains(pixel)
+            && self.within_bg_ratio(pixel)
+            && self.within_br_ratio(pixel)
+            && self.within_gr_ratio(pixel)
+    }
+
+    fn ratio(n: u8, d: u8) -> f32 {
+        let n = max(1, n);
+        let d = max(1, d);
+        n as f32 / d as f32
+    }
+
+    fn within_bg_ratio(&self, pixel: &Pixel) -> bool {
+        let baseline = Self::ratio(self.blue_min, self.green_min)
+            .max(Self::ratio(self.blue_min, self.green_max));
+        let actual = Self::ratio(pixel.blue, pixel.green);
+        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
+            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
+    }
+
+    fn within_br_ratio(&self, pixel: &Pixel) -> bool {
+        let baseline =
+            Self::ratio(self.blue_min, self.red_min).max(Self::ratio(self.blue_min, self.red_max));
+        let actual = Self::ratio(pixel.blue, pixel.red);
+        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
+            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
+    }
+
+    fn within_gr_ratio(&self, pixel: &Pixel) -> bool {
+        let baseline = Self::ratio(self.green_min, self.red_min)
+            .max(Self::ratio(self.green_min, self.red_max));
+        let actual = Self::ratio(pixel.green, pixel.red);
+        (1.0 - CHANNEL_RATIO_SLACK) * baseline <= actual
+            && (1.0 + CHANNEL_RATIO_SLACK) * baseline >= actual
     }
 }
 

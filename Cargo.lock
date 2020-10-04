@@ -60,6 +60,7 @@ version = "0.1.0"
 dependencies = [
  "inputbot",
  "mouse",
+ "scrap",
  "screen",
  "structopt",
  "util",
@@ -666,6 +667,7 @@ name = "util"
 version = "0.1.0"
 dependencies = [
  "csv",
+ "rand",
  "serde",
 ]
 
