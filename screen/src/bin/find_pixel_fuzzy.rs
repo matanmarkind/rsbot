@@ -1,3 +1,4 @@
+use screen::{Frame, FuzzyPixel};
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
@@ -33,13 +34,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         buffer.clear();
         io::stdin().read_line(&mut buffer)?;
         let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
+        let frame = capturer.frame().unwrap();
 
-        match screen::find_pixel_fuzzy(
-            &mut capturer,
-            &desired_pixel,
-            &config.top_left,
-            &config.past_bottom_right,
-        ) {
+        match frame.find_pixel_random(&desired_pixel, &config.top_left, &config.past_bottom_right) {
             Some(pos) => println!("found it! {:?}", pos),
             None => println!("didn't find it :("),
         }

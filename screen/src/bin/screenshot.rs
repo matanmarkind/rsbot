@@ -1,5 +1,5 @@
 // From scrap github repo. Here for my convenience.
-use screen::*;
+use screen::{Frame, FRAME_PERIOD};
 use std::fs::File;
 use std::io::ErrorKind::WouldBlock;
 use std::thread;
@@ -40,8 +40,10 @@ fn main() {
             }
         }
     }
-    let subframe = frame.subframe(Position { x: 100, y: 100 }, Position { x: 500, y: 500 });
-    dbg!(&subframe.width, &subframe.height, &subframe.len());
+    let subframe = frame
+        .to_owned()
+        .crop(Position { x: 100, y: 100 }, Position { x: 500, y: 500 });
+    dbg!(&subframe.width, &subframe.height, &subframe.buffer().len());
 
     println!("Captured! Saving...");
     let mut ofpath = config.out_dir.clone();

@@ -1,3 +1,4 @@
+use screen::{Frame, Pixel, PixelMatcher};
 /// Take a screenshot of the game and draw lines to separate the characters in
 /// the text that describes an action. This is a test to see if they are regular.
 use std::fs::File;
@@ -19,30 +20,31 @@ fn main() {
 
     let mut capturer = screen::Capturer::new();
 
+    let white_matcher = Pixel::is_white as PixelMatcher; // Cast needed so fn is reference, not item.
+    let blue_matcher = Pixel::is_letter_blue as PixelMatcher; // Cast needed so fn is reference, not item.
+    let letter_and_matchers = [
+        (screen::UPPER_C, white_matcher),
+        (screen::LOWER_H, white_matcher),
+        (screen::LOWER_O, white_matcher),
+        (screen::LOWER_P, white_matcher),
+        (screen::SPACE, white_matcher),
+        (screen::LOWER_D, white_matcher),
+        (screen::LOWER_O, white_matcher),
+        (screen::LOWER_W, white_matcher),
+        (screen::LOWER_N, white_matcher),
+        (screen::SPACE, white_matcher),
+        (screen::UPPER_T, blue_matcher),
+        (screen::LOWER_R, blue_matcher),
+        (screen::LOWER_E, blue_matcher),
+        (screen::LOWER_E, blue_matcher),
+    ];
+
     // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
     println!("Capturing, cropping, flipping, drawing...");
-    let white_matcher = screen::is_pixel_white as fn(&(u8, u8, u8)) -> bool; // Cast needed so fn is reference, not item.
-    let blue_matcher = screen::is_pixel_letter_blue as fn(&(u8, u8, u8)) -> bool; // Cast needed so fn is reference, not item.
     let frame = capturer.frame().unwrap();
-    let letter_and_matchers = [
-        (&screen::UPPER_C, white_matcher),
-        (&screen::LOWER_H, white_matcher),
-        (&screen::LOWER_O, white_matcher),
-        (&screen::LOWER_P, white_matcher),
-        (&screen::SPACE, white_matcher),
-        (&screen::LOWER_D, white_matcher),
-        (&screen::LOWER_O, white_matcher),
-        (&screen::LOWER_W, white_matcher),
-        (&screen::LOWER_N, white_matcher),
-        (&screen::SPACE, white_matcher),
-        (&screen::UPPER_T, blue_matcher),
-        (&screen::LOWER_R, blue_matcher),
-        (&screen::LOWER_E, blue_matcher),
-        (&screen::LOWER_E, blue_matcher),
-    ];
-    dbg!(frame.check_action_letters(&letter_and_matchers[..]));
+    dbg!(frame.check_action_letters(&letter_and_matchers));
 
-    let mut img = frame.flip();
+    let mut img = frame.to_owned().flip();
 
     // Logir here should look like check_action_letters.
     let mut x_offset = screen::TOP_LEFT_ACTION_TEXT.x;
@@ -52,13 +54,21 @@ fn main() {
                 x: x_offset + dx,
                 y: screen::TOP_LEFT_ACTION_TEXT.y + dy,
             };
-            img = img.draw_vertical_line(&pos, 1, (0, 0, 255))
+            img.draw_vertical_line(
+                &pos,
+                1,
+                &Pixel {
+                    blue: 0,
+                    green: 0,
+                    red: 255,
+                },
+            );
         }
         x_offset += letter.width;
     }
 
     // Save the image.
-    let img = img.subframe(WINDOW_BOUND.0, WINDOW_BOUND.1);
+    let img = img.crop(WINDOW_BOUND.0, WINDOW_BOUND.1);
     println!("Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot.png");

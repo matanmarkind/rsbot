@@ -1,9 +1,11 @@
+pub mod capture;
 pub mod constants;
-pub mod handling;
+pub mod frame;
 pub mod types;
 
 /// Publish internals so users can use screen::Frame instead of
-/// screen::types::Frame.
+/// screen::frame::Frame.
+pub use capture::*;
 pub use constants::*;
-pub use handling::*;
+pub use frame::*;
 pub use types::*;
