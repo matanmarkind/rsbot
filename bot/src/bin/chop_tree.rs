@@ -36,6 +36,8 @@ pub const CHOP_DOWN_TREE_MATCHERS: &[(ActionLetter, FuzzyPixel)] = &[
     (screen::LOWER_R, ACTION_BLUE),
     (screen::LOWER_E, ACTION_BLUE),
     (screen::LOWER_E, ACTION_BLUE),
+    (screen::SPACE, ACTION_WHITE),
+    (screen::FORWARD_SLASH, ACTION_WHITE),
 ];
 
 #[derive(Debug, StructOpt)]
@@ -97,6 +99,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             None => println!("didn't find it :("),
         }
+
+        // Even once we can monitor the inventory there should be a max timeout
+        // and if we reach the max timeout X times in a row there is an issue
+        // (perhaps a fence we can't pass). Rotate the screen away.
         sleep(Duration::from_secs(10));
     }
 }

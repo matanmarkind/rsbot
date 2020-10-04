@@ -42,11 +42,11 @@ pub const UPPER_C: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 0, dy: 4 },
-        DeltaPosition { dx: 3, dy: 0 },
-        DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 4, dy: 1 },
-        DeltaPosition { dx: 4, dy: 8 },
+        DeltaPosition { dx: 0, dy: 6 },
+        DeltaPosition { dx: 3, dy: 2 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 4, dy: 3 },
+        DeltaPosition { dx: 4, dy: 10 },
     ],
 };
 
@@ -55,11 +55,11 @@ pub const UPPER_T: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 0, dy: 0 },
-        DeltaPosition { dx: 2, dy: 0 },
-        DeltaPosition { dx: 2, dy: 3 },
-        DeltaPosition { dx: 2, dy: 9 },
-        DeltaPosition { dx: 4, dy: 0 },
+        DeltaPosition { dx: 0, dy: 2 },
+        DeltaPosition { dx: 2, dy: 2 },
+        DeltaPosition { dx: 2, dy: 5 },
+        DeltaPosition { dx: 2, dy: 11 },
+        DeltaPosition { dx: 4, dy: 2},
     ],
 };
 
@@ -68,11 +68,11 @@ pub const LOWER_D: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 7 },
-        DeltaPosition { dx: 3, dy: 5 },
-        DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 5, dy: 0 },
-        DeltaPosition { dx: 5, dy: 8 },
+        DeltaPosition { dx: 1, dy: 9 },
+        DeltaPosition { dx: 3, dy: 7 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 5, dy: 2 },
+        DeltaPosition { dx: 5, dy: 10 },
     ],
 };
 
@@ -81,12 +81,12 @@ pub const LOWER_E: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 4 },
-        DeltaPosition { dx: 1, dy: 9 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 3, dy: 7 },
+        DeltaPosition { dx: 1, dy: 6 },
+        DeltaPosition { dx: 1, dy: 11 },
+        DeltaPosition { dx: 3, dy: 6 },
         DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 4, dy: 5 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 4, dy: 7 },
     ],
 };
 
@@ -95,10 +95,10 @@ pub const LOWER_H: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 1 },
-        DeltaPosition { dx: 1, dy: 8 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 5, dy: 8 },
+        DeltaPosition { dx: 1, dy: 3 },
+        DeltaPosition { dx: 1, dy: 10 },
+        DeltaPosition { dx: 3, dy: 6 },
+        DeltaPosition { dx: 5, dy: 10 },
     ],
 };
 
@@ -107,11 +107,11 @@ pub const LOWER_N: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 4 },
-        DeltaPosition { dx: 1, dy: 7 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 5, dy: 4 },
-        DeltaPosition { dx: 5, dy: 7 },
+        DeltaPosition { dx: 1, dy: 6 },
+        DeltaPosition { dx: 1, dy: 9 },
+        DeltaPosition { dx: 3, dy: 6 },
+        DeltaPosition { dx: 5, dy: 6 },
+        DeltaPosition { dx: 5, dy: 9 },
     ],
 };
 
@@ -120,10 +120,10 @@ pub const LOWER_O: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 5, dy: 6 },
+        DeltaPosition { dx: 1, dy: 8 },
+        DeltaPosition { dx: 3, dy: 6 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 5, dy: 8 },
     ],
 };
 
@@ -132,11 +132,11 @@ pub const LOWER_P: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 1, dy: 11 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 5, dy: 6 },
+        DeltaPosition { dx: 1, dy: 8 },
+        DeltaPosition { dx: 1, dy: 13 },
+        DeltaPosition { dx: 3, dy: 6 },
+        DeltaPosition { dx: 3, dy: 11 },
+        DeltaPosition { dx: 5, dy: 8 },
     ],
 };
 
@@ -145,9 +145,9 @@ pub const LOWER_R: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 4 },
-        DeltaPosition { dx: 1, dy: 9 },
-        DeltaPosition { dx: 3, dy: 4 },
+        DeltaPosition { dx: 1, dy: 6 },
+        DeltaPosition { dx: 1, dy: 11 },
+        DeltaPosition { dx: 3, dy: 6 },
     ],
 };
 
@@ -156,11 +156,11 @@ pub const LOWER_W: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[
-        DeltaPosition { dx: 1, dy: 4 },
-        DeltaPosition { dx: 1, dy: 7 },
-        DeltaPosition { dx: 4, dy: 6 },
-        DeltaPosition { dx: 6, dy: 4 },
-        DeltaPosition { dx: 6, dy: 7 },
+        DeltaPosition { dx: 1, dy: 6 },
+        DeltaPosition { dx: 1, dy: 9 },
+        DeltaPosition { dx: 4, dy: 8 },
+        DeltaPosition { dx: 6, dy: 6 },
+        DeltaPosition { dx: 6, dy: 9 },
     ],
 };
 
@@ -169,6 +169,18 @@ pub const SPACE: ActionLetter = ActionLetter {
 
     // Delta from the top left corner of the letters box.
     checkpoints: &[],
+};
+
+pub const FORWARD_SLASH: ActionLetter = ActionLetter {
+    width: 8,
+
+    // Delta from the top left corner of the letters box.
+    checkpoints: &[
+        DeltaPosition { dx: 1, dy: 10 },
+        DeltaPosition { dx: 2, dy: 7 },
+        DeltaPosition { dx: 3, dy: 4 },
+        DeltaPosition { dx: 4, dy: 1 },
+    ],
 };
 
 // Spaces between words seem to be of different sizes. Therefore we try matching

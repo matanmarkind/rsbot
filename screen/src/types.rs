@@ -52,7 +52,7 @@ impl FuzzyPixel {
             && self.within_bg_ratio(pixel)
             && self.within_br_ratio(pixel)
             && self.within_gr_ratio(pixel);
-        println!("{:?}, {}", pixel, res);
+        // println!("{:?}, {}", pixel, res);
         res
     }
 

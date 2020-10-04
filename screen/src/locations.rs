@@ -24,7 +24,7 @@ pub const SCREEN_TOP_LEFT: Position = Position {
 /// clicking is displayed in the top left corner.
 pub const TOP_LEFT_ACTION_TEXT: Position = Position {
     x: WINDOW_TOP_LEFT.x + 9,
-    y: WINDOW_TOP_LEFT.y + 33,
+    y: WINDOW_TOP_LEFT.y + 31,
 };
 
 /// Location used to click to make sure that the rs window is the active window.

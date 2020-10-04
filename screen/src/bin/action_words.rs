@@ -35,6 +35,8 @@ fn main() {
         (screen::LOWER_R, ACTION_BLUE),
         (screen::LOWER_E, ACTION_BLUE),
         (screen::LOWER_E, ACTION_BLUE),
+        (screen::SPACE, ACTION_WHITE),
+        (screen::FORWARD_SLASH, ACTION_WHITE),
     ];
 
     // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
