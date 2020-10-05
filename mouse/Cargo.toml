@@ -15,3 +15,4 @@ inputbot = "0.5.0"  # 0.5 requires move_abs.
 rand = "0.7.3"
 device_query = "0.2.5"
 util = {path="../util"}
+uinput = "0.1.3"

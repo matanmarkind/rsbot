@@ -39,3 +39,10 @@ pub const MINIMAP_MIDDLE: Position = Position {
     x: WINDOW_TOP_LEFT.x + WINDOW_DIMENSIONS.dx - 85,
     y: WINDOW_TOP_LEFT.y + 113,
 };
+
+/// This is part of the gray background for the inventory icon in the bottom of
+/// the screen. Used to tell if the inventory is open or closed.
+pub const INVENTORY_ICON: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 632,
+    y: WINDOW_TOP_LEFT.y + 606,
+};

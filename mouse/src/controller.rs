@@ -230,7 +230,7 @@ pub mod press_buttons {
         let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
 
         LeftButton.press();
-        std::thread::sleep(duration.sample(&mut rng));
+        sleep(duration.sample(&mut rng));
         LeftButton.release();
     }
 
@@ -257,6 +257,34 @@ pub mod press_buttons {
             AKey.release();
         }
         println!("release");
+    }
+
+    pub fn press_esc() {
+        println!("press_esc");
+        let mut device = uinput::default()
+            .unwrap()
+            .name("test")
+            .unwrap()
+            .event(uinput::event::Keyboard::All)
+            .unwrap()
+            .create()
+            .unwrap();
+
+        device.click(&uinput::event::keyboard::Key::Esc).unwrap();
+        device.synchronize().unwrap();
+        sleep(Duration::from_millis(500));
+        device.click(&uinput::event::keyboard::Key::Esc).unwrap();
+        device.synchronize().unwrap();
+
+        // use inputbot::KeybdKey::EscapeKey;
+        // // TODO: Consider moving uniform to normal distribution.
+
+        // let mut rng = rand::thread_rng();
+        // let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
+
+        // EscapeKey.press();
+        // sleep(duration.sample(&mut rng));
+        // EscapeKey.release();
     }
 }
 pub use press_buttons::*;

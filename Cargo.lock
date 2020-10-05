@@ -302,6 +302,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
 
 [[package]]
+name = "libudev"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea626d3bdf40a1c5aee3bcd4f40826970cae8d80a8fec934c82a63840094dcfe"
+dependencies = [
+ "libc",
+ "libudev-sys",
+]
+
+[[package]]
 name = "libudev-sys"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -338,6 +348,7 @@ dependencies = [
  "rand",
  "serde",
  "structopt",
+ "uinput",
  "util",
 ]
 
@@ -620,6 +631,7 @@ dependencies = [
  "custom_derive",
  "enum_derive",
  "libc",
+ "libudev",
  "nix 0.10.0",
  "uinput-sys",
 ]
