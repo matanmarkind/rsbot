@@ -59,7 +59,7 @@ pub const UPPER_T: ActionLetter = ActionLetter {
         DeltaPosition { dx: 2, dy: 2 },
         DeltaPosition { dx: 2, dy: 5 },
         DeltaPosition { dx: 2, dy: 11 },
-        DeltaPosition { dx: 4, dy: 2},
+        DeltaPosition { dx: 4, dy: 2 },
     ],
 };
 

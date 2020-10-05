@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 use std::num::ParseIntError;
 use std::str::FromStr;
 
@@ -52,8 +52,8 @@ impl FuzzyPixel {
             && self.within_bg_ratio(pixel)
             && self.within_br_ratio(pixel)
             && self.within_gr_ratio(pixel);
-        // println!("{:?}, {}", pixel, res);
-        res
+        println!("{:?}, {}", pixel, res);
+        self.contains(pixel)
     }
 
     fn ratio(n: u8, d: u8) -> f32 {
@@ -66,18 +66,24 @@ impl FuzzyPixel {
     // boundaries set by this FuzzyPixel, and a and b are the actual values that
     // are being matches against.
     fn check_ratio(a_min: u8, a_max: u8, b_min: u8, b_max: u8, a: u8, b: u8) -> bool {
-        let ratios = [
-            Self::ratio(a_min, b_min),
-            Self::ratio(a_min, b_max),
-            Self::ratio(a_max, b_min),
-            Self::ratio(a_max, b_max),
-        ];
+        // let ratios = [
+        //     Self::ratio(a_min, b_min),
+        //     Self::ratio(a_min, b_max),
+        //     Self::ratio(a_max, b_min),
+        //     Self::ratio(a_max, b_max),
+        // ];
 
-        let minratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.min(y));
-        let maxratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.max(y));
-        let actual = Self::ratio(a, b);
-        (1.0 - CHANNEL_RATIO_SLACK) * minratio <= actual
-            && (1.0 + CHANNEL_RATIO_SLACK) * maxratio >= actual
+        // let minratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.min(y));
+        // let maxratio = ratios.iter().fold(f32::INFINITY, |x, &y| x.max(y));
+
+        let minratio = max(a_min, b_min) - min(a_min, b_min);
+        let maxratio = max(a_max, b_max) - min(a_max, b_max);
+        let minratio = minratio.min(maxratio);
+        let maxratio = minratio.max(maxratio);
+
+        let actual = max(a, b) - min(a, b);
+        (1.0 - CHANNEL_RATIO_SLACK) * minratio as f32 <= actual as f32
+            && (1.0 + CHANNEL_RATIO_SLACK) * maxratio as f32 >= actual as f32
     }
 
     fn within_bg_ratio(&self, pixel: &Pixel) -> bool {

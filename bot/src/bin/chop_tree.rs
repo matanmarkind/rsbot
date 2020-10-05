@@ -5,6 +5,7 @@
 /// 5. Click.
 /// 6. How do I know when I have completed? Going to have to work on
 ///    understanding my inventory.
+use bot::bot_utils;
 use screen::*;
 use std::error::Error;
 use std::thread::sleep;
@@ -61,6 +62,11 @@ fn get_pixel_position(frame: &impl Frame, pixel: &FuzzyPixel) -> Option<Position
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    // DELETE THIS
+    sleep(Duration::from_secs(1));
+    mouse::left_arrow(Duration::from_secs(3));
+    return Ok(());
+
     let config = Config::from_args();
     dbg!(&config);
 
@@ -68,36 +74,53 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mouse_mover = mouse::controller::MouseMover::new(&config.mouse_fpath);
 
     // Bring window into focus.
-    while !mouse_mover.move_to(&TOP_BAR_MIDDLE) {}
+    while !mouse_mover.move_near(&TOP_BAR_MIDDLE) {}
     mouse::left_click();
 
+    bot_utils::close_chatbox(&mut capturer, &mouse_mover);
+
+    let time = std::time::Instant::now();
+    let mut num_consecutive_misses = 0;
     loop {
+        if time.elapsed() > Duration::from_secs(60) {
+            // Once a minute make sure the chatbox is closed.
+            bot_utils::close_chatbox(&mut capturer, &mouse_mover);
+        }
+
         let frame = capturer.frame().unwrap();
-        let time = std::time::Instant::now();
+        let looptime = std::time::Instant::now();
         match get_pixel_position(&frame, &TREE_PIXEL) {
             Some(pos) => {
                 println!(
                     "{} - maybe found it... {:?}",
-                    time.elapsed().as_millis(),
+                    looptime.elapsed().as_millis(),
                     pos
                 );
                 if !mouse_mover.move_to(&pos) {
-                    println!("{} - couldn't make it :(", time.elapsed().as_millis());
+                    println!("{} - couldn't make it :(", looptime.elapsed().as_millis());
                     continue;
                 }
-                println!("{} - mouse moved!", time.elapsed().as_millis());
+                println!("{} - mouse moved!", looptime.elapsed().as_millis());
 
                 let frame = capturer.frame().unwrap();
                 if !screen::check_action_letters(&frame, CHOP_DOWN_TREE_MATCHERS) {
-                    // TODO: learn to rotate camera to recheck.
-                    println!("{} - action didn't match", time.elapsed().as_millis());
+                    println!("{} - action didn't match", looptime.elapsed().as_millis());
+                    num_consecutive_misses += 1;
+                    if num_consecutive_misses > 2 {
+                        println!("press left");
+                        mouse::left_arrow(Duration::from_secs(1));
+                    }
                     continue;
                 }
-                println!("{} - found it!", time.elapsed().as_millis());
+
+                println!("{} - found it!", looptime.elapsed().as_millis());
+                num_consecutive_misses = 0;
                 mouse::left_click();
-                println!("{} - done!", time.elapsed().as_millis());
+                println!("{} - done!", looptime.elapsed().as_millis());
             }
-            None => println!("didn't find it :("),
+            None => {
+                mouse::left_arrow(Duration::from_secs(1));
+            }
         }
 
         // Even once we can monitor the inventory there should be a max timeout

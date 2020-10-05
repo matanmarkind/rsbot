@@ -26,6 +26,10 @@ pub const ZERO_LOC: Location = Location {
 // controller.
 pub const MAX_CHEAT_DISTANCE: i32 = 20;
 
-/// Time to wait between press and release.
+/// Time to wait between press and release of mouse buttons.
 pub const MIN_CLICK_WAIT: Duration = Duration::from_millis(100);
 pub const MAX_CLICK_WAIT: Duration = Duration::from_millis(150);
+
+/// Time to wait between press and release of keyboard buttons.
+pub const MIN_PRESS_WAIT: Duration = Duration::from_millis(120);
+pub const MAX_PRESS_WAIT: Duration = Duration::from_millis(170);
