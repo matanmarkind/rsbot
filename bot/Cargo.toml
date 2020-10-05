@@ -11,5 +11,4 @@ util = {path="../util"}
 mouse = {path="../mouse"}
 screen = {path="../screen"}
 structopt = "0.3.17"
-inputbot = "0.5.0"  # 0.5 requires move_abs.
 scrap = "0.5.0"

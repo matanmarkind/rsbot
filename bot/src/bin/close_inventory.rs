@@ -26,24 +26,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let mouse_mover = mouse::controller::MouseMover::new(&config.mouse_fpath);
+    let mut inputbot = mouse::InputBot::new(&config.mouse_fpath);
 
-    while !mouse_mover.move_to(&TOP_BAR_MIDDLE) {}
-    mouse::left_click();
+    while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
+    inputbot.left_click();
+    inputbot.pan_left(90.0);
 
     let frame = capturer.frame().unwrap();
     println!(
         "open? {}",
         ICON_RED.matches(&frame.get_pixel(&INVENTORY_ICON))
     );
-    mouse::press_esc();
-    // std::thread::sleep(std::time::Duration::from_millis(333));
-    // mouse::press_esc();
-    // std::thread::sleep(std::time::Duration::from_millis(333));
-    // mouse::press_esc();
-    // std::thread::sleep(std::time::Duration::from_millis(333));
-    // mouse::press_esc();
-    // std::thread::sleep(std::time::Duration::from_millis(333));
+    inputbot.click_esc();
 
     let frame = capturer.frame().unwrap();
     println!(

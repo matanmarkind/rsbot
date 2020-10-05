@@ -2,7 +2,6 @@
 /// pixel and left click on it. Instead of a config with a single rectangle
 /// bounding the search, we will have multiple rectangles. This is because parts
 /// of the screen are covered by the chatbox or the mini map.
-use inputbot::MouseButton::LeftButton;
 use screen::{Frame, FuzzyPixel, TOP_BAR_MIDDLE};
 use std::error::Error;
 use std::io;
@@ -56,9 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
                 if mouse_mover.move_to(&pos) {
                     println!("{} - You made it!", time.elapsed().as_millis());
-                    LeftButton.press();
-                    sleep(Duration::from_millis(50));
-                    LeftButton.release();
+                    mouse::left_click();
                 } else {
                     println!(
                         "{} - At least you failed valiantly while trying.",
