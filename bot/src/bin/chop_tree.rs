@@ -62,11 +62,6 @@ fn get_pixel_position(frame: &impl Frame, pixel: &FuzzyPixel) -> Option<Position
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // DELETE THIS
-    sleep(Duration::from_secs(1));
-    mouse::left_arrow(Duration::from_secs(3));
-    return Ok(());
-
     let config = Config::from_args();
     dbg!(&config);
 
@@ -107,8 +102,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     println!("{} - action didn't match", looptime.elapsed().as_millis());
                     num_consecutive_misses += 1;
                     if num_consecutive_misses > 2 {
+                        num_consecutive_misses = 0;
                         println!("press left");
-                        mouse::left_arrow(Duration::from_secs(1));
+                        mouse::pan_left(90);
                     }
                     continue;
                 }
@@ -119,7 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("{} - done!", looptime.elapsed().as_millis());
             }
             None => {
-                mouse::left_arrow(Duration::from_secs(1));
+                mouse::pan_left(90);
             }
         }
 
