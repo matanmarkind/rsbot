@@ -1,4 +1,7 @@
-use screen::*;
+use screen::{
+    locations::{INVENTORY_ICON_BACKGROUND, TOP_BAR_MIDDLE},
+    Frame, FuzzyPixel,
+};
 use std::error::Error;
 use structopt::StructOpt;
 
@@ -8,7 +11,7 @@ pub struct Config {
     pub mouse_fpath: String, // CSV file to read mouse positions from.
 }
 
-pub const ICON_RED: FuzzyPixel = FuzzyPixel {
+pub const INVENTORY_OPEN_COLOR: FuzzyPixel = FuzzyPixel {
     blue_min: 25,
     blue_max: 35,
     green_min: 35,
@@ -29,19 +32,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
     inputbot.left_click();
-    inputbot.pan_left(90.0);
 
     let frame = capturer.frame().unwrap();
     println!(
         "open? {}",
-        ICON_RED.matches(&frame.get_pixel(&INVENTORY_ICON))
+        INVENTORY_OPEN_COLOR.matches(&frame.get_pixel(&INVENTORY_ICON_BACKGROUND))
     );
     inputbot.click_esc();
 
     let frame = capturer.frame().unwrap();
     println!(
         "open? {}",
-        ICON_RED.matches(&frame.get_pixel(&INVENTORY_ICON))
+        INVENTORY_OPEN_COLOR.matches(&frame.get_pixel(&INVENTORY_ICON_BACKGROUND))
     );
 
     Ok(())

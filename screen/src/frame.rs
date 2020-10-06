@@ -172,6 +172,8 @@ impl Frame for OwnedFrame {
     }
 }
 
+// TODO: Switch from consuming and returning self, to inputing &mut self and
+// outputing &mut self.
 impl OwnedFrame {
     /// Take a subframe. This means a frame contained within the frame in
     /// this object's buffer.
@@ -234,23 +236,51 @@ impl OwnedFrame {
         }
     }
 
+    fn recolor_pixel(&mut self, pos: &Position, color: &Pixel) {
+        let pixel_offset = self.pixel_index(pos);
+
+        self.buffer[pixel_offset] = if self.is_bgr { color.blue } else { color.red };
+        self.buffer[pixel_offset + 1] = color.green;
+        self.buffer[pixel_offset + 2] = if self.is_bgr { color.red } else { color.blue };
+    }
+
     pub fn draw_vertical_line(&mut self, top: &Position, len: i32, line_color: &Pixel) {
         for i in 0..len {
-            let pixel_offset = self.pixel_index(&(top + &Position { x: 0, y: i }));
-
-            self.buffer[pixel_offset] = if self.is_bgr {
-                line_color.blue
-            } else {
-                line_color.red
-            };
-
-            self.buffer[pixel_offset + 1] = line_color.green;
-
-            self.buffer[pixel_offset + 2] = if self.is_bgr {
-                line_color.red
-            } else {
-                line_color.blue
-            };
+            self.recolor_pixel(&(top + &Position { x: 0, y: i }), line_color);
         }
+    }
+    pub fn draw_horizontal_line(&mut self, top: &Position, len: i32, line_color: &Pixel) {
+        for i in 0..len {
+            self.recolor_pixel(&(top + &Position { x: i, y: 0 }), line_color);
+        }
+    }
+    // Drow a box with corners at 'top_left' (included) and 'past_bottom_right'
+    // (excluded).
+    pub fn draw_box(
+        &mut self,
+        top_left: &Position,
+        dimensions: &DeltaPosition,
+        line_color: &Pixel,
+    ) {
+        self.draw_horizontal_line(top_left, dimensions.dx, line_color);
+        self.draw_horizontal_line(
+            &(top_left
+                + &Position {
+                    x: 0,
+                    y: dimensions.dy,
+                }),
+            dimensions.dx,
+            line_color,
+        );
+        self.draw_vertical_line(top_left, dimensions.dy, line_color);
+        self.draw_vertical_line(
+            &(top_left
+                + &Position {
+                    x: dimensions.dx,
+                    y: 0,
+                }),
+            dimensions.dy,
+            line_color,
+        );
     }
 }

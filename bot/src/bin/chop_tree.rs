@@ -6,7 +6,9 @@
 /// 6. How do I know when I have completed? Going to have to work on
 ///    understanding my inventory.
 use bot::bot_utils;
-use screen::*;
+use screen::{
+    locations::TOP_BAR_MIDDLE, ActionLetter, Frame, FuzzyPixel, ACTION_BLUE, ACTION_WHITE,
+};
 use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;

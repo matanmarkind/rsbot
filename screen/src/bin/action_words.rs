@@ -1,4 +1,4 @@
-use screen::{Frame, Pixel, ACTION_BLUE, ACTION_WHITE};
+use screen::{locations, Frame, Pixel, ACTION_BLUE, ACTION_WHITE};
 /// Take a screenshot of the game and draw lines to separate the characters in
 /// the text that describes an action. This is a test to see if they are regular.
 use std::fs::File;
@@ -47,12 +47,12 @@ fn main() {
     let mut img = frame.to_owned().flip();
 
     // Logir here should look like check_action_letters.
-    let mut x_offset = screen::TOP_LEFT_ACTION_TEXT.x;
+    let mut x_offset = locations::TOP_LEFT_ACTION_TEXT.x;
     for (letter, _) in letter_and_matchers.iter() {
         for DeltaPosition { dx, dy } in letter.checkpoints {
             let pos = Position {
                 x: x_offset + dx,
-                y: screen::TOP_LEFT_ACTION_TEXT.y + dy,
+                y: locations::TOP_LEFT_ACTION_TEXT.y + dy,
             };
             img.draw_vertical_line(
                 &pos,

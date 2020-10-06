@@ -1,13 +1,8 @@
 mod chatbox {
+    use screen::{locations, Capturer, Frame, FuzzyPixel};
     use userinput::InputBot;
-    use screen::{Capturer, Frame, FuzzyPixel, MINIMAP_MIDDLE, WINDOW_TOP_LEFT};
     use util::*;
 
-    /// Chat buttons. Need to check them to make sure the chat box is closed.
-    const ALL_CHAT_BUTTON: Position = Position {
-        x: WINDOW_TOP_LEFT.x + 15,
-        y: WINDOW_TOP_LEFT.y + 619,
-    };
     // Pixel { blue: 35, green: 75, red: 98 }, false
     // Pixel { blue: 41, green: 51, red: 60 }, true
     // Pixel { blue: 35, green: 75, red: 98 }, false
@@ -31,10 +26,7 @@ mod chatbox {
     ];
 
     const CHAT_BOX_TOP_LEFT: (Position, FuzzyPixel) = (
-        Position {
-            x: WINDOW_TOP_LEFT.x + 10,
-            y: WINDOW_TOP_LEFT.y + 471,
-        },
+        locations::CHAT_BOX_TOP_LEFT,
         FuzzyPixel {
             blue_min: 114,
             blue_max: 114,
@@ -45,10 +37,7 @@ mod chatbox {
         },
     );
     const CHAT_BOX_BOTTOM_LEFT: (Position, FuzzyPixel) = (
-        Position {
-            x: WINDOW_TOP_LEFT.x + 5,
-            y: WINDOW_TOP_LEFT.y + 604,
-        },
+        locations::CHAT_BOX_BOTTOM_LEFT,
         FuzzyPixel {
             blue_min: 147,
             blue_max: 147,
@@ -60,10 +49,7 @@ mod chatbox {
     );
 
     const CHAT_BOX_TOP_RIGHT: (Position, FuzzyPixel) = (
-        Position {
-            x: WINDOW_TOP_LEFT.x + 518,
-            y: WINDOW_TOP_LEFT.y + 473,
-        },
+        locations::CHAT_BOX_TOP_RIGHT,
         FuzzyPixel {
             blue_min: 94,
             blue_max: 94,
@@ -75,10 +61,7 @@ mod chatbox {
     );
 
     const CHAT_BOX_BOTTOM_RIGHT: (Position, FuzzyPixel) = (
-        Position {
-            x: WINDOW_TOP_LEFT.x + 520,
-            y: WINDOW_TOP_LEFT.y + 604,
-        },
+        locations::CHAT_BOX_BOTTOM_RIGHT,
         FuzzyPixel {
             blue_min: 140,
             blue_max: 140,
@@ -108,7 +91,7 @@ mod chatbox {
             return;
         }
         // Go click on the All tab
-        while !inputbot.move_near(&ALL_CHAT_BUTTON) {}
+        while !inputbot.move_near(&locations::ALL_CHAT_BUTTON) {}
         inputbot.left_click();
 
         std::thread::sleep(REDRAW_TIME);
@@ -118,7 +101,7 @@ mod chatbox {
         }
 
         // If the ALL chat tab is now open we should turn it off.
-        let all_chat_pixel = frame.get_pixel(&ALL_CHAT_BUTTON);
+        let all_chat_pixel = frame.get_pixel(&locations::ALL_CHAT_BUTTON);
         if !ALL_CHAT_ON_HIGHLIGHTS
             .iter()
             .any(|pixel| pixel.matches(&all_chat_pixel))
@@ -128,7 +111,7 @@ mod chatbox {
             // game. Left click in the center of the MINI_MAP which will shrink the
             // chat tab without doing anything else.
             println!("Chat box open other.");
-            while !inputbot.move_near(&MINIMAP_MIDDLE) {}
+            while !inputbot.move_near(&locations::MINIMAP_MIDDLE) {}
         }
         inputbot.left_click();
 

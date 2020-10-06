@@ -17,19 +17,3 @@ pub const ZERO_LOC: Location = Location {
     x: 0,
     y: 0,
 };
-
-// Limits on how far the mouse can move in a single jump. These should make
-// sense based on how long we have between locations.
-
-// Maximum distance we can teleport the mouse when 'cheating' towards to a .
-// This should be on the order of a smallish DeltaPosition. Used by the
-// controller.
-pub const MAX_CHEAT_DISTANCE: i32 = 20;
-
-/// Time to wait between press and release of mouse buttons.
-pub const MIN_CLICK_WAIT: Duration = Duration::from_millis(100);
-pub const MAX_CLICK_WAIT: Duration = Duration::from_millis(150);
-
-/// Time to wait between press and release of keyboard buttons.
-pub const MIN_PRESS_WAIT: Duration = Duration::from_millis(120);
-pub const MAX_PRESS_WAIT: Duration = Duration::from_millis(170);

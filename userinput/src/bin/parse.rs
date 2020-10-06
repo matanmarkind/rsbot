@@ -1,10 +1,10 @@
-use userinput::constants::*;
-use userinput::types::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::num::ParseIntError;
 use std::time::Duration;
 use structopt::StructOpt;
+use userinput::constants::*;
+use userinput::types::*;
 use util::*;
 
 fn parse_duration_from_secs(src: &str) -> Result<Duration, ParseIntError> {

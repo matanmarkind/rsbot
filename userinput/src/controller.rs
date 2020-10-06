@@ -21,6 +21,11 @@ struct MouseMover {
     device_state: DeviceState,
 }
 
+// Maximum distance we can teleport the mouse when 'cheating' towards to a .
+// This should be on the order of a smallish DeltaPosition. Used by the
+// controller.
+pub const MAX_CHEAT_DISTANCE: i32 = 20;
+
 impl MouseMover {
     pub fn new(paths_fpath: &str) -> MouseMover {
         MouseMover {
@@ -189,97 +194,18 @@ fn cheat_towards(net_delta: &DeltaPosition) {
     replay_path(&summary, &path, net_delta);
 }
 
-pub mod press_buttons {
-    use crate::constants::*;
-    use rand::distributions::{Distribution, Uniform};
-    use std::thread::sleep;
-    use std::time::Duration;
-
-    // It seems like cycling every 2ms is good. Gives us nearly normal speed.
-    // Going down too slow is innefficient and choppy and probably doesn't
-    // look very human. Going too fast creates a backlog to the screen keeps
-    // circling.
-    const PANING_SIGNAL_PERIOD: Duration = Duration::from_millis(2);
-
-    // Number of signals to send at a signal period of 2ms to fully pan around the
-    // character. This is not exact. Sometimes we go a little past, sometimes a
-    // little short.
-    const SIGNALS_TO_FULLY_PAN: u32 = 4600;
-
-    pub fn left_click() {
-        use inputbot::MouseButton::LeftButton;
-        // TODO: Consider moving uniform to normal distribution.
-
-        let mut rng = rand::thread_rng();
-        let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
-
-        LeftButton.press();
-        sleep(duration.sample(&mut rng));
-        LeftButton.release();
-    }
-
-    /// Number of degrees to pan the screen to the left.
-    pub fn pan_left(degrees: u32) {
-        use inputbot::KeybdKey::AKey;
-        // TODO: Consider moving uniform to normal distribution.
-
-        // It seems that scan codes differentiate between the left arrow key and the
-        // left number bad key (4).
-        // - Inputbot seems to give the number bad version which OSRS doesn't care
-        //   for.
-        //   https://github.com/obv-mikhail/InputBot/blob/32a7d5e150753a5f7eefbe06fbef9b2f4015c876/src/linux/inputs.rs
-        // - To see scancodes - sudo showkey -s
-        // 1. Left arrow code - 0xe0 0x4b 0xe0 0xcb
-        // 2. Left number pad (4) 0x4b 0xcb
-        // The solution is to use runelight's "Key Remapping" plugin so that A is left and D is right.
-
-        println!("press");
-        let num_presses = SIGNALS_TO_FULLY_PAN * degrees / 360;
-        for _ in 0..num_presses {
-            AKey.press();
-            sleep(PANING_SIGNAL_PERIOD);
-            AKey.release();
-        }
-        println!("release");
-    }
-
-    pub fn press_esc() {
-        println!("press_esc");
-        let mut device = uinput::default()
-            .unwrap()
-            .name("test")
-            .unwrap()
-            .event(uinput::event::Keyboard::All)
-            .unwrap()
-            .create()
-            .unwrap();
-
-        device.click(&uinput::event::keyboard::Key::Esc).unwrap();
-        device.synchronize().unwrap();
-        sleep(Duration::from_millis(500));
-        device.click(&uinput::event::keyboard::Key::Esc).unwrap();
-        device.synchronize().unwrap();
-
-        // use inputbot::KeybdKey::EscapeKey;
-        // // TODO: Consider moving uniform to normal distribution.
-
-        // let mut rng = rand::thread_rng();
-        // let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
-
-        // EscapeKey.press();
-        // sleep(duration.sample(&mut rng));
-        // EscapeKey.release();
-    }
-}
-pub use press_buttons::*;
-
 /// Controller for user friendly input to fake a mouse and keyboard.
 /// Logic for how to move the mouse around will be encapsulated in the MouseMover.
-
 pub struct InputBot {
     keyboard: uinput::Device,
     mouse: MouseMover,
 }
+
+/// Time to wait between press and release of mouse buttons.
+// TODO: consider changing usage from Uniform to Normal distribution.
+// TODO: consider different values for key and mouse press.
+const MIN_CLICK_WAIT: Duration = Duration::from_millis(100);
+const MAX_CLICK_WAIT: Duration = Duration::from_millis(150);
 
 impl InputBot {
     pub fn new(paths_fpath: &str) -> InputBot {
