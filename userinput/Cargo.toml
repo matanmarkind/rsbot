@@ -1,5 +1,5 @@
 [package]
-name = "mouse"
+name = "userinput"
 version = "0.1.0"
 authors = ["Matan Markind <matan.markind@gmail.com>"]
 edition = "2018"

@@ -1,5 +1,5 @@
 mod chatbox {
-    use mouse::controller::MouseMover;
+    use userinput::InputBot;
     use screen::{Capturer, Frame, FuzzyPixel, MINIMAP_MIDDLE, WINDOW_TOP_LEFT};
     use util::*;
 
@@ -102,16 +102,16 @@ mod chatbox {
         true
     }
 
-    pub fn close_chatbox(cap: &mut Capturer, mouse_mover: &MouseMover) {
+    pub fn close_chatbox(cap: &mut Capturer, inputbot: &mut InputBot) {
         let frame = cap.frame().unwrap();
         if !is_chatbox_open(&frame) {
             return;
         }
         // Go click on the All tab
-        while !mouse_mover.move_near(&ALL_CHAT_BUTTON) {}
-        mouse::left_click();
+        while !inputbot.move_near(&ALL_CHAT_BUTTON) {}
+        inputbot.left_click();
 
-        std::thread::sleep(std::time::Duration::from_millis(200));
+        std::thread::sleep(REDRAW_TIME);
         let frame = cap.frame().unwrap();
         if !is_chatbox_open(&frame) {
             return;
@@ -119,21 +119,18 @@ mod chatbox {
 
         // If the ALL chat tab is now open we should turn it off.
         let all_chat_pixel = frame.get_pixel(&ALL_CHAT_BUTTON);
-        if ALL_CHAT_ON_HIGHLIGHTS
+        if !ALL_CHAT_ON_HIGHLIGHTS
             .iter()
             .any(|pixel| pixel.matches(&all_chat_pixel))
         {
-            println!("ALL_CHAT_ON_HIGHLIGHT");
-            mouse::left_click();
-        } else {
             // Chatbox is open, but not due to a chat tab. Could be from a game
             // update, like leveling up which is shrunk by left clicking on the
             // game. Left click in the center of the MINI_MAP which will shrink the
             // chat tab without doing anything else.
             println!("Chat box open other.");
-            while !mouse_mover.move_near(&MINIMAP_MIDDLE) {}
-            mouse::left_click();
+            while !inputbot.move_near(&MINIMAP_MIDDLE) {}
         }
+        inputbot.left_click();
 
         let frame = cap.frame().unwrap();
         println!("is_chatbox_open={}", is_chatbox_open(&frame));

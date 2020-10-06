@@ -1,14 +1,14 @@
 // This file is dedicated to recording mouse movements.
 // Tracks the location of the mouse as it moves on the screen and saves it to a CSV.
 use device_query::{DeviceQuery, DeviceState};
-use mouse::constants::*;
-use mouse::types::*;
 use std::error::Error;
 use std::fs::OpenOptions;
 use std::num::ParseIntError;
 use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
+use userinput::constants::*;
+use userinput::types::*;
 
 fn parse_duration_from_secs(src: &str) -> Result<Duration, ParseIntError> {
     let seconds: u64 = src.parse()?;

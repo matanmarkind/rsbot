@@ -5,7 +5,7 @@
 # - bot is the product and can import any crats
 # - All other crates are middleware and only import util.
 members = [
-    "mouse",
+    "userinput",
     "screen",
     "util",
     "bot",

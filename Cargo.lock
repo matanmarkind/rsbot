@@ -58,10 +58,10 @@ checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 name = "bot"
 version = "0.1.0"
 dependencies = [
- "mouse",
  "scrap",
  "screen",
  "structopt",
+ "userinput",
  "util",
 ]
 
@@ -334,21 +334,6 @@ checksum = "c60c0dfe32c10b43a144bad8fc83538c52f58302c92300ea7ec7bf7b38d5a7b9"
 dependencies = [
  "adler",
  "autocfg",
-]
-
-[[package]]
-name = "mouse"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "csv",
- "device_query",
- "inputbot",
- "rand",
- "serde",
- "structopt",
- "uinput",
- "util",
 ]
 
 [[package]]
@@ -671,6 +656,21 @@ checksum = "4ef4711d107b21b410a3a974b1204d9accc8b10dad75d8324b5d755de1617d47"
 dependencies = [
  "winapi 0.2.8",
  "winapi-build",
+]
+
+[[package]]
+name = "userinput"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "csv",
+ "device_query",
+ "inputbot",
+ "rand",
+ "serde",
+ "structopt",
+ "uinput",
+ "util",
 ]
 
 [[package]]

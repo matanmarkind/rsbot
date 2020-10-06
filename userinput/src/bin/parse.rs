@@ -1,6 +1,5 @@
-use mouse::constants::*;
-use mouse::types::*;
-use std::collections::btree_map::Entry;
+use userinput::constants::*;
+use userinput::types::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::num::ParseIntError;

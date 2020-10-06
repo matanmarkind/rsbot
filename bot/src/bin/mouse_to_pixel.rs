@@ -43,14 +43,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let mouse_mover = mouse::controller::MouseMover::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(&config.in_fpath);
 
     loop {
         match get_pixel_position(&config, &mut capturer) {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
-                if mouse_mover.move_to(&pos) {
+                if inputbot.move_to(&pos) {
                     println!("{} - You made it!", time.elapsed().as_millis());
                 } else {
                     println!(

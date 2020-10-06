@@ -1,4 +1,3 @@
-use mouse::controller::MouseMover;
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
@@ -14,7 +13,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_args();
     dbg!(&config);
 
-    let mouse_mover = MouseMover::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(&config.in_fpath);
     loop {
         println!("Enter location (x,y): ");
         let mut buffer = String::new();
@@ -28,7 +27,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for result in reader.deserialize::<Position>() {
             match result {
                 Ok(dst) => {
-                    if mouse_mover.move_to(&dst) {
+                    if inputbot.move_to(&dst) {
                         println!("You made it!");
                     } else {
                         println!("At least you failed valiantly while trying.");
@@ -36,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 _ => println!("invalid input"),
             }
-            println!("current_position={:?}", mouse_mover.current_position());
+            println!("current_position={:?}", inputbot.mouse_position());
         }
     }
 }

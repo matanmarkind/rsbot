@@ -13,7 +13,7 @@ use util::*;
 //
 // The quality of the mover is highly dependent on the set of MousePaths given
 // in.
-pub struct MouseMover {
+struct MouseMover {
     // Map of mouse paths to be followed. {PathSummary : MousePath}
     mouse_paths: MousePaths,
 
@@ -47,11 +47,12 @@ impl MouseMover {
     /// see mouse/src/bin/replay.rs for another complex example.
     ///
     /// ```no_run
-    /// use mouse::controller::MouseMover;
+    /// use util::Position;
+    /// use userinput::InputBot;
     ///
     /// fn main() {
-    ///     let mouse = MouseMover::new("/path/to/mousepaths.bincode");
-    ///     if mouse_mover.move_to(&Position{x:100, y;100}) {
+    ///     let inputbot = InputBot::new("/path/to/mousepaths.bincode");
+    ///     if inputbot.move_to(&Position{x:100, y:100}) {
     ///         println!("You made it!");
     ///     } else {
     ///         println!("Better luck next time.");
@@ -64,7 +65,6 @@ impl MouseMover {
             self.follow_path_to(&dst, /*tolerance=*/ 1);
             let distance = self.distance_from(&dst);
             if distance <= MAX_CHEAT_DISTANCE {
-                println!("Close enough. distance={}", distance);
                 break;
             } else if self.distance_from(&dst) >= distance {
                 // We couldn't find a path to move in the right direction, so
@@ -73,7 +73,6 @@ impl MouseMover {
                 if just_cheated {
                     return &self.current_position() == dst;
                 }
-                println!("cheater");
                 cheat_towards(&(dst - &self.current_position()));
                 just_cheated = true;
             } else {
@@ -86,19 +85,6 @@ impl MouseMover {
         MouseMover::sleep_between_moves();
         self.move_directly_to(&dst);
         &self.current_position() == dst
-    }
-
-    /// Moves the mouse close to 'dst'.
-    ///
-    /// This is used to avoid pixel perfect placement.
-    pub fn move_near(&self, dst: &Position) -> bool {
-        use std::cmp::max;
-
-        let mut rng = thread_rng();
-        self.move_to(&Position {
-            x: dst.x + max(0, rng.gen_range(-1, 2)),
-            y: dst.y + max(0, rng.gen_range(-1, 2)),
-        })
     }
 
     fn sleep_between_moves() {
@@ -306,11 +292,7 @@ impl InputBot {
                 .unwrap()
                 .create()
                 .unwrap(),
-            mouse: MouseMover {
-                mouse_paths: bincode::deserialize(&std::fs::read(paths_fpath).unwrap()[..])
-                    .unwrap(),
-                device_state: DeviceState::new(),
-            },
+            mouse: MouseMover::new(paths_fpath),
         }
     }
 
@@ -345,7 +327,7 @@ impl InputBot {
 
     // Pressing the mouse buttons is basically stateless, but makes sense to
     // put it here for simplicity.
-    fn click_mouse(&mut self, button: &inputbot::MouseButton) {
+    fn click_mouse(&self, button: &inputbot::MouseButton) {
         // TODO: Consider moving uniform to normal distribution.
         let mut rng = rand::thread_rng();
         let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
@@ -364,14 +346,29 @@ impl InputBot {
     }
 
     /// Mouse interactions.
-    pub fn left_click(&mut self) {
+    pub fn left_click(&self) {
         self.click_mouse(&inputbot::MouseButton::LeftButton);
     }
-    pub fn right_click(&mut self) {
+    pub fn right_click(&self) {
         self.click_mouse(&inputbot::MouseButton::RightButton);
     }
     pub fn move_to(&self, dst: &Position) -> bool {
         self.mouse.move_to(dst)
+    }
+    /// Moves the mouse close to 'dst'.
+    ///
+    /// This is used to avoid pixel perfect placement.
+    pub fn move_near(&self, dst: &Position) -> bool {
+        use std::cmp::max;
+
+        let mut rng = thread_rng();
+        self.move_to(&Position {
+            x: dst.x + max(0, rng.gen_range(-1, 2)),
+            y: dst.y + max(0, rng.gen_range(-1, 2)),
+        })
+    }
+    pub fn mouse_position(&self) -> Position {
+        self.mouse.current_position()
     }
 
     /// Keyboard keys.

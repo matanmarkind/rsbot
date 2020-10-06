@@ -1,6 +1,7 @@
 #![allow(warnings)] // Don't warn for unused variables... At least for now.
 
 use crate::types::*;
+use std::time::Duration;
 
 /// Screen based constants. Many of these assume that the screen is in the top
 /// right quarter of the screen.
@@ -29,3 +30,8 @@ pub const CLEAR_SCREEN_BOUNDS: &[BoundingBox] = &[
     BoundingBox(Position { x: 960, y: 52 }, Position { x: 1700, y: 625 }),
     BoundingBox(Position { x: 1700, y: 230 }, Position { x: 1920, y: 625 }),
 ];
+
+/// Amount of time to wait if waiting for the screen to change in response to an
+/// action (e.g. if we closed the chatbox how long ot wait to check it has been
+/// closed).
+pub const REDRAW_TIME: Duration = Duration::from_millis(200);

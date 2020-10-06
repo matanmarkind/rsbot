@@ -1,4 +1,3 @@
-use bot::bot_utils;
 use screen::*;
 use std::error::Error;
 use structopt::StructOpt;
@@ -26,7 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let mut inputbot = mouse::InputBot::new(&config.mouse_fpath);
+    let mut inputbot = userinput::InputBot::new(&config.mouse_fpath);
 
     while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
     inputbot.left_click();

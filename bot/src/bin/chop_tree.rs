@@ -66,20 +66,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let mouse_mover = mouse::controller::MouseMover::new(&config.mouse_fpath);
+    let mut inputbot = userinput::InputBot::new(&config.mouse_fpath);
 
     // Bring window into focus.
-    while !mouse_mover.move_near(&TOP_BAR_MIDDLE) {}
-    mouse::left_click();
+    while !inputbot.move_near(&TOP_BAR_MIDDLE) {}
+    inputbot.left_click();
 
-    bot_utils::close_chatbox(&mut capturer, &mouse_mover);
+    bot_utils::close_chatbox(&mut capturer, &mut inputbot);
 
     let time = std::time::Instant::now();
     let mut num_consecutive_misses = 0;
     loop {
         if time.elapsed() > Duration::from_secs(60) {
             // Once a minute make sure the chatbox is closed.
-            bot_utils::close_chatbox(&mut capturer, &mouse_mover);
+            bot_utils::close_chatbox(&mut capturer, &mut inputbot);
         }
 
         let frame = capturer.frame().unwrap();
@@ -91,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                     looptime.elapsed().as_millis(),
                     pos
                 );
-                if !mouse_mover.move_to(&pos) {
+                if !inputbot.move_to(&pos) {
                     println!("{} - couldn't make it :(", looptime.elapsed().as_millis());
                     continue;
                 }
@@ -104,18 +104,18 @@ fn main() -> Result<(), Box<dyn Error>> {
                     if num_consecutive_misses > 2 {
                         num_consecutive_misses = 0;
                         println!("press left");
-                        mouse::pan_left(90);
+                        inputbot.pan_left(90.0);
                     }
                     continue;
                 }
 
                 println!("{} - found it!", looptime.elapsed().as_millis());
                 num_consecutive_misses = 0;
-                mouse::left_click();
+                inputbot.left_click();
                 println!("{} - done!", looptime.elapsed().as_millis());
             }
             None => {
-                mouse::pan_left(90);
+                inputbot.pan_left(90.0);
             }
         }
 

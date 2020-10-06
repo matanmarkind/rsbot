@@ -5,8 +5,6 @@
 use screen::{Frame, FuzzyPixel, TOP_BAR_MIDDLE};
 use std::error::Error;
 use std::io;
-use std::thread::sleep;
-use std::time::Duration;
 use structopt::StructOpt;
 use util::*;
 
@@ -43,19 +41,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let mouse_mover = mouse::controller::MouseMover::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(&config.in_fpath);
 
-    while !mouse_mover.move_to(&TOP_BAR_MIDDLE) {}
-    mouse::left_click();
+    while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
+    inputbot.left_click();
 
     loop {
         match get_pixel_position(&mut capturer) {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
-                if mouse_mover.move_to(&pos) {
+                if inputbot.move_to(&pos) {
                     println!("{} - You made it!", time.elapsed().as_millis());
-                    mouse::left_click();
+                    inputbot.left_click();
                 } else {
                     println!(
                         "{} - At least you failed valiantly while trying.",
