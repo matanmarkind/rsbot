@@ -33,7 +33,7 @@ impl Sub for &Location {
 // though with rotation.
 
 // Ordering and equality is done by the distance only.
-#[derive(PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(PartialOrd, Debug, Clone, Serialize, Deserialize)]
 pub struct PathSummary {
     pub distance: i32,
     // Angle of the line from x axis in radians [0, 2PI)

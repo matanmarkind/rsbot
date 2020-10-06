@@ -1,5 +1,6 @@
 use mouse::constants::*;
 use mouse::types::*;
+use std::collections::btree_map::Entry;
 use std::fs::File;
 use std::io::prelude::*;
 use std::num::ParseIntError;
@@ -144,11 +145,14 @@ impl MousePathParser {
             {
                 // We are now at the end of a single path.
                 match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
-                    // TODO: Instead of inserting the last one, insert the
-                    // shortest path for this length (since we only hold 1 path
-                    // per path distance).
-                    Some((summary, path)) => mouse_paths.insert(summary, path),
-                    None => None,
+                    Some((summary, path)) => {
+                        let val = mouse_paths.get(&summary);
+                        if val.is_none() || path.len() < val.unwrap().len() {
+                            // Prefer the shorter path so that the bot will move around faster.
+                            mouse_paths.insert(summary, path);
+                        }
+                    }
+                    None => (),
                 };
                 // Reset the new path beginning.
                 path_start_index = i;
@@ -161,8 +165,14 @@ impl MousePathParser {
         // Parse the path that ends at the end of the batch.
         if path_start_index < last_move_index {
             match self.parse_mouse_path(&delta_mouse_locs[path_start_index..=last_move_index]) {
-                Some((summary, path)) => mouse_paths.insert(summary, path),
-                None => None,
+                Some((summary, path)) => {
+                    let val = mouse_paths.get(&summary);
+                    if val.is_none() || path.len() < val.unwrap().len() {
+                        // Prefer the shorter path so that the bot will move around faster.
+                        mouse_paths.insert(summary, path);
+                    }
+                }
+                None => (),
             };
         }
     }
@@ -281,20 +291,18 @@ mod tests {
 
     // This function takes in the mouse_paths output from 'parse_csv_input' and
     // checks that it contains the expected path.
-    fn check_paths(expected: Vec<(super::MousePath, usize)>, actual: super::MousePaths) {
+    fn check_paths(expected: Vec<super::MousePath>, actual: super::MousePaths) {
         assert_eq!(actual.len(), expected.len());
 
-        for (expected_path, total_expected_time) in expected {
+        for expected_path in expected {
             let net_delta_expected = super::get_net_delta(&expected_path);
             let expected_summary = super::PathSummary {
                 distance: net_delta_expected.distance(),
-                avg_time_us: (total_expected_time / expected_path.len()) as i32,
                 angle_rads: net_delta_expected.angle_rads(),
             };
             let (actual_summary, actual_path) = actual.get_key_value(&expected_summary).unwrap();
 
             assert_eq!(actual_summary.distance, expected_summary.distance);
-            assert!((actual_summary.avg_time_us - expected_summary.avg_time_us).abs() <= 1);
             assert!((actual_summary.angle_rads - expected_summary.angle_rads).abs() < 0.01);
             assert_eq!(actual_path, &expected_path);
         }
@@ -326,7 +334,7 @@ time_us,x,y
             DeltaPosition { dx: -3, dy: 2 },
             DeltaPosition { dx: 5, dy: 6 },
         ];
-        check_paths(vec![(expected_deltas, 61500 - 11000)], mouse_paths);
+        check_paths(vec![expected_deltas], mouse_paths);
     }
 
     #[test]
@@ -368,7 +376,7 @@ time_us,x,y
             DeltaPosition { dx: -3, dy: 2 },
             DeltaPosition { dx: 5, dy: 6 },
         ];
-        check_paths(vec![(expected_deltas, 63000 - 1000)], mouse_paths);
+        check_paths(vec![expected_deltas], mouse_paths);
     }
 
     #[test]
@@ -415,10 +423,7 @@ time_us,x,y
             DeltaPosition { dx: 2, dy: 3 },
             DeltaPosition { dx: 5, dy: 13 },
         ];
-        check_paths(
-            vec![(expected_deltas1, (64000 - 11000) + (254000 - 193000))],
-            mouse_paths,
-        );
+        check_paths(vec![expected_deltas1], mouse_paths);
     }
 
     #[test]
@@ -476,13 +481,7 @@ time_us,x,y
             DeltaPosition { dx: 2, dy: 3 },
             DeltaPosition { dx: 5, dy: 13 },
         ];
-        check_paths(
-            vec![
-                (expected_deltas1, 64000 - 11000),
-                (expected_deltas2, 254000 - 184000),
-            ],
-            mouse_paths,
-        );
+        check_paths(vec![expected_deltas1, expected_deltas2], mouse_paths);
     }
 
     #[test]
@@ -529,12 +528,47 @@ time_us,x,y
             DeltaPosition { dx: 2, dy: 3 },
             DeltaPosition { dx: 5, dy: 13 },
         ];
-        check_paths(
-            vec![
-                (expected_deltas1, 64000 - 11000),
-                (expected_deltas2, 254000 - 193500),
-            ],
-            mouse_paths,
-        );
+        check_paths(vec![expected_deltas1, expected_deltas2], mouse_paths);
+    }
+
+    #[test]
+    fn prefer_shorter_path() {
+        // There can only be 1 path for a given distance, and we should prefert
+        // the one with fewer moves.
+        let data = "\
+time_us,x,y
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33000,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33000,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+74000,20,31
+84000,15,31
+";
+
+        let mouse_paths = parse_str(data);
+
+        // The first delta is not (1, 1). This is as a result of skipping 0
+        // deltas at the beginning of a batch in 'parse_mouse_deltas'. We don't
+        // need to be exact so it's fine and not worth investing in changing.
+        let expected_deltas1 = vec![
+            DeltaPosition { dx: 1, dy: -1 },
+            DeltaPosition { dx: 7, dy: 19 },
+            DeltaPosition { dx: 3, dy: 3 },
+            DeltaPosition { dx: -3, dy: 2 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ];
+        check_paths(vec![expected_deltas1], mouse_paths);
     }
 }
