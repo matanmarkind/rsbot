@@ -1,138 +1,188 @@
-use screen::{locations, Capturer, Frame, FuzzyPixel};
+use crate::bot_utils;
+use screen::{inventory, locations, ActionLetter, Capturer, Frame, FuzzyPixel};
+use std::cell::RefCell;
+use std::thread::sleep;
+use std::time::Duration;
+use structopt::StructOpt;
 use userinput::InputBot;
 use util::*;
 
-// Pixel { blue: 35, green: 75, red: 98 }, false
-// Pixel { blue: 41, green: 51, red: 60 }, true
-// Pixel { blue: 35, green: 75, red: 98 }, false
-const ALL_CHAT_ON_HIGHLIGHTS: &[FuzzyPixel] = &[
-    FuzzyPixel {
-        blue_min: 39,
-        blue_max: 42,
-        green_min: 49,
-        green_max: 52,
-        red_min: 58,
-        red_max: 61,
-    },
-    FuzzyPixel {
-        blue_min: 34,
-        blue_max: 36,
-        green_min: 74,
-        green_max: 76,
-        red_min: 97,
-        red_max: 99,
-    },
-];
+struct ActionDescription {
+    /// The colors that if found likely correspond with the desired action.
+    pub colors: Vec<FuzzyPixel>,
 
-const CHAT_BOX_TOP_LEFT: (Position, FuzzyPixel) = (
-    locations::CHAT_BOX_TOP_LEFT,
-    FuzzyPixel {
-        blue_min: 114,
-        blue_max: 114,
-        green_min: 137,
-        green_max: 137,
-        red_min: 147,
-        red_max: 147,
-    },
-);
-const CHAT_BOX_BOTTOM_LEFT: (Position, FuzzyPixel) = (
-    locations::CHAT_BOX_BOTTOM_LEFT,
-    FuzzyPixel {
-        blue_min: 147,
-        blue_max: 147,
-        green_min: 169,
-        green_max: 169,
-        red_min: 173,
-        red_max: 173,
-    },
-);
+    pub action_text: Vec<(ActionLetter, FuzzyPixel)>,
 
-const CHAT_BOX_TOP_RIGHT: (Position, FuzzyPixel) = (
-    locations::CHAT_BOX_TOP_RIGHT,
-    FuzzyPixel {
-        blue_min: 94,
-        blue_max: 94,
-        green_min: 112,
-        green_max: 112,
-        red_min: 119,
-        red_max: 119,
-    },
-);
-
-const CHAT_BOX_BOTTOM_RIGHT: (Position, FuzzyPixel) = (
-    locations::CHAT_BOX_BOTTOM_RIGHT,
-    FuzzyPixel {
-        blue_min: 140,
-        blue_max: 140,
-        green_min: 154,
-        green_max: 154,
-        red_min: 162,
-        red_max: 162,
-    },
-);
-fn is_chatbox_open(frame: &impl Frame) -> bool {
-    for (pos, fuzzy_pixel) in &[
-        CHAT_BOX_TOP_LEFT,
-        CHAT_BOX_BOTTOM_LEFT,
-        CHAT_BOX_TOP_RIGHT,
-        CHAT_BOX_BOTTOM_RIGHT,
-    ] {
-        if !fuzzy_pixel.matches(&frame.get_pixel(pos)) {
-            return false;
-        }
-    }
-    true
+    /// Can taking this action result in us receiving multiple items over time.
+    /// If so, we will continue resetting the timer every time we receive an
+    /// item. For example, a single click on an oak tree can result in us
+    /// cutting many logs.
+    pub multi_item_action: bool,
+    /// Amount of time to wait for item to appear in inventory before assuming
+    /// we are done (resource exhausted, failed to reach resource, etc.)
+    pub timeout: Duration,
 }
 
-pub fn close_chatbox(cap: &mut Capturer, inputbot: &mut InputBot) {
-    let frame = cap.frame().unwrap();
-    if !is_chatbox_open(&frame) {
-        return;
-    }
-    // Go click on the All tab
-    while !inputbot.move_near(&locations::ALL_CHAT_BUTTON) {}
-    inputbot.left_click();
+fn get_search_locations() -> Vec<(Position, DeltaPosition)> {
+    vec![
+        (
+            locations::VERY_NEARBY_SCREEN_TOP_LEFT,
+            locations::VERY_NEARBY_SCREEN_DIMENSIONS,
+        ),
+        (
+            locations::NEARBY_SCREEN_TOP_LEFT,
+            locations::NEARBY_SCREEN_DIMENSIONS,
+        ),
+        (
+            locations::SCREEN_TOP_LEFT,
+            locations::OPEN_SCREEN_DIMENSIONS,
+        ),
+    ]
+}
 
-    std::thread::sleep(REDRAW_TIME);
-    let frame = cap.frame().unwrap();
-    if !is_chatbox_open(&frame) {
-        return;
-    }
+#[derive(Debug, StructOpt)]
+pub struct Config {
+    #[structopt(long)]
+    pub mouse_fpath: String, // CSV file to read mouse positions from.
 
-    // If the ALL chat tab is now open we should turn it off.
-    let all_chat_pixel = frame.get_pixel(&locations::ALL_CHAT_BUTTON);
-    if !ALL_CHAT_ON_HIGHLIGHTS
-        .iter()
-        .any(|pixel| pixel.matches(&all_chat_pixel))
-    {
-        // Chatbox is open, but not due to a chat tab. Could be from a game
-        // update, like leveling up which is shrunk by left clicking on the
-        // game. Left click in the center of the MINI_MAP which will shrink the
-        // chat tab without doing anything else.
-        println!("Chat box open other.");
-        while !inputbot.move_near(&locations::MINIMAP_MIDDLE) {}
-    }
-    inputbot.left_click();
-
-    let frame = cap.frame().unwrap();
-    println!("is_chatbox_open={}", is_chatbox_open(&frame));
+    #[structopt(
+        long,
+        about = "Path to directory to save screenshots to. Should end with a slash (e.g. /path/to/dir/ on linux)"
+    )]
+    pub screenshot_dir: String,
 }
 
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
-// pub struct Player {
-//     capturer: Capturer,
+pub struct Player {
+    capturer: RefCell<Capturer>,
 
-//     inputbot: InputBot,
-// }
+    inputbot: RefCell<InputBot>,
 
-// impl Player {
-//     fn open_chatbox(&mut self) {}
-//     fn close_chatbox(&mut self) {}
+    config: Config,
+}
 
-//     fn open_inventory(&mut self) {}
-//     fn close_inventory(&mut self) {}
-//     fn items_in_inventory(&mut self) -> i32 {
-//         0
-//     }
-// }
+impl Player {
+    fn new(config: Config) -> Player {
+        Player {
+            capturer: screen::Capturer::new(),
+            inputbot: userinput::InputBot::new(config.mouse_fpath.as_str()),
+            config,
+        }
+    }
+
+    /// Closes the chatbox and opens the inventoy. This is the state we want to
+    /// perform our loops in.
+    pub fn reset(&mut self) {
+        while !self.inputbot.move_near(&locations::TOP_BAR_MIDDLE) {}
+        self.inputbot.left_click();
+        bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
+        bot_utils::open_inventory(&mut self.inputbot, &self.frame());
+    }
+
+    pub fn frame(&mut self) -> impl Frame + '_ {
+        self.capturer.frame().unwrap()
+    }
+
+    pub fn fill_inventory(&mut self, action_description: &ActionDescription) {
+        let search_locations = get_search_locations();
+        self.reset();
+
+        let time = std::time::Instant::now();
+        let mut num_consecutive_misses = 0;
+        loop {
+            if time.elapsed() > Duration::from_secs(60) {
+                self.reset();
+            }
+
+            let mut frame = self.frame();
+
+            let mut first_open_inventory_slot = inventory::first_open_slot(&frame);
+            if first_open_inventory_slot.is_none() {
+                println!("Inventory is full. Goodbye.");
+                return;
+            }
+
+            for (top_left, dimensions) in search_locations.iter() {
+                for fuzzy_pixel in action_description.colors.iter() {
+                    num_consecutive_misses += 1;
+                    let position =
+                        frame.find_pixel_random(&fuzzy_pixel, top_left, &(top_left + dimensions));
+                    if position.is_none() {
+                        println!("{} - no matching pixel", time.elapsed().as_secs());
+                        continue;
+                    }
+
+                    let position = position.unwrap();
+                    if !self.inputbot.move_to(&position) && !self.inputbot.move_to(&position) {
+                        // Try moving the mouse twice since sometimes it is imperfect.
+                        println!("{} - couldn't make it :(", time.elapsed().as_secs());
+                        continue;
+                    }
+
+                    frame = self.frame();
+                    if !screen::check_action_letters(&frame, &action_description.action_text[..]) {
+                        println!("{} - action didn't match", time.elapsed().as_secs());
+                        let mut ofpath = self.config.screenshot_dir.clone();
+                        ofpath.push_str(
+                            format!(
+                                "screenshot_chop_tree_or_oak_{}.png",
+                                time.elapsed().as_secs()
+                            )
+                            .as_str(),
+                        );
+                        screen::mark_letters_and_save(
+                            &frame,
+                            ofpath.as_str(),
+                            &action_description.action_text[..],
+                        );
+                        continue;
+                    }
+
+                    println!("{} - found it!", time.elapsed().as_secs());
+                    num_consecutive_misses = 0;
+                    self.inputbot.left_click();
+
+                    let mut waiting_time = std::time::Instant::now();
+                    while waiting_time.elapsed() < action_description.timeout {
+                        sleep(Duration::from_secs(1));
+                        frame = self.frame();
+                        let open_slot = inventory::first_open_slot(&frame);
+                        if open_slot == first_open_inventory_slot {
+                            // Nothing new in the inventory, just keep waiting.
+                            continue;
+                        }
+
+                        first_open_inventory_slot = open_slot;
+
+                        if !action_description.multi_item_action {
+                            // We just received the item we were after, and we can't
+                            // continue to receive, so stop waiting for the action to
+                            // complete. I would have tried to check here if the
+                            // resource is exhausted, but other characters can walk
+                            // between the mouse and the object causing us to see them
+                            // at that location and mistaking that for resource
+                            // exhaustion.
+                            break;
+                        }
+
+                        // We have received an item so reset the timer to allow us to get more.
+                        println!("reset timer for multi_item_action");
+                        waiting_time = std::time::Instant::now();
+                    }
+
+                    // Making it here means we succesfully found a resource and
+                    // clicked it. We will break out and start the loop over to keep
+                    // preferring searching in the closest location. If we didn't
+                    // break here we would expand to further boxes for searching.
+                    break;
+                }
+            }
+            if num_consecutive_misses >= search_locations.len() {
+                num_consecutive_misses = 0;
+                println!("press left");
+                self.inputbot.pan_left(40.0);
+            }
+        }
+    }
+}

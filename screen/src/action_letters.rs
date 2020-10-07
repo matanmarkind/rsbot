@@ -58,15 +58,18 @@ pub mod letters {
 
     pub fn upper_o() -> ActionLetter {
         ActionLetter {
-            width: 8,
+            width: 9,
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
-                DeltaPosition { dx: 0, dy: 6 },
-                DeltaPosition { dx: 3, dy: 2 },
-                DeltaPosition { dx: 3, dy: 11 },
-                DeltaPosition { dx: 3, dy: 11 },
-                DeltaPosition { dx: 6, dy: 6 },
+                DeltaPosition { dx: 1, dy: 6 },
+                DeltaPosition { dx: 2, dy: 10 },
+                DeltaPosition { dx: 2, dy: 3 },
+                DeltaPosition { dx: 4, dy: 2 },
+                DeltaPosition { dx: 4, dy: 11 },
+                DeltaPosition { dx: 6, dy: 10 },
+                DeltaPosition { dx: 6, dy: 3 },
+                DeltaPosition { dx: 7, dy: 6 },
             ],
         }
     }

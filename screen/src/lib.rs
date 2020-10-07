@@ -17,7 +17,7 @@ pub fn mark_letters_and_save(
     frame: &impl crate::Frame,
     fpath: &str,
     letter_and_matchers: &[(ActionLetter, FuzzyPixel)],
-) {
+) -> std::thread::JoinHandle<()> {
     let mut img = frame.to_owned();
 
     let mut x_offset = locations::TOP_LEFT_ACTION_TEXT.x;
@@ -41,5 +41,5 @@ pub fn mark_letters_and_save(
         )
         .flip_to_rgb();
         img.save(fpath.as_str());
-    });
+    })
 }

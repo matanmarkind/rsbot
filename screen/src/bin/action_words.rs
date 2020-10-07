@@ -29,10 +29,9 @@ fn main() {
         (letters::lower_w(), ACTION_WHITE),
         (letters::lower_n(), ACTION_WHITE),
         (letters::space(), ACTION_WHITE),
-        (letters::upper_t(), ACTION_BLUE),
-        (letters::lower_r(), ACTION_BLUE),
-        (letters::lower_e(), ACTION_BLUE),
-        (letters::lower_e(), ACTION_BLUE),
+        (letters::upper_o(), ACTION_BLUE),
+        (letters::lower_a(), ACTION_BLUE),
+        (letters::lower_k(), ACTION_BLUE),
         (letters::space(), ACTION_WHITE),
         (letters::forward_slash(), ACTION_WHITE),
     ];
@@ -45,5 +44,7 @@ fn main() {
     println!("Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_action_words.png");
-    screen::mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers);
+    screen::mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
+        .join()
+        .expect("Error waiting for image to save");
 }

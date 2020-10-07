@@ -44,6 +44,11 @@ pub mod locations {
         y: WINDOW_TOP_LEFT.y + 224,
     };
     pub const NEARBY_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 650, dy: 350 };
+    pub const VERY_NEARBY_SCREEN_TOP_LEFT: Position = Position {
+        x: WINDOW_TOP_LEFT.x + 250,
+        y: WINDOW_TOP_LEFT.y + 224,
+    };
+    pub const VERY_NEARBY_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 350, dy: 250 };
 
     /// The area of the screen that should be open for searching for things in
     /// the world. This is when the chatbox is closed, and the inventory is
