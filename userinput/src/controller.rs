@@ -245,7 +245,7 @@ impl InputBot {
         self.keyboard.press(key).unwrap();
         self.keyboard.synchronize().unwrap();
 
-        sleep(FULL_ROTATION_TIME.div_f32(degrees / 360.0));
+        sleep(FULL_ROTATION_TIME.mul_f32(degrees / 360.0));
 
         self.keyboard.release(key).unwrap();
         self.keyboard.synchronize().unwrap();

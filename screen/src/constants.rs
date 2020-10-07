@@ -37,6 +37,20 @@ pub mod locations {
         y: WINDOW_TOP_LEFT.y + TOP_BAR_HEIGHT / 2,
     };
 
+    /// Box in the middle (ish) of the screen. Used to search for things closer to the
+    /// player first.
+    pub const NEARBY_SCREEN_TOP_LEFT: Position = Position {
+        x: WINDOW_TOP_LEFT.x + 100,
+        y: WINDOW_TOP_LEFT.y + 224,
+    };
+    pub const NEARBY_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 650, dy: 350 };
+
+    /// The area of the screen that should be open for searching for things in
+    /// the world. This is when the chatbox is closed, and the inventory is
+    /// open. With the minimap the right colum of the screen is basically out of
+    /// commision.
+    pub const OPEN_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 750, dy: 570 };
+
     /// Middle of the minimap is where player dot is located. Pressing here should
     /// not cause us to move.
     pub const MINIMAP_MIDDLE: Position = Position {
@@ -85,5 +99,53 @@ pub mod locations {
     pub const CHAT_BOX_BOTTOM_RIGHT: Position = Position {
         x: WINDOW_TOP_LEFT.x + 520,
         y: WINDOW_TOP_LEFT.y + 604,
+    };
+}
+
+pub mod colors {
+    use crate::{FuzzyPixel, Pixel};
+
+    pub const PURE_RED: Pixel = Pixel {
+        red: 255,
+        green: 0,
+        blue: 0,
+    };
+
+    pub const INVENTORY_BACKGROUND: FuzzyPixel = FuzzyPixel {
+        blue_min: 37,
+        blue_max: 46,
+        green_min: 49,
+        green_max: 57,
+        red_min: 58,
+        red_max: 65,
+    };
+
+    /// This is the red color of the inventory icon when the inventory is open.
+    /// Corresponds to the location of INVENTORY_ICON_BACKGROUND.
+    pub const INVENTORY_ICON_BACKGROUND_OPEN: FuzzyPixel = FuzzyPixel {
+        blue_min: 25,
+        blue_max: 35,
+        green_min: 35,
+        green_max: 45,
+        red_min: 110,
+        red_max: 130,
+    };
+
+    pub const TREE_BARK: FuzzyPixel = FuzzyPixel {
+        blue_min: 40,
+        blue_max: 44,
+        green_min: 81,
+        green_max: 85,
+        red_min: 114,
+        red_max: 118,
+    };
+
+    pub const OAK_BARK: FuzzyPixel = FuzzyPixel {
+        blue_min: 40,
+        blue_max: 44,
+        green_min: 81,
+        green_max: 85,
+        red_min: 114,
+        red_max: 118,
     };
 }

@@ -7,7 +7,7 @@
 // Top left of inventory
 // Dimension of each slot.A
 
-use screen::{locations, Capturer, Frame, FuzzyPixel, Pixel};
+use screen::{colors, inventory, locations, Capturer, Frame};
 use structopt::StructOpt;
 use util::*;
 
@@ -20,29 +20,25 @@ pub struct Config {
     pub out_dir: String,
 }
 
-pub const INVENTORY_BACKGROUND: FuzzyPixel = FuzzyPixel {
-    blue_min: 61,
-    blue_max: 63,
-    green_min: 52,
-    green_max: 54,
-    red_min: 40,
-    red_max: 42,
-};
-
-pub const NUM_INVENTORY_ROWS: i32 = 7;
-pub const NUM_INVENTORY_COLS: i32 = 4;
-
 fn main() {
     let config = Config::from_args();
     dbg!(&config);
 
     // Capture the frame and convert it to RGB for saving.
     let mut capturer = Capturer::new();
+    println!("Capturing, analyzing, and manipulating frame.");
+    let mut frame = capturer.frame().unwrap().to_owned();
+    frame.flip();
+    for i in 0..inventory::NUM_INVENTORY_SLOTS {
+        println!(
+            "Is slot {} open? {}",
+            i,
+            inventory::is_slot_open(&mut frame, i)
+        );
+    }
 
-    println!("Capturing and manipulating frame.");
-    let mut frame = capturer.frame().unwrap().to_owned().flip();
-    for r in 0..NUM_INVENTORY_ROWS {
-        for c in 0..NUM_INVENTORY_COLS {
+    for r in 0..inventory::NUM_INVENTORY_ROWS {
+        for c in 0..inventory::NUM_INVENTORY_COLS {
             let DeltaPosition { dx, dy } = locations::INVENTORY_SLOT_DIMENSIONS;
             let top_left = Position {
                 x: locations::INVENTORY_FIRST_SLOT.x + dx * c,
@@ -51,11 +47,7 @@ fn main() {
             frame.draw_box(
                 &top_left,
                 &locations::INVENTORY_SLOT_DIMENSIONS,
-                &Pixel {
-                    blue: 0,
-                    green: 0,
-                    red: 255,
-                },
+                &colors::PURE_RED,
             );
         }
     }

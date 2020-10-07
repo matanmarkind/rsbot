@@ -72,11 +72,16 @@ pub trait Frame {
         top_left: &Position,
         past_bottom_right: &Position,
     ) -> Option<Position> {
+        let batch_size = 1000;
         let time = std::time::Instant::now();
         while time.elapsed() < TIME_TO_FIND_PIXEL {
-            let pos = random_position(top_left, past_bottom_right);
-            if fuzzy_pixel.contains(&self.get_pixel(&pos)) {
-                return Some(pos);
+            // To avoid wasting time by always checking the time, only check
+            // every 1k searches.
+            for _ in 0..batch_size {
+                let pos = random_position(top_left, past_bottom_right);
+                if fuzzy_pixel.contains(&self.get_pixel(&pos)) {
+                    return Some(pos);
+                }
             }
         }
         None
@@ -185,7 +190,7 @@ impl OwnedFrame {
     /// 'past_bottom_right' - bottom right of the image (excluded). (x,y)
     /// represent one past the bottom/rightmost row/column from the original
     /// image the will be copied over.
-    pub fn crop(mut self, top_left: Position, past_bottom_right: Position) -> OwnedFrame {
+    pub fn crop(&mut self, top_left: Position, past_bottom_right: Position) -> &mut OwnedFrame {
         assert!(top_left.x < past_bottom_right.x);
         assert!(top_left.y < past_bottom_right.y);
         assert!(past_bottom_right.x as usize <= self.width());
@@ -208,17 +213,14 @@ impl OwnedFrame {
         assert!(i <= self.buffer().len());
         self.buffer.resize(i, 0);
 
-        OwnedFrame {
-            buffer: self.buffer,
-            width: delta.dx as usize,
-            height: delta.dy as usize,
-            is_bgr: self.is_bgr,
-        }
+        self.width = delta.dx as usize;
+        self.height = delta.dy as usize;
+        self
     }
 
     /// Flip the image from either BGRA to RGBA or back. Always sets alpha to
     /// 255.
-    pub fn flip(mut self) -> OwnedFrame {
+    pub fn flip(&mut self) -> &mut OwnedFrame {
         // Copy in each row segment.
         for pixel_offset in (0..self.buffer.len()).step_by(RAW_PIXEL_SIZE) {
             // Swap the blue and red channels.
@@ -228,15 +230,21 @@ impl OwnedFrame {
             self.buffer[pixel_offset + 3] = 255;
         }
 
-        OwnedFrame {
-            buffer: self.buffer,
-            width: self.width,
-            height: self.height,
-            is_bgr: !self.is_bgr,
+        self.is_bgr = !self.is_bgr;
+        self
+    }
+    pub fn flip_to_rgb(&mut self) {
+        if self.is_bgr {
+            self.flip();
+        }
+    }
+    pub fn flip_to_bgr(&mut self) {
+        if !self.is_bgr {
+            self.flip();
         }
     }
 
-    fn recolor_pixel(&mut self, pos: &Position, color: &Pixel) {
+    pub fn recolor_pixel(&mut self, pos: &Position, color: &Pixel) {
         let pixel_offset = self.pixel_index(pos);
 
         self.buffer[pixel_offset] = if self.is_bgr { color.blue } else { color.red };

@@ -121,3 +121,12 @@ mod chatbox {
 }
 
 pub use chatbox::close_chatbox;
+
+use screen::{inventory, Frame};
+use userinput::InputBot;
+pub fn open_inventory(inputbot: &mut InputBot, frame: &impl Frame) {
+    if !inventory::is_inventory_open(frame) {
+        inputbot.click_esc();
+        std::thread::sleep(util::REDRAW_TIME);
+    }
+}

@@ -26,7 +26,7 @@ pub const ACTION_BLUE: FuzzyPixel = FuzzyPixel {
 /// do that action.
 ///
 /// These are all expected to be constants, so the lifetimes will be static.
-pub struct ActionLetter<'a> {
+pub struct ActionLetter {
     /// How wide is the letter, use to figure out the offset of the next letter.
     pub width: i32,
 
@@ -34,154 +34,229 @@ pub struct ActionLetter<'a> {
     /// given as the offset from the top_left of the box. The top is typically
     /// y=52. Letters are drawn in white, and the background can be of any
     /// color.
-    pub checkpoints: &'a [DeltaPosition],
+    pub checkpoints: Vec<DeltaPosition>,
 }
 
-pub const UPPER_C: ActionLetter = ActionLetter {
-    width: 8,
+pub mod letters {
+    use super::ActionLetter;
+    use util::*;
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 0, dy: 6 },
-        DeltaPosition { dx: 3, dy: 2 },
-        DeltaPosition { dx: 3, dy: 11 },
-        DeltaPosition { dx: 4, dy: 3 },
-        DeltaPosition { dx: 4, dy: 10 },
-    ],
-};
+    pub fn upper_c() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const UPPER_T: ActionLetter = ActionLetter {
-    width: 7,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 3, dy: 2 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 4, dy: 3 },
+                DeltaPosition { dx: 4, dy: 10 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 0, dy: 2 },
-        DeltaPosition { dx: 2, dy: 2 },
-        DeltaPosition { dx: 2, dy: 5 },
-        DeltaPosition { dx: 2, dy: 11 },
-        DeltaPosition { dx: 4, dy: 2 },
-    ],
-};
+    pub fn upper_o() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_D: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 3, dy: 2 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 6, dy: 6 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 9 },
-        DeltaPosition { dx: 3, dy: 7 },
-        DeltaPosition { dx: 3, dy: 11 },
-        DeltaPosition { dx: 5, dy: 2 },
-        DeltaPosition { dx: 5, dy: 10 },
-    ],
-};
+    pub fn upper_t() -> ActionLetter {
+        ActionLetter {
+            width: 7,
 
-pub const LOWER_E: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 2 },
+                DeltaPosition { dx: 2, dy: 2 },
+                DeltaPosition { dx: 2, dy: 5 },
+                DeltaPosition { dx: 2, dy: 11 },
+                DeltaPosition { dx: 4, dy: 2 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 1, dy: 11 },
-        DeltaPosition { dx: 3, dy: 6 },
-        DeltaPosition { dx: 3, dy: 9 },
-        DeltaPosition { dx: 3, dy: 11 },
-        DeltaPosition { dx: 4, dy: 7 },
-    ],
-};
+    pub fn lower_a() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_H: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 10 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 3, dy: 8 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 5, dy: 7 },
+                DeltaPosition { dx: 5, dy: 10 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 3 },
-        DeltaPosition { dx: 1, dy: 10 },
-        DeltaPosition { dx: 3, dy: 6 },
-        DeltaPosition { dx: 5, dy: 10 },
-    ],
-};
+    pub fn lower_d() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_N: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 9 },
+                DeltaPosition { dx: 3, dy: 7 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 5, dy: 2 },
+                DeltaPosition { dx: 5, dy: 10 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 1, dy: 9 },
-        DeltaPosition { dx: 3, dy: 6 },
-        DeltaPosition { dx: 5, dy: 6 },
-        DeltaPosition { dx: 5, dy: 9 },
-    ],
-};
+    pub fn lower_e() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_O: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 6 },
+                DeltaPosition { dx: 1, dy: 11 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 3, dy: 9 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 4, dy: 7 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 8 },
-        DeltaPosition { dx: 3, dy: 6 },
-        DeltaPosition { dx: 3, dy: 11 },
-        DeltaPosition { dx: 5, dy: 8 },
-    ],
-};
+    pub fn lower_h() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_P: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 3 },
+                DeltaPosition { dx: 1, dy: 10 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 5, dy: 10 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 8 },
-        DeltaPosition { dx: 1, dy: 13 },
-        DeltaPosition { dx: 3, dy: 6 },
-        DeltaPosition { dx: 3, dy: 11 },
-        DeltaPosition { dx: 5, dy: 8 },
-    ],
-};
+    pub fn lower_k() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_R: ActionLetter = ActionLetter {
-    width: 7,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 3 },
+                DeltaPosition { dx: 1, dy: 7 },
+                DeltaPosition { dx: 1, dy: 11 },
+                DeltaPosition { dx: 4, dy: 6 },
+                DeltaPosition { dx: 5, dy: 11 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 1, dy: 11 },
-        DeltaPosition { dx: 3, dy: 6 },
-    ],
-};
+    pub fn lower_n() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const LOWER_W: ActionLetter = ActionLetter {
-    width: 9,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 6 },
+                DeltaPosition { dx: 1, dy: 9 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 5, dy: 6 },
+                DeltaPosition { dx: 5, dy: 9 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 6 },
-        DeltaPosition { dx: 1, dy: 9 },
-        DeltaPosition { dx: 4, dy: 8 },
-        DeltaPosition { dx: 6, dy: 6 },
-        DeltaPosition { dx: 6, dy: 9 },
-    ],
-};
+    pub fn lower_o() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const SPACE: ActionLetter = ActionLetter {
-    width: 5,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 8 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 5, dy: 8 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[],
-};
+    pub fn lower_p() -> ActionLetter {
+        ActionLetter {
+            width: 8,
 
-pub const FORWARD_SLASH: ActionLetter = ActionLetter {
-    width: 8,
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 8 },
+                DeltaPosition { dx: 1, dy: 13 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 5, dy: 8 },
+            ],
+        }
+    }
 
-    // Delta from the top left corner of the letters box.
-    checkpoints: &[
-        DeltaPosition { dx: 1, dy: 10 },
-        DeltaPosition { dx: 2, dy: 7 },
-        DeltaPosition { dx: 3, dy: 4 },
-        DeltaPosition { dx: 4, dy: 1 },
-    ],
-};
+    pub fn lower_r() -> ActionLetter {
+        ActionLetter {
+            width: 7,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 6 },
+                DeltaPosition { dx: 1, dy: 11 },
+                DeltaPosition { dx: 3, dy: 6 },
+            ],
+        }
+    }
+
+    pub fn lower_w() -> ActionLetter {
+        ActionLetter {
+            width: 9,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 6 },
+                DeltaPosition { dx: 1, dy: 9 },
+                DeltaPosition { dx: 4, dy: 8 },
+                DeltaPosition { dx: 6, dy: 6 },
+                DeltaPosition { dx: 6, dy: 9 },
+            ],
+        }
+    }
+
+    pub fn space() -> ActionLetter {
+        ActionLetter {
+            width: 5,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: Vec::<DeltaPosition>::new(),
+        }
+    }
+
+    pub fn forward_slash() -> ActionLetter {
+        ActionLetter {
+            width: 8,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 1, dy: 10 },
+                DeltaPosition { dx: 2, dy: 7 },
+                DeltaPosition { dx: 3, dy: 4 },
+                DeltaPosition { dx: 4, dy: 1 },
+            ],
+        }
+    }
+}
 
 // Spaces between words seem to be of different sizes. Therefore we try matching
 // with different spaces.
@@ -194,7 +269,7 @@ fn check_letters_for_space(
     let mut num_letter_mistmatches = 0;
 
     for (letter, expected_pixel) in letter_and_pixels {
-        for DeltaPosition { dx, dy } in letter.checkpoints {
+        for DeltaPosition { dx, dy } in letter.checkpoints.iter() {
             let pos = Position {
                 x: x_offset + dx,
                 y: TOP_LEFT_ACTION_TEXT.y + dy,
@@ -205,12 +280,11 @@ fn check_letters_for_space(
                 break;
             }
         }
-        dbg!(&num_letter_mistmatches);
+        // dbg!(&num_letter_mistmatches);
         x_offset += letter.width;
 
         if letter.checkpoints.is_empty() {
             // If 'letter' was a space, then offset it.
-            println!("space");
             x_offset += space_offset;
         }
     }
@@ -232,7 +306,7 @@ pub fn check_action_letters(
     letter_and_pixels: &[(ActionLetter, FuzzyPixel)],
 ) -> bool {
     for space_offset in &[0, -1, 1] {
-        println!("space_offset={}", space_offset);
+        // println!("check_action_letters -- space_offset={}", space_offset);
         if check_letters_for_space(frame, letter_and_pixels, *space_offset) {
             return true;
         }

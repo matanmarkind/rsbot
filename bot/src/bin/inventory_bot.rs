@@ -1,9 +1,8 @@
-use screen::{
-    locations::{INVENTORY_ICON_BACKGROUND, TOP_BAR_MIDDLE},
-    Frame, FuzzyPixel,
-};
+use screen::{inventory, locations::TOP_BAR_MIDDLE, FuzzyPixel};
 use std::error::Error;
+use std::thread::sleep;
 use structopt::StructOpt;
+use util::*;
 
 #[derive(Debug, StructOpt)]
 pub struct Config {
@@ -33,18 +32,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
     inputbot.left_click();
 
-    let frame = capturer.frame().unwrap();
-    println!(
-        "open? {}",
-        INVENTORY_OPEN_COLOR.matches(&frame.get_pixel(&INVENTORY_ICON_BACKGROUND))
-    );
-    inputbot.click_esc();
+    let mut frame = capturer.frame().unwrap();
+    if !inventory::is_inventory_open(&frame) {
+        inputbot.click_esc();
+        sleep(REDRAW_TIME);
+    }
 
-    let frame = capturer.frame().unwrap();
-    println!(
-        "open? {}",
-        INVENTORY_OPEN_COLOR.matches(&frame.get_pixel(&INVENTORY_ICON_BACKGROUND))
-    );
+    frame = capturer.frame().unwrap();
+    dbg!(inventory::first_open_slot(&frame));
 
     Ok(())
 }
