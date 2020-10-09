@@ -23,7 +23,7 @@ pub struct Config {
         default_value = "1920,625",
         about = "bottom right of the image (excluded). (x,y) represent one past the bottom/rightmost row/column of the frame to search in."
     )]
-    pub past_bottom_right: Position,
+    pub dimensions: DeltaPosition,
 }
 
 fn get_pixel_position(config: &Config, capturer: &mut screen::Capturer) -> Option<Position> {
@@ -35,7 +35,7 @@ fn get_pixel_position(config: &Config, capturer: &mut screen::Capturer) -> Optio
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
     let frame = capturer.frame().unwrap();
 
-    frame.find_pixel_random(&desired_pixel, &config.top_left, &config.past_bottom_right)
+    frame.find_pixel_random(&desired_pixel, &config.top_left, &config.dimensions)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

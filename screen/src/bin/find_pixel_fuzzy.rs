@@ -18,7 +18,7 @@ pub struct Config {
         default_value = "1920,1080",
         about = "bottom right of the image (excluded). (x,y) represent one past the bottom/rightmost row/column of the frame to search in."
     )]
-    pub past_bottom_right: Position,
+    pub dimensions: DeltaPosition,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
         let frame = capturer.frame().unwrap();
 
-        match frame.find_pixel_random(&desired_pixel, &config.top_left, &config.past_bottom_right) {
+        match frame.find_pixel_random(&desired_pixel, &config.top_left, &config.dimensions) {
             Some(pos) => println!("found it! {:?}", pos),
             None => println!("didn't find it :("),
         }

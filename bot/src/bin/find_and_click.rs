@@ -23,12 +23,8 @@ fn get_pixel_position(capturer: &mut screen::Capturer) -> Option<Position> {
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
     let frame = capturer.frame().unwrap();
 
-    for BoundingBox {
-        0: top_left,
-        1: past_bottom_right,
-    } in CLEAR_SCREEN_BOUNDS
-    {
-        match frame.find_pixel_random(&desired_pixel, &top_left, &past_bottom_right) {
+    for (top_left, dimensions) in bot::controller::get_search_locations().iter() {
+        match frame.find_pixel_random(&desired_pixel, &top_left, &dimensions) {
             Some(pos) => return Some(pos),
             None => (),
         }

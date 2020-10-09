@@ -493,11 +493,8 @@ pub fn mark_letters_and_save(
     // Spawn image saving to another thread since it takes a very long time.
     let fpath = fpath.to_string();
     std::thread::spawn(move || {
-        img.crop(
-            locations::WINDOW_TOP_LEFT,
-            &locations::WINDOW_TOP_LEFT + &locations::WINDOW_DIMENSIONS,
-        )
-        .flip_to_rgb();
+        img.crop(locations::WINDOW_TOP_LEFT, locations::WINDOW_DIMENSIONS)
+            .flip_to_rgb();
         img.save(fpath.as_str());
     })
 }

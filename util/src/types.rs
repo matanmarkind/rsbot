@@ -126,5 +126,18 @@ impl Add for &DeltaPosition {
     }
 }
 
+impl FromStr for DeltaPosition {
+    type Err = ParseIntError;
+
+    /// Input is expected to be "x,y" without anything around (e.g. no "(x,y)")
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let dims: Vec<&str> = s.trim().split(",").collect();
+        Ok(DeltaPosition {
+            dx: dims[0].parse::<i32>()?,
+            dy: dims[1].parse::<i32>()?,
+        })
+    }
+}
+
 /// Bounding box made of top_left (included), past_bottom_right (excluded).
 pub struct BoundingBox(pub Position, pub Position);

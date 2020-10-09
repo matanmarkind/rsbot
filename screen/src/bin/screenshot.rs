@@ -40,7 +40,10 @@ fn main() {
         }
     }
     let mut subframe = frame.to_owned();
-    subframe.crop(Position { x: 100, y: 100 }, Position { x: 500, y: 500 });
+    subframe.crop(
+        Position { x: 100, y: 100 },
+        DeltaPosition { dx: 500, dy: 500 },
+    );
     dbg!(&subframe.width, &subframe.height, &subframe.buffer().len());
 
     println!("Captured! Saving...");

@@ -22,7 +22,7 @@ pub struct ActionDescription {
     pub timeout: Duration,
 }
 
-fn get_search_locations() -> Vec<(Position, DeltaPosition)> {
+pub fn get_search_locations() -> Vec<(Position, DeltaPosition)> {
     vec![
         (
             locations::VERY_NEARBY_SCREEN_TOP_LEFT,
@@ -100,8 +100,7 @@ impl Player {
             let mut found_action = false;
             for (top_left, dimensions) in search_locations.iter() {
                 for fuzzy_pixel in action_description.colors.iter() {
-                    let position =
-                        frame.find_pixel_random(&fuzzy_pixel, top_left, &(top_left + dimensions));
+                    let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
                     if position.is_none() {
                         println!("{} - no matching pixel", time.elapsed().as_secs());
                         continue;

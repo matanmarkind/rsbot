@@ -71,7 +71,7 @@ pub trait Frame {
         &self,
         fuzzy_pixel: &FuzzyPixel,
         top_left: &Position,
-        past_bottom_right: &Position,
+        dimensions: &DeltaPosition,
     ) -> Option<Position> {
         let batch_size = 1000;
         let time = std::time::Instant::now();
@@ -79,7 +79,7 @@ pub trait Frame {
             // To avoid wasting time by always checking the time, only check
             // every 1k searches.
             for _ in 0..batch_size {
-                let pos = random_position(top_left, past_bottom_right);
+                let pos = random_position(top_left, dimensions);
                 if fuzzy_pixel.contains(&self.get_pixel(&pos)) {
                     return Some(pos);
                 }
@@ -189,16 +189,11 @@ impl OwnedFrame {
     /// the top/leftmost row/column from the original image that will be copied
     /// over.
     ///
-    /// 'past_bottom_right' - bottom right of the image (excluded). (x,y)
-    /// represent one past the bottom/rightmost row/column from the original
-    /// image the will be copied over.
-    pub fn crop(&mut self, top_left: Position, past_bottom_right: Position) -> &mut OwnedFrame {
-        assert!(top_left.x < past_bottom_right.x);
-        assert!(top_left.y < past_bottom_right.y);
+    /// 'dimensions' - size of resultant frame.
+    pub fn crop(&mut self, top_left: Position, dimensions: DeltaPosition) -> &mut OwnedFrame {
+        let past_bottom_right = &top_left + &dimensions;
         assert!(past_bottom_right.x as usize <= self.width());
         assert!(past_bottom_right.y as usize <= self.height());
-
-        let delta = &past_bottom_right - &top_left;
 
         let mut i = 0;
         for row in top_left.y..past_bottom_right.y {
@@ -215,35 +210,10 @@ impl OwnedFrame {
         assert!(i <= self.buffer().len());
         self.buffer.resize(i, 0);
 
-        self.width = delta.dx as usize;
-        self.height = delta.dy as usize;
+        self.width = dimensions.dx as usize;
+        self.height = dimensions.dy as usize;
         self
     }
-
-    // pub fn crop(&mut self, top_left: Position, dimensions: DeltaPosition) -> &mut OwnedFrame {
-    //     let past_bottom_right = &top_left + &dimensions;
-    //     assert!(past_bottom_right.x as usize <= self.width());
-    //     assert!(past_bottom_right.y as usize <= self.height());
-
-    //     let mut i = 0;
-    //     for row in top_left.y..past_bottom_right.y {
-    //         for col in top_left.x..past_bottom_right.x {
-    //             // The value copied will always be at a higher or equal index to the index it is overwriting. Since both are monotonically increasing once a value has been read out, we no longer need it to remain valid.
-    //             let pixel_offset = self.pixel_index(&Position { x: col, y: row });
-    //             self.buffer[i] = self.buffer[pixel_offset];
-    //             self.buffer[i + 1] = self.buffer[pixel_offset + 1];
-    //             self.buffer[i + 2] = self.buffer[pixel_offset + 2];
-    //             self.buffer[i + 3] = self.buffer[pixel_offset + 3];
-    //             i += RAW_PIXEL_SIZE;
-    //         }
-    //     }
-    //     assert!(i <= self.buffer().len());
-    //     self.buffer.resize(i, 0);
-
-    //     self.width = dimensions.dx as usize;
-    //     self.height = dimensions.dy as usize;
-    //     self
-    // }
 
     /// Flip the image from either BGRA to RGBA or back. Always sets alpha to
     /// 255.
@@ -289,8 +259,7 @@ impl OwnedFrame {
             self.recolor_pixel(&(top + &Position { x: i, y: 0 }), line_color);
         }
     }
-    // Drow a box with corners at 'top_left' (included) and 'past_bottom_right'
-    // (excluded).
+    // Drow a box from 'top_left' (included).
     pub fn draw_box(
         &mut self,
         top_left: &Position,
@@ -299,21 +268,19 @@ impl OwnedFrame {
     ) {
         self.draw_horizontal_line(top_left, dimensions.dx, line_color);
         self.draw_horizontal_line(
-            &(top_left
-                + &Position {
-                    x: 0,
-                    y: dimensions.dy,
-                }),
+            &Position {
+                x: top_left.x,
+                y: top_left.y + dimensions.dy,
+            },
             dimensions.dx,
             line_color,
         );
         self.draw_vertical_line(top_left, dimensions.dy, line_color);
         self.draw_vertical_line(
-            &(top_left
-                + &Position {
-                    x: dimensions.dx,
-                    y: 0,
-                }),
+            &Position {
+                x: top_left.x + dimensions.dx,
+                y: top_left.y,
+            },
             dimensions.dy,
             line_color,
         );

@@ -9,10 +9,10 @@ use rand::{thread_rng, Rng};
 ///
 /// Returns the position of the first pixel found which matches the criteria. If
 /// no pixel is found return None.
-pub fn random_position(top_left: &Position, past_bottom_right: &Position) -> Position {
+pub fn random_position(top_left: &Position, dimensions: &DeltaPosition) -> Position {
     let mut rng = thread_rng();
     Position {
-        x: rng.gen_range(top_left.x, past_bottom_right.x),
-        y: rng.gen_range(top_left.y, past_bottom_right.y),
+        x: rng.gen_range(top_left.x, top_left.x + dimensions.dx),
+        y: rng.gen_range(top_left.y, top_left.y + dimensions.dy),
     }
 }
