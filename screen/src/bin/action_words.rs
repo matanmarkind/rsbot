@@ -1,6 +1,6 @@
 /// Take a screenshot of the game and draw lines to separate the characters in
 /// the text that describes an action. This is a test to see if they are regular.
-use screen::{letters, ACTION_BLUE, ACTION_WHITE};
+use screen::{action_letters, colors};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -19,32 +19,44 @@ fn main() {
     let mut capturer = screen::Capturer::new();
 
     let letter_and_matchers = vec![
-        (letters::upper_c(), ACTION_WHITE),
-        (letters::lower_h(), ACTION_WHITE),
-        (letters::lower_o(), ACTION_WHITE),
-        (letters::lower_p(), ACTION_WHITE),
-        (letters::space(), ACTION_WHITE),
-        (letters::lower_d(), ACTION_WHITE),
-        (letters::lower_o(), ACTION_WHITE),
-        (letters::lower_w(), ACTION_WHITE),
-        (letters::lower_n(), ACTION_WHITE),
-        (letters::space(), ACTION_WHITE),
-        (letters::upper_o(), ACTION_BLUE),
-        (letters::lower_a(), ACTION_BLUE),
-        (letters::lower_k(), ACTION_BLUE),
-        (letters::space(), ACTION_WHITE),
-        (letters::forward_slash(), ACTION_WHITE),
+        (action_letters::start(), colors::ACTION_WHITE),
+        (action_letters::upper_s(), colors::ACTION_WHITE),
+        (action_letters::lower_m(), colors::ACTION_WHITE),
+        (action_letters::lower_a(), colors::ACTION_WHITE),
+        (action_letters::lower_l(), colors::ACTION_WHITE),
+        (action_letters::lower_l(), colors::ACTION_WHITE),
+        (action_letters::space(), colors::ACTION_WHITE),
+        (action_letters::upper_n(), colors::ACTION_WHITE),
+        (action_letters::lower_e(), colors::ACTION_WHITE),
+        (action_letters::lower_t(), colors::ACTION_WHITE),
+        (action_letters::space(), colors::ACTION_WHITE),
+        (action_letters::upper_f(), colors::ACTION_YELLOW),
+        (action_letters::lower_i(), colors::ACTION_YELLOW),
+        (action_letters::lower_s(), colors::ACTION_YELLOW),
+        (action_letters::lower_h(), colors::ACTION_YELLOW),
+        (action_letters::lower_i(), colors::ACTION_YELLOW),
+        (action_letters::lower_n(), colors::ACTION_YELLOW),
+        (action_letters::lower_g(), colors::ACTION_YELLOW),
+        (action_letters::space(), colors::ACTION_WHITE),
+        (action_letters::lower_s(), colors::ACTION_YELLOW),
+        (action_letters::lower_p(), colors::ACTION_YELLOW),
+        (action_letters::lower_o(), colors::ACTION_YELLOW),
+        (action_letters::lower_t(), colors::ACTION_YELLOW),
+        (action_letters::space(), colors::ACTION_WHITE),
+        (action_letters::forward_slash(), colors::ACTION_WHITE),
     ];
 
-    // Capture a screenshot, crop it to include just the game window, and flip it to RGB.
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();
-    dbg!(screen::check_action_letters(&frame, &letter_and_matchers));
+    dbg!(screen::action_letters::check_action_letters(
+        &frame,
+        &letter_and_matchers
+    ));
 
     println!("Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_action_words.png");
-    screen::mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
+    action_letters::mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
         .join()
         .expect("Error waiting for image to save");
 }

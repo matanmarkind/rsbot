@@ -3,28 +3,6 @@ mod chatbox {
     use userinput::InputBot;
     use util::*;
 
-    // Pixel { blue: 35, green: 75, red: 98 }, false
-    // Pixel { blue: 41, green: 51, red: 60 }, true
-    // Pixel { blue: 35, green: 75, red: 98 }, false
-    const ALL_CHAT_ON_HIGHLIGHTS: &[FuzzyPixel] = &[
-        FuzzyPixel {
-            blue_min: 39,
-            blue_max: 42,
-            green_min: 49,
-            green_max: 52,
-            red_min: 58,
-            red_max: 61,
-        },
-        FuzzyPixel {
-            blue_min: 34,
-            blue_max: 36,
-            green_min: 74,
-            green_max: 76,
-            red_min: 97,
-            red_max: 99,
-        },
-    ];
-
     const CHAT_BOX_TOP_LEFT: (Position, FuzzyPixel) = (
         locations::CHAT_BOX_TOP_LEFT,
         FuzzyPixel {
@@ -93,30 +71,29 @@ mod chatbox {
         // Go click on the All tab
         while !inputbot.move_near(&locations::ALL_CHAT_BUTTON) {}
         inputbot.left_click();
-
         std::thread::sleep(REDRAW_TIME);
         let frame = cap.frame().unwrap();
+
+        // If the chatbox is still open it's possible a different chat tab was
+        // selected and now the ALL tab is on.
         if !is_chatbox_open(&frame) {
             return;
         }
-
-        // If the ALL chat tab is now open we should turn it off.
-        let all_chat_pixel = frame.get_pixel(&locations::ALL_CHAT_BUTTON);
-        if !ALL_CHAT_ON_HIGHLIGHTS
-            .iter()
-            .any(|pixel| pixel.matches(&all_chat_pixel))
-        {
-            // Chatbox is open, but not due to a chat tab. Could be from a game
-            // update, like leveling up which is shrunk by left clicking on the
-            // game. Left click in the center of the MINI_MAP which will shrink the
-            // chat tab without doing anything else.
-            println!("Chat box open other.");
-            while !inputbot.move_near(&locations::MINIMAP_MIDDLE) {}
-        }
+        // Go click on the All tab
+        while !inputbot.move_near(&locations::ALL_CHAT_BUTTON) {}
         inputbot.left_click();
-
+        std::thread::sleep(REDRAW_TIME);
         let frame = cap.frame().unwrap();
-        println!("is_chatbox_open={}", is_chatbox_open(&frame));
+
+        // If the chatbox is still open this is likely due to an update such as
+        // leveling up. This closes by left clicking most things
+        if !is_chatbox_open(&frame) {
+            return;
+        }
+        // Click the center of the minimap since this will only move us a small
+        // amount. Safest/easiest way I could think of torandomly left click.
+        while !inputbot.move_near(&locations::MINIMAP_MIDDLE) {}
+        inputbot.left_click();
     }
 }
 

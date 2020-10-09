@@ -1,17 +1,16 @@
 use crate::bot_utils;
-use screen::{inventory, locations, ActionLetter, Capturer, Frame, FuzzyPixel};
-use std::cell::RefCell;
+use screen::{action_letters::Letter, inventory, locations, Capturer, Frame, FuzzyPixel};
 use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
 use util::*;
 
-struct ActionDescription {
+pub struct ActionDescription {
     /// The colors that if found likely correspond with the desired action.
     pub colors: Vec<FuzzyPixel>,
 
-    pub action_text: Vec<(ActionLetter, FuzzyPixel)>,
+    pub action_text: Vec<(Letter, FuzzyPixel)>,
 
     /// Can taking this action result in us receiving multiple items over time.
     /// If so, we will continue resetting the timer every time we receive an
@@ -55,15 +54,15 @@ pub struct Config {
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
 pub struct Player {
-    capturer: RefCell<Capturer>,
+    capturer: Capturer,
 
-    inputbot: RefCell<InputBot>,
+    inputbot: InputBot,
 
     config: Config,
 }
 
 impl Player {
-    fn new(config: Config) -> Player {
+    pub fn new(config: Config) -> Player {
         Player {
             capturer: screen::Capturer::new(),
             inputbot: userinput::InputBot::new(config.mouse_fpath.as_str()),
@@ -77,11 +76,7 @@ impl Player {
         while !self.inputbot.move_near(&locations::TOP_BAR_MIDDLE) {}
         self.inputbot.left_click();
         bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
-        bot_utils::open_inventory(&mut self.inputbot, &self.frame());
-    }
-
-    pub fn frame(&mut self) -> impl Frame + '_ {
-        self.capturer.frame().unwrap()
+        bot_utils::open_inventory(&mut self.inputbot, &self.capturer.frame().unwrap());
     }
 
     pub fn fill_inventory(&mut self, action_description: &ActionDescription) {
@@ -89,13 +84,12 @@ impl Player {
         self.reset();
 
         let time = std::time::Instant::now();
-        let mut num_consecutive_misses = 0;
         loop {
             if time.elapsed() > Duration::from_secs(60) {
                 self.reset();
             }
 
-            let mut frame = self.frame();
+            let mut frame = self.capturer.frame().unwrap();
 
             let mut first_open_inventory_slot = inventory::first_open_slot(&frame);
             if first_open_inventory_slot.is_none() {
@@ -103,9 +97,9 @@ impl Player {
                 return;
             }
 
+            let mut found_action = false;
             for (top_left, dimensions) in search_locations.iter() {
                 for fuzzy_pixel in action_description.colors.iter() {
-                    num_consecutive_misses += 1;
                     let position =
                         frame.find_pixel_random(&fuzzy_pixel, top_left, &(top_left + dimensions));
                     if position.is_none() {
@@ -120,8 +114,11 @@ impl Player {
                         continue;
                     }
 
-                    frame = self.frame();
-                    if !screen::check_action_letters(&frame, &action_description.action_text[..]) {
+                    frame = self.capturer.frame().unwrap();
+                    if !screen::action_letters::check_action_letters(
+                        &frame,
+                        &action_description.action_text[..],
+                    ) {
                         println!("{} - action didn't match", time.elapsed().as_secs());
                         let mut ofpath = self.config.screenshot_dir.clone();
                         ofpath.push_str(
@@ -131,7 +128,7 @@ impl Player {
                             )
                             .as_str(),
                         );
-                        screen::mark_letters_and_save(
+                        screen::action_letters::mark_letters_and_save(
                             &frame,
                             ofpath.as_str(),
                             &action_description.action_text[..],
@@ -140,13 +137,13 @@ impl Player {
                     }
 
                     println!("{} - found it!", time.elapsed().as_secs());
-                    num_consecutive_misses = 0;
+                    found_action = true;
                     self.inputbot.left_click();
 
                     let mut waiting_time = std::time::Instant::now();
                     while waiting_time.elapsed() < action_description.timeout {
                         sleep(Duration::from_secs(1));
-                        frame = self.frame();
+                        frame = self.capturer.frame().unwrap();
                         let open_slot = inventory::first_open_slot(&frame);
                         if open_slot == first_open_inventory_slot {
                             // Nothing new in the inventory, just keep waiting.
@@ -178,11 +175,12 @@ impl Player {
                     break;
                 }
             }
-            if num_consecutive_misses >= search_locations.len() {
-                num_consecutive_misses = 0;
-                println!("press left");
-                self.inputbot.pan_left(40.0);
+            if !found_action {
+                self.inputbot.pan_left(37.0);
             }
+            // Sleep to avoid a busy loop that monopolizes the keyboard and
+            // mouse.
+            sleep(Duration::from_secs(1));
         }
     }
 }

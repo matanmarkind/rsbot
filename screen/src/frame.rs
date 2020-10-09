@@ -51,6 +51,7 @@ pub trait Frame {
 
     // Check that one of the pixels around 'pos' (+-1) match the expectation.
     fn check_loose_pixel(&self, pos: &Position, expected_pixel: &FuzzyPixel) -> bool {
+        // dbg!(pos, expected_pixel);
         for x_shift in [-1, 0, 1].iter() {
             for y_shift in [-1, 0, 1].iter() {
                 let pos = Position {
@@ -218,6 +219,31 @@ impl OwnedFrame {
         self.height = delta.dy as usize;
         self
     }
+
+    // pub fn crop(&mut self, top_left: Position, dimensions: DeltaPosition) -> &mut OwnedFrame {
+    //     let past_bottom_right = &top_left + &dimensions;
+    //     assert!(past_bottom_right.x as usize <= self.width());
+    //     assert!(past_bottom_right.y as usize <= self.height());
+
+    //     let mut i = 0;
+    //     for row in top_left.y..past_bottom_right.y {
+    //         for col in top_left.x..past_bottom_right.x {
+    //             // The value copied will always be at a higher or equal index to the index it is overwriting. Since both are monotonically increasing once a value has been read out, we no longer need it to remain valid.
+    //             let pixel_offset = self.pixel_index(&Position { x: col, y: row });
+    //             self.buffer[i] = self.buffer[pixel_offset];
+    //             self.buffer[i + 1] = self.buffer[pixel_offset + 1];
+    //             self.buffer[i + 2] = self.buffer[pixel_offset + 2];
+    //             self.buffer[i + 3] = self.buffer[pixel_offset + 3];
+    //             i += RAW_PIXEL_SIZE;
+    //         }
+    //     }
+    //     assert!(i <= self.buffer().len());
+    //     self.buffer.resize(i, 0);
+
+    //     self.width = dimensions.dx as usize;
+    //     self.height = dimensions.dy as usize;
+    //     self
+    // }
 
     /// Flip the image from either BGRA to RGBA or back. Always sets alpha to
     /// 255.
