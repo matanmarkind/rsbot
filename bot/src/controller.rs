@@ -173,6 +173,9 @@ impl Player {
                     // break here we would expand to further boxes for searching.
                     break;
                 }
+                if found_action {
+                    break;
+                }
             }
             if !found_action {
                 self.inputbot.pan_left(37.0);

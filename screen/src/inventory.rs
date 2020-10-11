@@ -1,4 +1,5 @@
-use crate::constants::{colors, locations};
+use crate::constants::colors;
+use crate::locations;
 use crate::Frame;
 use util::*;
 

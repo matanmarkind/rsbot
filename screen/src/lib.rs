@@ -3,6 +3,7 @@ pub mod capture;
 pub mod constants;
 pub mod frame;
 pub mod inventory;
+pub mod locations;
 pub mod types;
 
 /// Publish internals so users can use screen::Frame instead of

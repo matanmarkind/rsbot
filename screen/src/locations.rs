@@ -1,0 +1,298 @@
+use util::*;
+
+/// Absolute values describing the screen's. Most values should be given in
+/// reference to this point. Changing this will move every other "const fn"
+/// listed.
+pub const WINDOW_TOP_LEFT: Position = Position { x: 960, y: 26 };
+pub const WINDOW_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 960, dy: 637 };
+
+// Between the window for the program and the game screen there is a border. At
+// the top this has options such minimize, and on the sides and bottom it is
+// simply padding.
+pub const SIDE_BORDER_WIDTH: i32 = 4;
+pub const BOTTOM_BORDER_HEIGHT: i32 = 5;
+pub const TOP_BAR_HEIGHT: i32 = 27;
+
+/// All other locations are defined in terms of where they are in reference to
+/// WINDOW_TOP_LEFT.
+pub const SCREEN_TOP_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + SIDE_BORDER_WIDTH,
+    y: WINDOW_TOP_LEFT.y + TOP_BAR_HEIGHT,
+};
+
+/// When the mouse hovers over an object, the action that would be taken by left
+/// clicking is displayed in the top left corner.
+pub const TOP_LEFT_ACTION_TEXT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 9,
+    y: WINDOW_TOP_LEFT.y + 31,
+};
+
+/// Location used to click to make sure that the rs window is the active window.
+pub const TOP_BAR_MIDDLE: Position = Position {
+    x: WINDOW_TOP_LEFT.x + WINDOW_DIMENSIONS.dx / 2,
+    y: WINDOW_TOP_LEFT.y + TOP_BAR_HEIGHT / 2,
+};
+
+/// Box in the middle (ish) of the screen. Used to search for things closer to the
+/// player first.
+pub const NEARBY_SCREEN_TOP_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 100,
+    y: WINDOW_TOP_LEFT.y + 224,
+};
+pub const NEARBY_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 650, dy: 350 };
+pub const VERY_NEARBY_SCREEN_TOP_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 250,
+    y: WINDOW_TOP_LEFT.y + 224,
+};
+pub const VERY_NEARBY_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 350, dy: 250 };
+
+/// The area of the screen that should be open for searching for things in
+/// the world. This is when the chatbox is closed, and the inventory is
+/// open. With the minimap the right colum of the screen is basically out of
+/// commision.
+pub const OPEN_SCREEN_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 750, dy: 570 };
+
+/// Middle of the minimap is where player dot is located. Pressing here should
+/// not cause us to move.
+pub const MINIMAP_MIDDLE: Position = Position {
+    x: WINDOW_TOP_LEFT.x + WINDOW_DIMENSIONS.dx - 85,
+    y: WINDOW_TOP_LEFT.y + 113,
+};
+
+/// This is part of the gray background for the inventory icon in the bottom of
+/// the screen. Used to tell if the inventory is open or closed.
+pub const INVENTORY_ICON_BACKGROUND: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 632,
+    y: WINDOW_TOP_LEFT.y + 606,
+};
+/// Interior bounds of the inventory itself.
+pub const INVENTORY_TOP_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 759,
+    y: WINDOW_TOP_LEFT.y + 330,
+};
+pub const INVENTORY_BOTTOM_RIGHT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 948,
+    y: WINDOW_TOP_LEFT.y + 590,
+};
+pub const INVENTORY_FIRST_SLOT: Position = Position {
+    x: INVENTORY_TOP_LEFT.x + 10,
+    y: INVENTORY_TOP_LEFT.y + 6,
+};
+pub const INVENTORY_SLOT_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 42, dy: 36 };
+
+/// Chat box/buttons.
+pub const ALL_CHAT_BUTTON: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 15,
+    y: WINDOW_TOP_LEFT.y + 619,
+};
+pub const CHAT_BOX_TOP_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 10,
+    y: WINDOW_TOP_LEFT.y + 471,
+};
+pub const CHAT_BOX_BOTTOM_LEFT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 5,
+    y: WINDOW_TOP_LEFT.y + 604,
+};
+pub const CHAT_BOX_TOP_RIGHT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 518,
+    y: WINDOW_TOP_LEFT.y + 473,
+};
+pub const CHAT_BOX_BOTTOM_RIGHT: Position = Position {
+    x: WINDOW_TOP_LEFT.x + 520,
+    y: WINDOW_TOP_LEFT.y + 604,
+};
+
+/// Used to calculate the pixel location of a desired object on the screen.
+///
+/// For interesting locations that don't move, we have recorded their location
+/// in Fullscreen mode and can scale those to the correct location.
+pub struct Locations {
+    // Locations are given in reference to the gameplay screen (as opposed to
+    // the process window. This is because window attributes will likely
+    // change across computers and also side buffers change depending on
+    // fullscreen mode)
+    top_left: Position,
+
+    // Width and height of the screen, such that the bottom right pixel is
+    // (top_left + dimensions - 1).
+    dimensions: DeltaPosition,
+}
+
+impl Locations {
+    // Used to scale the location for elements on the screen that move. While
+    // many things have basically constant positionioning in reference to the
+    // correct screen corner, when searching for an interesting pixel in the
+    // open screen we will scale the boxes we look in based on the size of the
+    // screen.
+    const BASELINE_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 1920, dy: 1053 };
+    // Icons at the bottom right of the screen seem to keep the same dimensions
+    // even as the screen stretches.
+    pub const BOTTOM_ICONS_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 33, dy: 35 };
+
+    pub fn new(top_left: Position, dimensions: DeltaPosition) -> Locations {
+        Locations {
+            top_left,
+            dimensions,
+        }
+
+        // We are tied to the assumption that the screen is wide enough for all
+        // the icons in the bottom right to fit in 1 row.
+        assert!(dimensions.dx > 955);
+    }
+
+    // Corners of the screen.
+    fn bottom_left(&self) -> Position {
+        Position {
+            x: self.top_left.x,
+            y: self.top_left.y + self.dimensions.dy - 1,
+        }
+    }
+
+    fn top_right(&self) -> Position {
+        Position {
+            x: self.top_left.x + self.dimensions.dx - 1,
+            y: self.top_left.y,
+        }
+    }
+
+    fn bottom_right(&self) -> Position {
+        Position {
+            x: self.top_left.x + self.dimensions.dx - 1,
+            y: self.top_left.y + self.dimensions.dy - 1,
+        }
+    }
+
+    // Locations given in reference to the top left corner of the screen.
+    pub fn action_text_top_left(&self) -> Position {
+        Position {
+            x: self.top_left.x + 5,
+            y: self.top_left.y + 3,
+        }
+    }
+    pub fn mid_screen(&self) -> Position {
+        Position {
+            x: self.top_left.x + (self.dimensions.dx as f32 / 2.0).round() as i32,
+            y: self.top_left.y + (self.dimensions.dy as f32 / 2.0).round() as i32,
+        }
+    }
+
+    // Locations given in reference to the bottom left corner of the screen.
+    pub fn all_chat_button(&self) -> Position {
+        let Position { x, y } = self.bottom_left();
+        Position {
+            x: x + 17,
+            y: y - 12,
+        }
+    }
+    pub fn chatbox_outer_top_left(&self) -> Position {
+        let Position { x, y } = self.bottom_left();
+        Position { x: x, y: y - 164 }
+    }
+    pub fn chatbox_outer_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
+            dx: 519,
+            dy: 142
+        }
+    }
+    pub fn chatbox_inner_top_left(&self) -> Position {
+        let Position { x, y } = self.bottom_left();
+        Position {
+            x: x + 7,
+            y: y - 157,
+        }
+    }
+    pub fn chatbox_inner_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
+            dx: 506,
+            dy: 129
+        }
+    }
+
+    // Locations given in reference to the top right corner of the screen.
+
+    /// Minimap top left is used to create a box around the mini map and the
+    /// icons around it such as health and compass etc.
+    pub fn minimap_top_left(&self) -> Position {
+        let Position { x, y } = self.top_right();
+        Position { x: x - 210, y }
+    }
+    pub fn minimap_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
+            dx: 211,
+            dy: 173
+        }
+    }
+    pub fn minimap_middle(&self) -> Position {
+        let Position { x, y } = self.top_right();
+        Position {
+            x: x - 80,
+            y: y + 80,
+        }
+    }
+    pub fn worldmap_icon(&self) -> Position {
+        let Position { x, y } = self.top_right();
+        Position {
+            x: x - 21,
+            y: y + 140,
+        }
+    }
+
+    // Locations given in reference to the bottom right corner of the screen.
+    pub fn inventory_outer_top_left(&self) -> Position {
+        let Position { x, y } = self.bottom_right();
+        Position {
+            x: x - 202,
+            y: y - 309,
+        }
+    }
+    pub fn inventory_outer_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
+            dx: 202,
+            dy: 273
+        }
+    }
+    pub fn inventory_inner_top_left(&self) -> Position {
+        let Position { x, y } = self.bottom_right();
+        Position {
+            x: x - 200,
+            y: y - 303,
+        }
+    }
+    pub fn inventory_inner_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
+            dx: 194,
+            dy: 261
+        }
+    }
+
+    // At the bottom of the screen, to the right of the chat icons are icons for
+    // many different features with menus (inventory, combat, etc.). This
+    // assumes the screen is wide enough to show all of these icons in 1 row.
+    fn leftmost_bottom_icon_top_left(&self) -> Position {
+        let Position { x, y } = self.bottom_right();
+        Position {
+            x: x - 428,
+            y: y - 35,
+        }
+    }
+    // icon_index is 0 indexed (starting at combat).
+    fn bottom_icon_top_left(&self, icon_index: i32) -> Position {
+        let Position { x, y } = self.bottom_right();
+        Position {
+            x: x + icon_index * BOTTOM_ICONS_DIMENSIONS.dx,
+            y,
+        }
+    }
+    // An offset of (4, 4) seems to give a consistent pixel color identifying
+    // when an icon is active/passive.
+    fn bottom_icon_background(&self, icon_index: i32) -> Position {
+        let Position { x, y } = self.bottom_icon_top_left(icon_index);
+        Position {
+            x: x + 4,
+            y: y + 4,
+        }
+    }
+    pub fn inventory_icon_background(&self) -> Position {
+        self.bottom_icon_background(3)
+    }
+}
