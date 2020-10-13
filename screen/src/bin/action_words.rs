@@ -16,11 +16,8 @@ pub struct Config {
 }
 
 fn main() {
-    println!("Begin");
     let config = Config::from_args();
-    println!("1111111");
     dbg!(&config);
-    println!("2222222");
 
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::Handler::new(config.screen_config);

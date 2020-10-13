@@ -27,11 +27,11 @@ pub struct Config {
 
     #[structopt(
         long,
-        about = "Dimesions, in pixels, of the screen 'x,y'. This is the first \
-                 pixel that changes color based on what is shown, not the top \
-                 left pixel of the window."
+        about = "Bottom right position in pixels of the screen 'x,y'. This is \
+                 the last pixel that changes color based on what is shown, \
+                 not the bottom right pixel of the window."
     )]
-    pub screen_dimensions: util::DeltaPosition,
+    pub screen_bottom_right: util::Position,
 }
 
 /// Public interface for getting info about the screen.
@@ -46,7 +46,13 @@ pub struct Handler {
 impl Handler {
     pub fn new(config: Config) -> Handler {
         Handler {
-            locations: Locations::new(config.screen_top_left, config.screen_dimensions),
+            locations: Locations::new(
+                config.screen_top_left,
+                util::DeltaPosition {
+                    dx: config.screen_bottom_right.x - config.screen_top_left.x + 1,
+                    dy: config.screen_bottom_right.y - config.screen_top_left.y + 1,
+                },
+            ),
         }
     }
 
