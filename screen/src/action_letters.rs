@@ -1,6 +1,6 @@
+use crate::colors;
 use crate::types::*;
 use crate::Frame;
-use crate::{colors, locations};
 use util::*;
 
 /// When the mouse is placed over an object to act on, the top left of the
@@ -402,13 +402,10 @@ pub fn forward_slash() -> Letter {
 pub fn check_action_letters(
     frame: &impl Frame,
     letter_and_pixels: &[(Letter, FuzzyPixel)],
+    action_text_top_left: Position,
 ) -> bool {
-    let num_letter_mistmatches = check_action_letters_impl(
-        frame,
-        letter_and_pixels,
-        locations::TOP_LEFT_ACTION_TEXT.x,
-        &[0, -1, 1],
-    );
+    let num_letter_mistmatches =
+        check_action_letters_impl(frame, letter_and_pixels, action_text_top_left, &[0, -1, 1]);
     letter_and_pixels.len() > 10 * num_letter_mistmatches
 }
 
@@ -423,7 +420,7 @@ pub fn check_action_letters(
 pub fn check_action_letters_impl(
     frame: &impl Frame,
     letter_and_pixels: &[(Letter, FuzzyPixel)],
-    mut x_offset: i32,
+    mut letter_offset: Position,
     space_offsets: &[i32],
 ) -> usize {
     let mut num_letter_mistmatches = 0;
@@ -432,8 +429,8 @@ pub fn check_action_letters_impl(
         // println!("check_letters_for_space -- next letter");
         for DeltaPosition { dx, dy } in letter.checkpoints.iter() {
             let pos = Position {
-                x: x_offset + dx,
-                y: locations::TOP_LEFT_ACTION_TEXT.y + dy,
+                x: letter_offset.x + dx,
+                y: letter_offset.y + dy,
             };
             if !frame.check_loose_pixel(&pos, &expected_pixel) {
                 // dbg!(&pos, &expected_pixel);
@@ -442,7 +439,10 @@ pub fn check_action_letters_impl(
                 break;
             }
         }
-        x_offset += letter.width;
+        letter_offset = Position {
+            x: letter_offset.x + letter.width,
+            y: letter_offset.y,
+        };
 
         if letter.checkpoints.is_empty() {
             // dbg!(&num_letter_mistmatches);
@@ -452,7 +452,10 @@ pub fn check_action_letters_impl(
                     check_action_letters_impl(
                         frame,
                         &letter_and_pixels[i + 1..],
-                        x_offset + space_offset,
+                        Position {
+                            x: letter_offset.x + space_offset,
+                            y: letter_offset.y,
+                        },
                         space_offsets,
                     )
                 })
@@ -472,18 +475,19 @@ pub fn check_action_letters_impl(
 /// Shows space offset of 0 only, and colors the exact pixel, where the check is
 /// done for a lose pixel.
 pub fn mark_letters_and_save(
-    frame: &impl crate::Frame,
+    frame: &impl Frame,
     fpath: &str,
     letter_and_pixels: &[(Letter, FuzzyPixel)],
+    action_text_top_left: Position,
 ) -> std::thread::JoinHandle<()> {
     let mut img = frame.to_owned();
 
-    let mut x_offset = locations::TOP_LEFT_ACTION_TEXT.x;
+    let mut x_offset = action_text_top_left.x;
     for (letter, _) in letter_and_pixels {
         for util::DeltaPosition { dx, dy } in letter.checkpoints.iter() {
             let pos = util::Position {
                 x: x_offset + dx,
-                y: locations::TOP_LEFT_ACTION_TEXT.y + dy,
+                y: action_text_top_left.y + dy,
             };
             img.recolor_pixel(&pos, &colors::PURE_RED);
         }
@@ -493,8 +497,7 @@ pub fn mark_letters_and_save(
     // Spawn image saving to another thread since it takes a very long time.
     let fpath = fpath.to_string();
     std::thread::spawn(move || {
-        img.crop(locations::WINDOW_TOP_LEFT, locations::WINDOW_DIMENSIONS)
-            .flip_to_rgb();
+        img.flip_to_rgb();
         img.save(fpath.as_str());
     })
 }

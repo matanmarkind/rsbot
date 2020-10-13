@@ -6,7 +6,7 @@ use std::str::FromStr;
 /// Types that are used by multiple crates. For example mouse and screen
 /// shouldn't import from each other to we don't put Position in either of them.
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub struct Position {
     pub x: i32,
     pub y: i32,
@@ -58,7 +58,7 @@ impl FromStr for Position {
     }
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Serialize, Deserialize)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DeltaPosition {
     pub dx: i32,
     pub dy: i32,

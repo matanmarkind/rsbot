@@ -111,11 +111,11 @@ pub struct Locations {
     // the process window. This is because window attributes will likely
     // change across computers and also side buffers change depending on
     // fullscreen mode)
-    top_left: Position,
+    pub top_left: Position,
 
     // Width and height of the screen, such that the bottom right pixel is
     // (top_left + dimensions - 1).
-    dimensions: DeltaPosition,
+    pub dimensions: DeltaPosition,
 }
 
 impl Locations {
@@ -124,20 +124,22 @@ impl Locations {
     // correct screen corner, when searching for an interesting pixel in the
     // open screen we will scale the boxes we look in based on the size of the
     // screen.
-    const BASELINE_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 1920, dy: 1053 };
+    const BASELINE_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 1920, dy: 1030 };
     // Icons at the bottom right of the screen seem to keep the same dimensions
     // even as the screen stretches.
     pub const BOTTOM_ICONS_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 33, dy: 35 };
+    pub const NUM_BOTTOM_ICONS: i32 = 13;
+    const WORLDMAP_OUTER_BORDER_WIDTH: i32 = 6;
 
     pub fn new(top_left: Position, dimensions: DeltaPosition) -> Locations {
+        // We are tied to the assumption that the screen is wide enough for all
+        // the icons in the bottom right to fit in 1 row.
+        assert!(dimensions.dx > 947);
+
         Locations {
             top_left,
             dimensions,
         }
-
-        // We are tied to the assumption that the screen is wide enough for all
-        // the icons in the bottom right to fit in 1 row.
-        assert!(dimensions.dx > 955);
     }
 
     // Corners of the screen.
@@ -165,7 +167,7 @@ impl Locations {
     // Locations given in reference to the top left corner of the screen.
     pub fn action_text_top_left(&self) -> Position {
         Position {
-            x: self.top_left.x + 5,
+            x: self.top_left.x + 4,
             y: self.top_left.y + 3,
         }
     }
@@ -174,6 +176,51 @@ impl Locations {
             x: self.top_left.x + (self.dimensions.dx as f32 / 2.0).round() as i32,
             y: self.top_left.y + (self.dimensions.dy as f32 / 2.0).round() as i32,
         }
+    }
+    // For worldmap we give only innter positions/dimensions.
+    pub fn worldmap_top_left(&self) -> Position {
+        Position {
+            x: self.top_left.x + Self::WORLDMAP_OUTER_BORDER_WIDTH,
+            y: self.top_left.y + Self::WORLDMAP_OUTER_BORDER_WIDTH,
+        }
+    }
+    pub fn worldmap_dimensions(&self) -> DeltaPosition {
+        // The worldap extends from the top left of the screen until the chatbox
+        // at the bottom and near the mini map area on the right. To convert
+        // this to dimensions we calculate the distance from the worldmap's
+        // top_left to these points and then subtract out any padding.
+        let Position { x: x0, y: y0 } = self.worldmap_top_left();
+        DeltaPosition {
+            // There is a 5 pixel space between the worldmaps border ending and
+            // the minimap box starting.
+            dx: self.minimap_top_left().x - x0 - 4 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
+            dy: self.chatbox_outer_top_left().y - y0 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
+        }
+    }
+    pub fn worldmap_map_top_left(&self) -> Position {
+        let Position { x, y } = self.worldmap_top_left();
+        Position {
+            x: x + self.worldmap_key_dimensions().dx - 1,
+            y,
+        }
+    }
+    pub fn worldmap_map_dimensions(&self) -> DeltaPosition {
+        let DeltaPosition { dx, dy } = self.worldmap_dimensions();
+        DeltaPosition {
+            dx: dx - self.worldmap_key_dimensions().dx + 1,
+            dy: dy - self.worldmap_bottom_bar_dimensions().dy - Self::WORLDMAP_OUTER_BORDER_WIDTH,
+        }
+    }
+    fn worldmap_key_dimensions(&self) -> DeltaPosition {
+        let DeltaPosition { dx: _, dy } = self.worldmap_dimensions();
+        DeltaPosition {
+            dx: 168,
+            dy: dy - Self::WORLDMAP_OUTER_BORDER_WIDTH - self.worldmap_bottom_bar_dimensions().dy,
+        }
+    }
+    fn worldmap_bottom_bar_dimensions(&self) -> DeltaPosition {
+        let DeltaPosition { dx, dy: _ } = self.worldmap_dimensions();
+        DeltaPosition { dx, dy: 32 }
     }
 
     // Locations given in reference to the bottom left corner of the screen.
@@ -189,10 +236,7 @@ impl Locations {
         Position { x: x, y: y - 164 }
     }
     pub fn chatbox_outer_dimensions(&self) -> DeltaPosition {
-        DeltaPosition {
-            dx: 519,
-            dy: 142
-        }
+        DeltaPosition { dx: 519, dy: 142 }
     }
     pub fn chatbox_inner_top_left(&self) -> Position {
         let Position { x, y } = self.bottom_left();
@@ -202,10 +246,7 @@ impl Locations {
         }
     }
     pub fn chatbox_inner_dimensions(&self) -> DeltaPosition {
-        DeltaPosition {
-            dx: 506,
-            dy: 129
-        }
+        DeltaPosition { dx: 506, dy: 129 }
     }
 
     // Locations given in reference to the top right corner of the screen.
@@ -217,27 +258,37 @@ impl Locations {
         Position { x: x - 210, y }
     }
     pub fn minimap_dimensions(&self) -> DeltaPosition {
-        DeltaPosition {
-            dx: 211,
-            dy: 173
-        }
+        DeltaPosition { dx: 211, dy: 173 }
     }
     pub fn minimap_middle(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position {
             x: x - 80,
-            y: y + 80,
+            y: y + 84,
         }
     }
     pub fn worldmap_icon(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position {
-            x: x - 21,
+            x: x - 19,
             y: y + 140,
+        }
+    }
+    pub fn compass_icon(&self) -> Position {
+        let Position { x, y } = self.top_right();
+        Position {
+            x: x - 158,
+            y: y + 23,
         }
     }
 
     // Locations given in reference to the bottom right corner of the screen.
+    const NUM_INVENTORY_ROWS: i32 = 7;
+    const NUM_INVENTORY_COLS: i32 = 4;
+    pub const NUM_INVENTORY_SLOTS: i32 = Self::NUM_INVENTORY_ROWS * Self::NUM_INVENTORY_COLS;
+    // Spacing between pixels to check in a slot.
+    pub const INVENTORY_SLOT_CHECK_SPACING: DeltaPosition = DeltaPosition { dx: 9, dy: 9 };
+
     pub fn inventory_outer_top_left(&self) -> Position {
         let Position { x, y } = self.bottom_right();
         Position {
@@ -246,22 +297,34 @@ impl Locations {
         }
     }
     pub fn inventory_outer_dimensions(&self) -> DeltaPosition {
-        DeltaPosition {
-            dx: 202,
-            dy: 273
-        }
+        DeltaPosition { dx: 202, dy: 273 }
     }
     pub fn inventory_inner_top_left(&self) -> Position {
         let Position { x, y } = self.bottom_right();
         Position {
-            x: x - 200,
-            y: y - 303,
+            x: x - 197,
+            y: y - 304,
         }
     }
     pub fn inventory_inner_dimensions(&self) -> DeltaPosition {
-        DeltaPosition {
-            dx: 194,
-            dy: 261
+        DeltaPosition { dx: 191, dy: 262 }
+    }
+    pub fn inventory_slot_dimensions(&self) -> DeltaPosition {
+        DeltaPosition { dx: 42, dy: 36 }
+    }
+    pub fn inventory_slot_top_left(&self, slot_index: i32) -> Position {
+        let row = slot_index / Self::NUM_INVENTORY_COLS;
+        let col = slot_index - row * Self::NUM_INVENTORY_COLS;
+
+        let Position { x, y } = self.inventory_inner_top_left();
+        let DeltaPosition { dx, dy } = self.inventory_slot_dimensions();
+
+        // There is a border of open space in the inventory where items are
+        // never put. So there is an offset from the top left corner of the
+        // inventory to where teh first slot is placed.
+        Position {
+            x: x + 11 + col * dx,
+            y: y + 8 + row * dy,
         }
     }
 
@@ -277,20 +340,18 @@ impl Locations {
     }
     // icon_index is 0 indexed (starting at combat).
     fn bottom_icon_top_left(&self, icon_index: i32) -> Position {
-        let Position { x, y } = self.bottom_right();
+        let Position { x, y } = self.leftmost_bottom_icon_top_left();
         Position {
-            x: x + icon_index * BOTTOM_ICONS_DIMENSIONS.dx,
+            x: x + icon_index * Self::BOTTOM_ICONS_DIMENSIONS.dx,
             y,
         }
     }
     // An offset of (4, 4) seems to give a consistent pixel color identifying
     // when an icon is active/passive.
     fn bottom_icon_background(&self, icon_index: i32) -> Position {
+        assert!(icon_index < Self::NUM_BOTTOM_ICONS);
         let Position { x, y } = self.bottom_icon_top_left(icon_index);
-        Position {
-            x: x + 4,
-            y: y + 4,
-        }
+        Position { x: x + 4, y: y + 4 }
     }
     pub fn inventory_icon_background(&self) -> Position {
         self.bottom_icon_background(3)

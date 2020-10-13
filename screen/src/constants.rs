@@ -37,6 +37,43 @@ pub mod colors {
         blue: 0,
     };
 
+    pub const WHITE: FuzzyPixel = FuzzyPixel {
+        blue_min: 255,
+        blue_max: 255,
+        green_min: 255,
+        green_max: 255,
+        red_min: 255,
+        red_max: 255,
+    };
+
+    // Used to make a dollar sign to mark a bank on the mini/worldmap.
+    pub const BANK_ICON_YELLOW: FuzzyPixel = FuzzyPixel {
+        blue_min: 74,
+        blue_max: 78,
+        green_min: 207,
+        green_max: 211,
+        red_min: 230,
+        red_max: 234,
+    };
+
+    // Far from the picture within the icon, outside of its shadow.
+    pub const MAP_ICON_LIGHT_GRAY: FuzzyPixel = FuzzyPixel {
+        blue_min: 190,
+        blue_max: 194,
+        green_min: 189,
+        green_max: 193,
+        red_min: 189,
+        red_max: 193,
+    };
+    pub const MAP_ICON_DARK_GRAY: FuzzyPixel = FuzzyPixel {
+        blue_min: 157,
+        blue_max: 161,
+        green_min: 158,
+        green_max: 162,
+        red_min: 158,
+        red_max: 162,
+    };
+
     // TODO: Change to active background.
     pub const INVENTORY_BACKGROUND: FuzzyPixel = FuzzyPixel {
         blue_min: 37,

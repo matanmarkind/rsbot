@@ -49,12 +49,17 @@ pub struct Config {
         about = "Path to directory to save screenshots to. Should end with a slash (e.g. /path/to/dir/ on linux)"
     )]
     pub screenshot_dir: String,
+
+    #[structopt(flatten)]
+    pub screen_config: screen::Config,
 }
 
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
 pub struct Player {
     capturer: Capturer,
+
+    screenhandler: screen::Handler,
 
     inputbot: InputBot,
 
@@ -66,6 +71,7 @@ impl Player {
         Player {
             capturer: screen::Capturer::new(),
             inputbot: userinput::InputBot::new(config.mouse_fpath.as_str()),
+            screenhandler: screen::Handler::new(config.screen_config.clone()),
             config,
         }
     }
@@ -114,10 +120,10 @@ impl Player {
                     }
 
                     frame = self.capturer.frame().unwrap();
-                    if !screen::action_letters::check_action_letters(
-                        &frame,
-                        &action_description.action_text[..],
-                    ) {
+                    if !self
+                        .screenhandler
+                        .check_action_letters(&frame, &action_description.action_text[..])
+                    {
                         println!("{} - action didn't match", time.elapsed().as_secs());
                         let mut ofpath = self.config.screenshot_dir.clone();
                         ofpath.push_str(
@@ -127,7 +133,7 @@ impl Player {
                             )
                             .as_str(),
                         );
-                        screen::action_letters::mark_letters_and_save(
+                        self.screenhandler.mark_letters_and_save(
                             &frame,
                             ofpath.as_str(),
                             &action_description.action_text[..],

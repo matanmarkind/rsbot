@@ -10,13 +10,20 @@ pub struct Config {
         about = "Path to directory to save screenshots to. Should end with a slash (e.g. /path/to/dir/ on linux)"
     )]
     pub out_dir: String,
+
+    #[structopt(flatten)]
+    pub screen_config: screen::Config,
 }
 
 fn main() {
+    println!("Begin");
     let config = Config::from_args();
+    println!("1111111");
     dbg!(&config);
+    println!("2222222");
 
     let mut capturer = screen::Capturer::new();
+    let screenhandler = screen::Handler::new(config.screen_config);
 
     let letter_and_matchers = vec![
         (action_letters::start(), colors::ACTION_WHITE),
@@ -48,15 +55,13 @@ fn main() {
 
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();
-    dbg!(screen::action_letters::check_action_letters(
-        &frame,
-        &letter_and_matchers
-    ));
+    dbg!(screenhandler.check_action_letters(&frame, &letter_and_matchers));
 
     println!("Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_action_words.png");
-    action_letters::mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
+    screenhandler
+        .mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
         .join()
         .expect("Error waiting for image to save");
 }

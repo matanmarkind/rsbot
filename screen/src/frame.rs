@@ -270,7 +270,7 @@ impl OwnedFrame {
         self.draw_horizontal_line(
             &Position {
                 x: top_left.x,
-                y: top_left.y + dimensions.dy,
+                y: top_left.y + dimensions.dy - 1,
             },
             dimensions.dx,
             line_color,
@@ -278,11 +278,23 @@ impl OwnedFrame {
         self.draw_vertical_line(top_left, dimensions.dy, line_color);
         self.draw_vertical_line(
             &Position {
-                x: top_left.x + dimensions.dx,
+                x: top_left.x + dimensions.dx - 1,
                 y: top_left.y,
             },
             dimensions.dy,
             line_color,
+        );
+    }
+
+    pub fn draw_red_box(&mut self, top_left: &Position, dimensions: &DeltaPosition) {
+        self.draw_box(
+            top_left,
+            dimensions,
+            &Pixel {
+                blue: 0,
+                green: 0,
+                red: 255,
+            },
         );
     }
 }
