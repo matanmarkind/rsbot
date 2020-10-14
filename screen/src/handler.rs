@@ -101,4 +101,36 @@ impl FrameHandler {
         }
         None
     }
+
+    pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
+        let top_left = self.locations.chatbox_inner_top_left();
+        let bottom_right =
+            top_left + (self.locations.chatbox_inner_dimensions() - DeltaPosition { dx: 1, dy: 1 });
+
+        let pos_and_pixel = vec![
+            (top_left, colors::CHATBOX_INNER_TOP_LEFT),
+            (
+                Position {
+                    x: top_left.x,
+                    y: bottom_right.y,
+                },
+                colors::CHATBOX_INNER_BOTTOM_LEFT,
+            ),
+            (
+                Position {
+                    x: bottom_right.x,
+                    y: bottom_right.y,
+                },
+                colors::CHATBOX_INNER_TOP_RIGHT,
+            ),
+            (bottom_right, colors::CHATBOX_INNER_BOTTOM_RIGHT),
+        ];
+        for (pos, fuzzy_pixel) in &pos_and_pixel {
+            dbg!(pos, fuzzy_pixel);
+            if !fuzzy_pixel.matches(&frame.get_pixel(pos)) {
+                return false;
+            }
+        }
+        true
+    }
 }

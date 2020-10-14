@@ -162,6 +162,28 @@ impl Add for &DeltaPosition {
     }
 }
 
+impl Add for DeltaPosition {
+    type Output = DeltaPosition;
+
+    fn add(self, other: DeltaPosition) -> DeltaPosition {
+        DeltaPosition {
+            dx: self.dx + other.dx,
+            dy: self.dy + other.dy,
+        }
+    }
+}
+
+impl Sub for DeltaPosition {
+    type Output = DeltaPosition;
+
+    fn sub(self, other: DeltaPosition) -> DeltaPosition {
+        DeltaPosition {
+            dx: self.dx - other.dx,
+            dy: self.dy - other.dy,
+        }
+    }
+}
+
 impl FromStr for DeltaPosition {
     type Err = ParseIntError;
 

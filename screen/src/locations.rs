@@ -80,28 +80,6 @@ pub const INVENTORY_FIRST_SLOT: Position = Position {
 };
 pub const INVENTORY_SLOT_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 42, dy: 36 };
 
-/// Chat box/buttons.
-pub const ALL_CHAT_BUTTON: Position = Position {
-    x: WINDOW_TOP_LEFT.x + 15,
-    y: WINDOW_TOP_LEFT.y + 619,
-};
-pub const CHAT_BOX_TOP_LEFT: Position = Position {
-    x: WINDOW_TOP_LEFT.x + 10,
-    y: WINDOW_TOP_LEFT.y + 471,
-};
-pub const CHAT_BOX_BOTTOM_LEFT: Position = Position {
-    x: WINDOW_TOP_LEFT.x + 5,
-    y: WINDOW_TOP_LEFT.y + 604,
-};
-pub const CHAT_BOX_TOP_RIGHT: Position = Position {
-    x: WINDOW_TOP_LEFT.x + 518,
-    y: WINDOW_TOP_LEFT.y + 473,
-};
-pub const CHAT_BOX_BOTTOM_RIGHT: Position = Position {
-    x: WINDOW_TOP_LEFT.x + 520,
-    y: WINDOW_TOP_LEFT.y + 604,
-};
-
 /// Used to calculate the pixel location of a desired object on the screen.
 ///
 /// For interesting locations that don't move, we have recorded their location

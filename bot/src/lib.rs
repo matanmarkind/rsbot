@@ -1,4 +1,3 @@
-pub mod bot_utils;
 pub mod controller;
 
 use structopt::StructOpt;

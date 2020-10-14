@@ -4,6 +4,45 @@ pub const RAW_PIXEL_SIZE: usize = 4;
 pub mod colors {
     use crate::{FuzzyPixel, Pixel};
 
+    pub const PURE_RED: Pixel = Pixel {
+        red: 255,
+        green: 0,
+        blue: 0,
+    };
+
+    pub const CHATBOX_INNER_TOP_LEFT: FuzzyPixel = FuzzyPixel {
+        blue_min: 64,
+        blue_max: 68,
+        green_min: 78,
+        green_max: 82,
+        red_min: 85,
+        red_max: 89,
+    };
+    pub const CHATBOX_INNER_BOTTOM_LEFT: FuzzyPixel = FuzzyPixel {
+        blue_min: 76,
+        blue_max: 80,
+        green_min: 93,
+        green_max: 97,
+        red_min: 101,
+        red_max: 105,
+    };
+    pub const CHATBOX_INNER_TOP_RIGHT: FuzzyPixel = FuzzyPixel {
+        blue_min: 64,
+        blue_max: 68,
+        green_min: 78,
+        green_max: 82,
+        red_min: 85,
+        red_max: 89,
+    };
+    pub const CHATBOX_INNER_BOTTOM_RIGHT: FuzzyPixel = FuzzyPixel {
+        blue_min: 76,
+        blue_max: 80,
+        green_min: 93,
+        green_max: 97,
+        red_min: 101,
+        red_max: 105,
+    };
+
     pub const ACTION_WHITE: FuzzyPixel = FuzzyPixel {
         blue_min: 180,
         blue_max: 255,
@@ -29,12 +68,6 @@ pub mod colors {
         green_max: 235,
         red_min: 190,
         red_max: 235,
-    };
-
-    pub const PURE_RED: Pixel = Pixel {
-        red: 255,
-        green: 0,
-        blue: 0,
     };
 
     pub const WHITE: FuzzyPixel = FuzzyPixel {

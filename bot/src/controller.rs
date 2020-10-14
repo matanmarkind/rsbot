@@ -1,8 +1,8 @@
-use crate::bot_utils;
 use screen::{action_letters::Letter, Capturer, Frame, FrameHandler, FuzzyPixel};
 use std::thread::sleep;
 use std::time::Duration;
 use userinput::InputBot;
+use util::*;
 
 pub struct ActionDescription {
     /// The colors that if found likely correspond with the desired action.
@@ -48,7 +48,7 @@ impl Player {
         {}
         self.inputbot.left_click();
         self.open_inventory();
-        bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
+        self.close_chatbox();
     }
 
     // Assumes runelight is the active screen.
@@ -161,5 +161,46 @@ impl Player {
             // mouse.
             sleep(Duration::from_secs(1));
         }
+    }
+
+    fn close_chatbox(&mut self) {
+        let mut frame = self.capturer.frame().unwrap();
+        if !self.framehandler.is_chatbox_open(&frame) {
+            return;
+        }
+        // Go click on the All tab
+        while !self
+            .inputbot
+            .move_near(&self.framehandler.locations.all_chat_button())
+        {}
+        self.inputbot.left_click();
+        std::thread::sleep(REDRAW_TIME);
+        frame = self.capturer.frame().unwrap();
+
+        // If the chatbox is still open it's possible a different chat tab was
+        // selected and now the ALL tab is on.
+        if !self.framehandler.is_chatbox_open(&frame) {
+            return;
+        }
+        // Go click on the All tab
+        while !self
+            .inputbot
+            .move_near(&self.framehandler.locations.all_chat_button())
+        {}
+        self.inputbot.left_click();
+        std::thread::sleep(REDRAW_TIME);
+        frame = self.capturer.frame().unwrap();
+
+        // If the chatbox is still open this is likely due to an update such as
+        // leveling up. This closes by left clicking most things
+        if !self.framehandler.is_chatbox_open(&frame) {
+            return;
+        } // Click the center of the minimap since this will only move us a small
+          // amount. Safest/easiest way I could think of torandomly left click.
+        while !self
+            .inputbot
+            .move_near(&self.framehandler.locations.minimap_middle())
+        {}
+        self.inputbot.left_click();
     }
 }
