@@ -119,12 +119,6 @@ pub struct Locations {
 }
 
 impl Locations {
-    // Used to scale the location for elements on the screen that move. While
-    // many things have basically constant positionioning in reference to the
-    // correct screen corner, when searching for an interesting pixel in the
-    // open screen we will scale the boxes we look in based on the size of the
-    // screen.
-    const BASELINE_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 1920, dy: 1030 };
     // Icons at the bottom right of the screen seem to keep the same dimensions
     // even as the screen stretches.
     pub const BOTTOM_ICONS_DIMENSIONS: DeltaPosition = DeltaPosition { dx: 33, dy: 35 };
@@ -171,11 +165,14 @@ impl Locations {
             y: self.top_left.y + 3,
         }
     }
-    pub fn mid_screen(&self) -> Position {
+    pub fn midpoint(top_left: Position, dimensions: DeltaPosition) -> Position {
         Position {
-            x: self.top_left.x + (self.dimensions.dx as f32 / 2.0).round() as i32,
-            y: self.top_left.y + (self.dimensions.dy as f32 / 2.0).round() as i32,
+            x: top_left.x + (dimensions.dx as f32 / 2.0).round() as i32,
+            y: top_left.y + (dimensions.dy as f32 / 2.0).round() as i32,
         }
+    }
+    pub fn mid_screen(&self) -> Position {
+        Self::midpoint(self.top_left, self.dimensions)
     }
     // For worldmap we give only innter positions/dimensions.
     pub fn worldmap_top_left(&self) -> Position {
@@ -197,6 +194,17 @@ impl Locations {
             dy: self.chatbox_outer_top_left().y - y0 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
         }
     }
+    fn worldmap_key_dimensions(&self) -> DeltaPosition {
+        let DeltaPosition { dx: _, dy } = self.worldmap_dimensions();
+        DeltaPosition {
+            dx: 168,
+            dy: dy - Self::WORLDMAP_OUTER_BORDER_WIDTH - self.worldmap_bottom_bar_dimensions().dy,
+        }
+    }
+    fn worldmap_bottom_bar_dimensions(&self) -> DeltaPosition {
+        let DeltaPosition { dx, dy: _ } = self.worldmap_dimensions();
+        DeltaPosition { dx, dy: 32 }
+    }
     pub fn worldmap_map_top_left(&self) -> Position {
         let Position { x, y } = self.worldmap_top_left();
         Position {
@@ -211,16 +219,40 @@ impl Locations {
             dy: dy - self.worldmap_bottom_bar_dimensions().dy - Self::WORLDMAP_OUTER_BORDER_WIDTH,
         }
     }
-    fn worldmap_key_dimensions(&self) -> DeltaPosition {
-        let DeltaPosition { dx: _, dy } = self.worldmap_dimensions();
-        DeltaPosition {
-            dx: 168,
-            dy: dy - Self::WORLDMAP_OUTER_BORDER_WIDTH - self.worldmap_bottom_bar_dimensions().dy,
-        }
+    pub fn worldmap_map_middle(&self) -> Position {
+        Self::midpoint(self.worldmap_map_top_left(), self.worldmap_map_dimensions())
     }
-    fn worldmap_bottom_bar_dimensions(&self) -> DeltaPosition {
-        let DeltaPosition { dx, dy: _ } = self.worldmap_dimensions();
-        DeltaPosition { dx, dy: 32 }
+    pub fn worldmap_map_search_boxes(&self) -> Vec<(Position, DeltaPosition)> {
+        let top_left = self.worldmap_map_top_left();
+        let dimensions = self.worldmap_map_dimensions();
+
+        let mut ret = Vec::<(Position, DeltaPosition)>::new();
+        let mut box_top_left = self.worldmap_map_middle();
+
+        // Based on the angle the camera is from, things lower in the screen
+        // tend to be closer to the player than things higher in the screen.
+        // Therefore prefer widening the search more down the screen than up the
+        // screen.
+        let step_size = 50;
+        let mut box_dimensions = DeltaPosition { dx: 0, dy: 0 };
+        loop {
+            box_top_left = Position {
+                x: box_top_left.x - step_size,
+                y: box_top_left.y - step_size,
+            };
+            if box_top_left.x <= top_left.x || box_top_left.y <= top_left.y {
+                // Once we reach an edge just make the last box of the entire screen.
+                ret.push((top_left, dimensions));
+                break;
+            }
+
+            box_dimensions = DeltaPosition {
+                dx: box_dimensions.dx + 2 * step_size,
+                dy: box_dimensions.dy + 2 * step_size,
+            };
+            ret.push((box_top_left, box_dimensions));
+        }
+        ret
     }
 
     // Locations given in reference to the bottom left corner of the screen.
@@ -355,5 +387,53 @@ impl Locations {
     }
     pub fn inventory_icon_background(&self) -> Position {
         self.bottom_icon_background(3)
+    }
+
+    // Create boxes used for searching for things in the open screen.
+    pub fn open_screen_search_boxes(&self) -> Vec<(Position, DeltaPosition)> {
+        let top_left = self.top_left;
+        let past_bottom_right = Position {
+            // We usually play with the inventory open so only search as far right
+            // as either the inventory or minimap extends left.
+            x: std::cmp::min(self.inventory_outer_top_left().x, self.minimap_top_left().x) + 1,
+            // We assume that the chatbox is closed in which case the icons on the
+            // bottom extend up higher than the chat buttons.
+            y: self.leftmost_bottom_icon_top_left().y + 1,
+        };
+        let dimensions = past_bottom_right - top_left;
+
+        let mut ret = Vec::<(Position, DeltaPosition)>::new();
+        let mut box_top_left = self.mid_screen();
+
+        let step_size = 50;
+        let mut box_dimensions = DeltaPosition { dx: 0, dy: 0 };
+        loop {
+            // Based on the angle the camera is from, things lower in the screen
+            // tend to be closer to the player than things higher in the screen.
+            // Therefore prefer widening the search more down the screen than up the
+            // screen.
+            box_top_left = Position {
+                x: box_top_left.x - 2 * step_size,
+                y: box_top_left.y - step_size,
+            };
+            if box_top_left.x <= top_left.x || box_top_left.y <= top_left.y {
+                // Once we reach an edge just make the last box of the entire screen.
+                ret.push((top_left, dimensions));
+                break;
+            }
+
+            box_dimensions = DeltaPosition {
+                dx: std::cmp::min(
+                    box_dimensions.dx + 4 * step_size,
+                    past_bottom_right.x - box_top_left.x,
+                ),
+                dy: std::cmp::min(
+                    box_dimensions.dy + 3 * step_size,
+                    past_bottom_right.y - box_top_left.y,
+                ),
+            };
+            ret.push((box_top_left, box_dimensions));
+        }
+        ret
     }
 }

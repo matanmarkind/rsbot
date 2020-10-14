@@ -1,9 +1,8 @@
 use crate::bot_utils;
-use screen::{action_letters::Letter, locations, Capturer, Frame, FuzzyPixel};
+use screen::{action_letters::Letter, Capturer, Frame, FrameHandler, FuzzyPixel};
 use std::thread::sleep;
 use std::time::Duration;
 use userinput::InputBot;
-use util::*;
 
 pub struct ActionDescription {
     /// The colors that if found likely correspond with the desired action.
@@ -21,29 +20,12 @@ pub struct ActionDescription {
     pub timeout: Duration,
 }
 
-pub fn get_search_locations() -> Vec<(Position, DeltaPosition)> {
-    vec![
-        (
-            locations::VERY_NEARBY_SCREEN_TOP_LEFT,
-            locations::VERY_NEARBY_SCREEN_DIMENSIONS,
-        ),
-        (
-            locations::NEARBY_SCREEN_TOP_LEFT,
-            locations::NEARBY_SCREEN_DIMENSIONS,
-        ),
-        (
-            locations::SCREEN_TOP_LEFT,
-            locations::OPEN_SCREEN_DIMENSIONS,
-        ),
-    ]
-}
-
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
 pub struct Player {
     capturer: Capturer,
 
-    framehandler: screen::FrameHandler,
+    framehandler: FrameHandler,
 
     inputbot: InputBot,
 }
@@ -51,47 +33,44 @@ pub struct Player {
 impl Player {
     pub fn new(config: crate::Config) -> Player {
         Player {
-            capturer: screen::Capturer::new(),
-            inputbot: userinput::InputBot::new(config.userinput_config.clone()),
-            framehandler: screen::FrameHandler::new(config.screen_config.clone()),
+            capturer: Capturer::new(),
+            inputbot: InputBot::new(config.userinput_config.clone()),
+            framehandler: FrameHandler::new(config.screen_config.clone()),
         }
     }
 
     /// Closes the chatbox and opens the inventoy. This is the state we want to
     /// perform our loops in.
     pub fn reset(&mut self) {
-        while !self.inputbot.move_near(&locations::TOP_BAR_MIDDLE) {}
+        while !self
+            .inputbot
+            .move_near(&self.framehandler.locations.minimap_middle())
+        {}
         self.inputbot.left_click();
-        bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
         self.open_inventory();
+        bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
     }
 
+    // Assumes runelight is the active screen.
     pub fn open_inventory(&mut self) {
-        let mut frame = self.capturer.frame().unwrap();
-        if !self.framehandler.is_inventory_open(&frame) {
-            self.inputbot.click_esc();
-            std::thread::sleep(util::REDRAW_TIME);
+        let frame = self.capturer.frame().unwrap();
+        if self.framehandler.is_inventory_open(&frame) {
+            // dbg!("frame already open");
+            return;
         }
+        self.inputbot.click_esc();
 
-        frame = self.capturer.frame().unwrap();
-        if !self.framehandler.is_inventory_open(&frame) {
-            std::thread::sleep(util::REDRAW_TIME);
-        }
-
-        frame = self.capturer.frame().unwrap();
-        if !self.framehandler.is_inventory_open(&frame) {
-            // TODO: This can happen if runescape is not the active window, so fall
-            // back on clicking on the inventory icon.
-        }
+        // std::thread::sleep(util::REDRAW_TIME);
+        // frame = self.capturer.frame().unwrap();
+        // dbg!(self.framehandler.is_inventory_open(&frame));
     }
 
     pub fn fill_inventory(&mut self, action_description: &ActionDescription) {
-        let search_locations = get_search_locations();
         self.reset();
 
         let time = std::time::Instant::now();
         loop {
-            if time.elapsed() > Duration::from_secs(60) {
+            if time.elapsed() > Duration::from_secs(300) {
                 self.reset();
             }
 
@@ -104,7 +83,12 @@ impl Player {
             }
 
             let mut found_action = false;
-            for (top_left, dimensions) in search_locations.iter() {
+            for (top_left, dimensions) in self
+                .framehandler
+                .locations
+                .open_screen_search_boxes()
+                .iter()
+            {
                 for fuzzy_pixel in action_description.colors.iter() {
                     let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
                     if position.is_none() {

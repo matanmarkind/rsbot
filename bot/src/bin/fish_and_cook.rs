@@ -1,8 +1,8 @@
 use bot::controller;
-use structopt::StructOpt;
 use screen::{action_letters, colors};
 use std::error::Error;
 use std::time::Duration;
+use structopt::StructOpt;
 
 fn catch_shrimp_description() -> controller::ActionDescription {
     controller::ActionDescription {

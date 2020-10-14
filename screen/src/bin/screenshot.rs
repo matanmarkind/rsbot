@@ -19,7 +19,7 @@ pub struct Config {
 }
 
 fn surrounding_box(frame: &mut OwnedFrame, center: &Position) {
-    let delta = 5;
+    let delta = 3;
     frame.draw_red_box(
         &(center
             + &DeltaPosition {
@@ -128,6 +128,10 @@ fn main() {
         }
     }
 
+    for (pos, dim) in screenhandler.locations.open_screen_search_boxes() {
+        frame.draw_red_box(&pos, &dim);
+    }
+
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot.png");
     println!("Saving {}. Open the worldmap...", ofpath);
@@ -143,6 +147,10 @@ fn main() {
         &screenhandler.locations.worldmap_map_top_left(),
         &screenhandler.locations.worldmap_map_dimensions(),
     );
+    surrounding_box(&mut frame, &screenhandler.locations.worldmap_map_middle());
+    for (pos, dim) in screenhandler.locations.worldmap_map_search_boxes() {
+        frame.draw_red_box(&pos, &dim);
+    }
 
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");

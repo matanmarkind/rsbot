@@ -14,7 +14,10 @@ pub struct Config {
     pub in_fpath: String, // CSV file to read mouse positions from.
 }
 
-fn get_pixel_position(capturer: &mut screen::Capturer) -> Option<Position> {
+fn get_pixel_position(
+    capturer: &mut screen::Capturer,
+    framehandler: &screen::FrameHandler,
+) -> Option<Position> {
     let mut buffer = String::new();
 
     println!("Enter (blue_min,blue_max,green_min,green_max,red_min,red_max): ");
@@ -23,7 +26,7 @@ fn get_pixel_position(capturer: &mut screen::Capturer) -> Option<Position> {
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
     let frame = capturer.frame().unwrap();
 
-    for (top_left, dimensions) in bot::controller::get_search_locations().iter() {
+    for (top_left, dimensions) in framehandler.locations.open_screen_search_boxes().iter() {
         match frame.find_pixel_random(&desired_pixel, &top_left, &dimensions) {
             Some(pos) => return Some(pos),
             None => (),
@@ -38,12 +41,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut capturer = screen::Capturer::new();
     let inputbot = userinput::InputBot::new(config.userinput_config.clone());
+    let framehandler = screen::FrameHandler::new(config.screen_config.clone());
 
     while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
     inputbot.left_click();
 
     loop {
-        match get_pixel_position(&mut capturer) {
+        match get_pixel_position(&mut capturer, &framehandler) {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
