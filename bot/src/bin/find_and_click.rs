@@ -8,12 +8,6 @@ use std::io;
 use structopt::StructOpt;
 use util::*;
 
-#[derive(Debug, StructOpt)]
-pub struct Config {
-    #[structopt(long)]
-    pub in_fpath: String, // CSV file to read mouse positions from.
-}
-
 fn get_pixel_position(
     capturer: &mut screen::Capturer,
     framehandler: &screen::FrameHandler,

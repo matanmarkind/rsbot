@@ -53,6 +53,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut player = controller::Player::new(config);
 
     player.fill_inventory(&catch_shrimp_description());
+    let frame = player.capturer.frame().unwrap();
+    // Find wood in inventory
+    let oak_logs_slot = player
+        .framehandler
+        .first_matching_inventory_slot(&frame, &colors::INVENTORY_OAK_LOGS);
+    if oak_logs_slot.is_none() {
+        dbg!(oak_logs_slot);
+        return Ok(());
+    }
+    // Find tinderbox in inventory
+    let tinderbox_slot = player
+        .framehandler
+        .first_matching_inventory_slot(&frame, &colors::INVENTORY_TINDERBOX);
+    if tinderbox_slot.is_none() {
+        dbg!(tinderbox_slot);
+        return Ok(());
+    }
+    // Start fire
+    // Find shrimp in inventory
+    // Find fire on screen
+    // Cook
+    // Find anchovies in inventory
+    // Find fire on screen
+    // Cook
 
     Ok(())
 }

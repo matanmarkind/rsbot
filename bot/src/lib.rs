@@ -1,5 +1,7 @@
 pub mod controller;
 
+pub use controller::Player;
+
 use structopt::StructOpt;
 #[derive(Debug, StructOpt, Clone)]
 pub struct Config {

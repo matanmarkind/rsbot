@@ -217,8 +217,17 @@ impl Locations {
     const NUM_INVENTORY_ROWS: i32 = 7;
     const NUM_INVENTORY_COLS: i32 = 4;
     pub const NUM_INVENTORY_SLOTS: i32 = Self::NUM_INVENTORY_ROWS * Self::NUM_INVENTORY_COLS;
-    // Spacing between pixels to check in a slot.
+    // Spacing between pixels to check in a slot. This value must remain
+    // constant because it is the basis for checking if items in the inventory
+    // match and changing the spacing here would change where pixels are checked
+    // and teh total number of checks.
     pub const INVENTORY_SLOT_CHECK_SPACING: DeltaPosition = DeltaPosition { dx: 9, dy: 9 };
+    // Based on INVENTORY_SLOT_CHECK_SPACING and the size of each inventory
+    // slot, which is seems to be constant across different screen sizes, this
+    // is the number of pixels checked per inventory slot. This is truly
+    // expected to remain constant since we tie this to the recipes passed to
+    // FrameHandler::check_inventory_slot.
+    pub const NUM_CHECKS_PER_INVENTORY_SLOT: usize = 12;
 
     pub fn inventory_outer_top_left(&self) -> Position {
         let Position { x, y } = self.bottom_right();
@@ -244,6 +253,7 @@ impl Locations {
         DeltaPosition { dx: 42, dy: 36 }
     }
     pub fn inventory_slot_top_left(&self, slot_index: i32) -> Position {
+        assert!(slot_index < Self::NUM_INVENTORY_SLOTS);
         let row = slot_index / Self::NUM_INVENTORY_COLS;
         let col = slot_index - row * Self::NUM_INVENTORY_COLS;
 

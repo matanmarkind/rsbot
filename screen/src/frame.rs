@@ -460,7 +460,19 @@ impl FrameHandler {
         )
     }
 
-    pub fn is_inventory_slot_open(&self, frame: &impl Frame, slot_index: i32) -> bool {
+    /// Based on Locations::INVENTORY_SLOT_CHECK_SPACING we perform 12 checks
+    /// per inventory slot. This is constant across different screen sizes. This
+    /// can switch to [(DeltaPosition, FuzzyPixel)] if relying on this constant
+    /// becomes a problem.
+    ///
+    /// Make sure that the mouse is not hovering over the inventory since this
+    /// causes text to appear messing up the frame.
+    pub fn check_inventory_slot(
+        &self,
+        frame: &impl Frame,
+        slot_index: i32,
+        expected_colors: &[FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT],
+    ) -> bool {
         let top_left = self.locations.inventory_slot_top_left(slot_index);
         let dimensions = self.locations.inventory_slot_dimensions();
 
@@ -470,17 +482,19 @@ impl FrameHandler {
         // Don't bother checking the border between slots.
         let first_pos = &top_left + &check_spacing;
         let mut pos = first_pos;
+        let mut i = 0;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
                 let pixel = frame.get_pixel(&pos);
-                if !colors::INVENTORY_BACKGROUND.matches(&pixel) {
-                    // println!("is_slot_open={}, {:?}, {:?}", slot_index, pos, pixel);
+                // println!("slot_index={}, {:?}, {:?}", slot_index, pos, pixel);
+                if !expected_colors[i].matches(&pixel) {
                     return false;
                 }
                 pos = Position {
                     x: pos.x + check_spacing.dx,
                     y: pos.y,
                 };
+                i += 1;
             }
             pos = Position {
                 x: first_pos.x,
@@ -490,15 +504,27 @@ impl FrameHandler {
         true
     }
 
-    /// Get the minimum slot_index [0,NUM_INVENTORY_SLOTS) which points to an open
-    /// slot. Returns None if there is no open slot.
-    pub fn first_open_inventory_slot(&self, frame: &impl Frame) -> Option<i32> {
+    pub fn is_inventory_slot_open(&self, frame: &impl Frame, slot_index: i32) -> bool {
+        self.check_inventory_slot(frame, slot_index, &colors::INVENTORY_SLOT_EMPTY)
+    }
+
+    /// Get the minimum slot_index [0,NUM_INVENTORY_SLOTS) which points to a
+    /// matching inventory slot. Returns None if there is no open slot.
+    pub fn first_matching_inventory_slot(
+        &self,
+        frame: &impl Frame,
+        expected_colors: &[FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT],
+    ) -> Option<i32> {
         for i in 0..Locations::NUM_INVENTORY_SLOTS {
-            if self.is_inventory_slot_open(frame, i) {
+            if self.check_inventory_slot(frame, i, expected_colors) {
                 return Some(i);
             }
         }
         None
+    }
+
+    pub fn first_open_inventory_slot(&self, frame: &impl Frame) -> Option<i32> {
+        self.first_matching_inventory_slot(frame, &colors::INVENTORY_SLOT_EMPTY)
     }
 
     pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {

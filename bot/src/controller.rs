@@ -23,11 +23,11 @@ pub struct ActionDescription {
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
 pub struct Player {
-    capturer: Capturer,
+    pub capturer: Capturer,
 
-    framehandler: FrameHandler,
+    pub framehandler: FrameHandler,
 
-    inputbot: InputBot,
+    pub inputbot: InputBot,
 }
 
 impl Player {
@@ -42,6 +42,7 @@ impl Player {
     /// Closes the chatbox and opens the inventoy. This is the state we want to
     /// perform our loops in.
     pub fn reset(&mut self) {
+        // Click on the game screen to make sure it is the active window.
         while !self
             .inputbot
             .move_near(&self.framehandler.locations.minimap_middle())
