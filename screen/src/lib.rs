@@ -1,7 +1,6 @@
 pub mod action_letters;
 pub mod constants;
 pub mod frame;
-pub mod handler;
 pub mod locations;
 pub mod types;
 
@@ -9,7 +8,6 @@ pub mod types;
 /// screen::frame::Frame.
 pub use constants::*;
 pub use frame::*;
-pub use handler::FrameHandler;
 pub use locations::Locations;
 pub use types::*;
 

@@ -2,7 +2,7 @@
 /// pixel and left click on it. Instead of a config with a single rectangle
 /// bounding the search, we will have multiple rectangles. This is because parts
 /// of the screen are covered by the chatbox or the mini map.
-use screen::{locations::TOP_BAR_MIDDLE, Frame, FuzzyPixel};
+use screen::{Frame, FuzzyPixel};
 use std::error::Error;
 use std::io;
 use structopt::StructOpt;
@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let inputbot = userinput::InputBot::new(config.userinput_config.clone());
     let framehandler = screen::FrameHandler::new(config.screen_config.clone());
 
-    while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
+    while !inputbot.move_to(&framehandler.locations.minimap_middle()) {}
     inputbot.left_click();
 
     loop {

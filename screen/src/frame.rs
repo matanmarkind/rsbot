@@ -5,8 +5,10 @@
 /// want to keep this, is that when the bot is running we don't need to do any
 /// owning activities. For the sake of feedback it can be useful to mark up and
 /// save the image, which requires ownership.
+use crate::action_letters;
 use crate::constants::*;
 use crate::types::*;
+use crate::Locations;
 use std::cmp::{max, min};
 use std::fs::File;
 use std::io::ErrorKind::WouldBlock;
@@ -55,8 +57,8 @@ pub trait Frame {
     // Check that one of the pixels around 'pos' (+-1) match the expectation.
     fn check_loose_pixel(&self, pos: &Position, expected_pixel: &FuzzyPixel) -> bool {
         // dbg!(pos, expected_pixel);
-        for x_shift in [-1, 0, 1].iter() {
-            for y_shift in [-1, 0, 1].iter() {
+        for x_shift in [0, -1, 1].iter() {
+            for y_shift in [0, -1, 1].iter() {
                 let pos = Position {
                     x: min(max(0, pos.x + x_shift), self.width() as i32 - 1),
                     y: min(max(0, pos.y + y_shift), self.height() as i32 - 1),
@@ -393,4 +395,142 @@ impl Capturer {
         }
     }
     */
+}
+
+/// Helper for getting information about frames.
+///
+/// The frame class is a basic class that shouldn't be especially tied to
+/// runescape. This class layers on more functionality that is directly tied to
+/// game related questions instead of image handling.
+///
+/// Importantly this class has state, Locations. This is configured on startup
+/// based on where the game window is. The game window is never expected to move
+/// during play.
+pub struct FrameHandler {
+    pub locations: crate::Locations,
+}
+
+impl FrameHandler {
+    pub fn new(config: crate::Config) -> FrameHandler {
+        FrameHandler {
+            locations: Locations::new(
+                config.screen_top_left,
+                util::DeltaPosition {
+                    dx: config.screen_bottom_right.x - config.screen_top_left.x + 1,
+                    dy: config.screen_bottom_right.y - config.screen_top_left.y + 1,
+                },
+            ),
+        }
+    }
+
+    pub fn check_action_letters(
+        &self,
+        frame: &impl Frame,
+        letter_and_pixels: &[(action_letters::Letter, FuzzyPixel)],
+    ) -> bool {
+        action_letters::check_action_letters(
+            frame,
+            letter_and_pixels,
+            self.locations.action_text_top_left(),
+        )
+    }
+    pub fn mark_letters_and_save(
+        &self,
+        frame: &impl Frame,
+        fpath: &str,
+        letter_and_pixels: &[(action_letters::Letter, crate::FuzzyPixel)],
+    ) -> std::thread::JoinHandle<()> {
+        action_letters::mark_letters_and_save(
+            frame,
+            fpath,
+            &letter_and_pixels,
+            self.locations.action_text_top_left(),
+        )
+    }
+
+    pub fn is_inventory_open(&self, frame: &impl Frame) -> bool {
+        // Use check_loose_pixel because the background color of the icons is very
+        // distinct between on and off and the satchel depicted is also a
+        // significantly different color. If the image shifts, which it sometimes
+        // does I don't want to be too brittle since I think the risk of a false
+        // positive is relatively low.
+        frame.check_loose_pixel(
+            &self.locations.inventory_icon_background(),
+            &colors::INVENTORY_ICON_BACKGROUND_OPEN,
+        )
+    }
+
+    pub fn is_inventory_slot_open(&self, frame: &impl Frame, slot_index: i32) -> bool {
+        let top_left = self.locations.inventory_slot_top_left(slot_index);
+        let dimensions = self.locations.inventory_slot_dimensions();
+
+        let past_bottom_right = &top_left + &dimensions;
+        let check_spacing = Locations::INVENTORY_SLOT_CHECK_SPACING;
+
+        // Don't bother checking the border between slots.
+        let first_pos = &top_left + &check_spacing;
+        let mut pos = first_pos;
+        while pos.y < past_bottom_right.y {
+            while pos.x < past_bottom_right.x {
+                let pixel = frame.get_pixel(&pos);
+                if !colors::INVENTORY_BACKGROUND.matches(&pixel) {
+                    // println!("is_slot_open={}, {:?}, {:?}", slot_index, pos, pixel);
+                    return false;
+                }
+                pos = Position {
+                    x: pos.x + check_spacing.dx,
+                    y: pos.y,
+                };
+            }
+            pos = Position {
+                x: first_pos.x,
+                y: pos.y + check_spacing.dy,
+            };
+        }
+        true
+    }
+
+    /// Get the minimum slot_index [0,NUM_INVENTORY_SLOTS) which points to an open
+    /// slot. Returns None if there is no open slot.
+    pub fn first_open_inventory_slot(&self, frame: &impl Frame) -> Option<i32> {
+        for i in 0..Locations::NUM_INVENTORY_SLOTS {
+            if self.is_inventory_slot_open(frame, i) {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
+        let top_left = self.locations.chatbox_inner_top_left();
+        let bottom_right =
+            top_left + (self.locations.chatbox_inner_dimensions() - DeltaPosition { dx: 1, dy: 1 });
+
+        let pos_and_pixel = vec![
+            (top_left, colors::CHATBOX_INNER_TOP_LEFT),
+            (
+                Position {
+                    x: top_left.x,
+                    y: bottom_right.y,
+                },
+                colors::CHATBOX_INNER_BOTTOM_LEFT,
+            ),
+            (
+                Position {
+                    x: bottom_right.x,
+                    y: bottom_right.y,
+                },
+                colors::CHATBOX_INNER_TOP_RIGHT,
+            ),
+            (bottom_right, colors::CHATBOX_INNER_BOTTOM_RIGHT),
+        ];
+        for (pos, fuzzy_pixel) in &pos_and_pixel {
+            let pixel = frame.get_pixel(pos);
+            // dbg!(pos, fuzzy_pixel, pixel);
+            if !fuzzy_pixel.matches(&pixel) {
+                return false;
+            }
+        }
+        true
+    }
 }
