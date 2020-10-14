@@ -62,6 +62,8 @@ fn main() {
             }
         }
     }
+    dbg!(screenhandler.is_chatbox_open(&frame));
+
     let mut frame = frame.to_owned();
     frame.flip_to_rgb();
 

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 /// BGR/RBG pixel. Alpha is left out since I have yet to come across an instance
 /// where I care about it.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Pixel {
     pub blue: u8,
     pub green: u8,
@@ -12,7 +12,7 @@ pub struct Pixel {
 
 /// Diecribes the type of pixel we expected, providing bounds on the colors it
 /// will match with. Both min and max are included in matching.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FuzzyPixel {
     pub blue_min: u8,
     pub blue_max: u8,

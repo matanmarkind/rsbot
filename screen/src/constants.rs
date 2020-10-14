@@ -12,35 +12,35 @@ pub mod colors {
 
     pub const CHATBOX_INNER_TOP_LEFT: FuzzyPixel = FuzzyPixel {
         blue_min: 64,
-        blue_max: 68,
+        blue_max: 70,
         green_min: 78,
-        green_max: 82,
+        green_max: 84,
         red_min: 85,
-        red_max: 89,
+        red_max: 92,
     };
     pub const CHATBOX_INNER_BOTTOM_LEFT: FuzzyPixel = FuzzyPixel {
-        blue_min: 76,
-        blue_max: 80,
-        green_min: 93,
-        green_max: 97,
-        red_min: 101,
-        red_max: 105,
+        blue_min: 82,
+        blue_max: 89,
+        green_min: 100,
+        green_max: 108,
+        red_min: 109,
+        red_max: 118,
     };
     pub const CHATBOX_INNER_TOP_RIGHT: FuzzyPixel = FuzzyPixel {
-        blue_min: 64,
-        blue_max: 68,
-        green_min: 78,
-        green_max: 82,
-        red_min: 85,
-        red_max: 89,
+        blue_min: 115,
+        blue_max: 119,
+        green_min: 143,
+        green_max: 147,
+        red_min: 155,
+        red_max: 159,
     };
     pub const CHATBOX_INNER_BOTTOM_RIGHT: FuzzyPixel = FuzzyPixel {
-        blue_min: 76,
-        blue_max: 80,
-        green_min: 93,
-        green_max: 97,
-        red_min: 101,
-        red_max: 105,
+        blue_min: 115,
+        blue_max: 119,
+        green_min: 143,
+        green_max: 147,
+        red_min: 155,
+        red_max: 159,
     };
 
     pub const ACTION_WHITE: FuzzyPixel = FuzzyPixel {

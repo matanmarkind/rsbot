@@ -126,8 +126,9 @@ impl FrameHandler {
             (bottom_right, colors::CHATBOX_INNER_BOTTOM_RIGHT),
         ];
         for (pos, fuzzy_pixel) in &pos_and_pixel {
-            dbg!(pos, fuzzy_pixel);
-            if !fuzzy_pixel.matches(&frame.get_pixel(pos)) {
+            let pixel = frame.get_pixel(pos);
+            // dbg!(pos, fuzzy_pixel, pixel);
+            if !fuzzy_pixel.matches(&pixel) {
                 return false;
             }
         }
