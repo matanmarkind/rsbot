@@ -20,7 +20,7 @@ fn main() {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let screenhandler = screen::Handler::new(config.screen_config);
+    let screenhandler = screen::FrameHandler::new(config.screen_config);
 
     let letter_and_matchers = vec![
         (action_letters::start(), colors::ACTION_WHITE),

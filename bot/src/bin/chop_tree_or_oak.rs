@@ -71,7 +71,7 @@ fn get_action_description(use_oak: bool) -> controller::ActionDescription {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = controller::Config::from_args();
+    let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut player = controller::Player::new(config);

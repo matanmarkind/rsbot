@@ -208,7 +208,7 @@ const MIN_CLICK_WAIT: Duration = Duration::from_millis(100);
 const MAX_CLICK_WAIT: Duration = Duration::from_millis(150);
 
 impl InputBot {
-    pub fn new(paths_fpath: &str) -> InputBot {
+    pub fn new(config: crate::Config) -> InputBot {
         InputBot {
             keyboard: uinput::default()
                 .unwrap()
@@ -218,7 +218,7 @@ impl InputBot {
                 .unwrap()
                 .create()
                 .unwrap(),
-            mouse: MouseMover::new(paths_fpath),
+            mouse: MouseMover::new(&config.mouse_paths_fpath),
         }
     }
 

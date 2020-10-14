@@ -1,8 +1,8 @@
 use bot::controller;
+use structopt::StructOpt;
 use screen::{action_letters, colors};
 use std::error::Error;
 use std::time::Duration;
-use structopt::StructOpt;
 
 fn catch_shrimp_description() -> controller::ActionDescription {
     controller::ActionDescription {
@@ -47,7 +47,7 @@ fn catch_shrimp_description() -> controller::ActionDescription {
 /// 4. Drop burned fish
 ///
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = controller::Config::from_args();
+    let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut player = controller::Player::new(config);

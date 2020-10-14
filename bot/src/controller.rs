@@ -1,8 +1,7 @@
 use crate::bot_utils;
-use screen::{action_letters::Letter, inventory, locations, Capturer, Frame, FuzzyPixel};
+use screen::{action_letters::Letter, locations, Capturer, Frame, FuzzyPixel};
 use std::thread::sleep;
 use std::time::Duration;
-use structopt::StructOpt;
 use userinput::InputBot;
 use util::*;
 
@@ -39,40 +38,22 @@ pub fn get_search_locations() -> Vec<(Position, DeltaPosition)> {
     ]
 }
 
-#[derive(Debug, StructOpt)]
-pub struct Config {
-    #[structopt(long)]
-    pub mouse_fpath: String, // CSV file to read mouse positions from.
-
-    #[structopt(
-        long,
-        about = "Path to directory to save screenshots to. Should end with a slash (e.g. /path/to/dir/ on linux)"
-    )]
-    pub screenshot_dir: String,
-
-    #[structopt(flatten)]
-    pub screen_config: screen::Config,
-}
-
 // This is the player class that will tie together the userinput and screen
 // crates and wrap them in specific usages.
 pub struct Player {
     capturer: Capturer,
 
-    screenhandler: screen::Handler,
+    framehandler: screen::FrameHandler,
 
     inputbot: InputBot,
-
-    config: Config,
 }
 
 impl Player {
-    pub fn new(config: Config) -> Player {
+    pub fn new(config: crate::Config) -> Player {
         Player {
             capturer: screen::Capturer::new(),
-            inputbot: userinput::InputBot::new(config.mouse_fpath.as_str()),
-            screenhandler: screen::Handler::new(config.screen_config.clone()),
-            config,
+            inputbot: userinput::InputBot::new(config.userinput_config.clone()),
+            framehandler: screen::FrameHandler::new(config.screen_config.clone()),
         }
     }
 
@@ -82,7 +63,26 @@ impl Player {
         while !self.inputbot.move_near(&locations::TOP_BAR_MIDDLE) {}
         self.inputbot.left_click();
         bot_utils::close_chatbox(&mut self.capturer, &mut self.inputbot);
-        bot_utils::open_inventory(&mut self.inputbot, &self.capturer.frame().unwrap());
+        self.open_inventory();
+    }
+
+    pub fn open_inventory(&mut self) {
+        let mut frame = self.capturer.frame().unwrap();
+        if !self.framehandler.is_inventory_open(&frame) {
+            self.inputbot.click_esc();
+            std::thread::sleep(util::REDRAW_TIME);
+        }
+
+        frame = self.capturer.frame().unwrap();
+        if !self.framehandler.is_inventory_open(&frame) {
+            std::thread::sleep(util::REDRAW_TIME);
+        }
+
+        frame = self.capturer.frame().unwrap();
+        if !self.framehandler.is_inventory_open(&frame) {
+            // TODO: This can happen if runescape is not the active window, so fall
+            // back on clicking on the inventory icon.
+        }
     }
 
     pub fn fill_inventory(&mut self, action_description: &ActionDescription) {
@@ -97,7 +97,7 @@ impl Player {
 
             let mut frame = self.capturer.frame().unwrap();
 
-            let mut first_open_inventory_slot = inventory::first_open_slot(&frame);
+            let mut first_open_inventory_slot = self.framehandler.first_open_inventory_slot(&frame);
             if first_open_inventory_slot.is_none() {
                 println!("Inventory is full. Goodbye.");
                 return;
@@ -121,23 +121,10 @@ impl Player {
 
                     frame = self.capturer.frame().unwrap();
                     if !self
-                        .screenhandler
+                        .framehandler
                         .check_action_letters(&frame, &action_description.action_text[..])
                     {
                         println!("{} - action didn't match", time.elapsed().as_secs());
-                        let mut ofpath = self.config.screenshot_dir.clone();
-                        ofpath.push_str(
-                            format!(
-                                "screenshot_chop_tree_or_oak_{}.png",
-                                time.elapsed().as_secs()
-                            )
-                            .as_str(),
-                        );
-                        self.screenhandler.mark_letters_and_save(
-                            &frame,
-                            ofpath.as_str(),
-                            &action_description.action_text[..],
-                        );
                         continue;
                     }
 
@@ -149,7 +136,7 @@ impl Player {
                     while waiting_time.elapsed() < action_description.timeout {
                         sleep(Duration::from_secs(1));
                         frame = self.capturer.frame().unwrap();
-                        let open_slot = inventory::first_open_slot(&frame);
+                        let open_slot = self.framehandler.first_open_inventory_slot(&frame);
                         if open_slot == first_open_inventory_slot {
                             // Nothing new in the inventory, just keep waiting.
                             continue;

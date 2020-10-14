@@ -3,17 +3,11 @@ use std::io;
 use structopt::StructOpt;
 use util::*;
 
-#[derive(Debug, StructOpt)]
-pub struct Config {
-    #[structopt(long)]
-    pub in_fpath: String, // CSV file to read mouse positions from.
-}
-
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = Config::from_args();
+    let config = userinput::Config::from_args();
     dbg!(&config);
 
-    let inputbot = userinput::InputBot::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(config);
     loop {
         println!("Enter location (x,y): ");
         let mut buffer = String::new();

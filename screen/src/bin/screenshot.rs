@@ -38,7 +38,7 @@ fn main() {
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let screenhandler = screen::Handler::new(config.screen_config);
+    let screenhandler = screen::FrameHandler::new(config.screen_config);
     // Get Frame.
     // Mark it up and save.
     // Crop it.
@@ -115,7 +115,7 @@ fn main() {
         let mut pos = first_pos;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
-                frame.recolor_pixel(&pos,&screen::colors::PURE_RED);
+                frame.recolor_pixel(&pos, &screen::colors::PURE_RED);
                 pos = Position {
                     x: pos.x + slot_check_spacing.dx,
                     y: pos.y,

@@ -6,27 +6,7 @@ use std::io;
 use structopt::StructOpt;
 use util::*;
 
-#[derive(Debug, StructOpt)]
-pub struct Config {
-    #[structopt(long)]
-    pub in_fpath: String, // CSV file to read mouse positions from.
-
-    #[structopt(
-        long,
-        default_value = "960,40",
-        about = "top left corner of the image (included). (x,y) represent the top/leftmost row/column of the frame to search in."
-    )]
-    pub top_left: Position,
-
-    #[structopt(
-        long,
-        default_value = "1920,625",
-        about = "bottom right of the image (excluded). (x,y) represent one past the bottom/rightmost row/column of the frame to search in."
-    )]
-    pub dimensions: DeltaPosition,
-}
-
-fn get_pixel_position(config: &Config, capturer: &mut screen::Capturer) -> Option<Position> {
+fn get_pixel_position(config: &bot::Config, capturer: &mut screen::Capturer) -> Option<Position> {
     let mut buffer = String::new();
 
     println!("Enter (blue_min,blue_max,green_min,green_max,red_min,red_max): ");
@@ -35,15 +15,19 @@ fn get_pixel_position(config: &Config, capturer: &mut screen::Capturer) -> Optio
     let desired_pixel: FuzzyPixel = buffer.trim().parse().unwrap();
     let frame = capturer.frame().unwrap();
 
-    frame.find_pixel_random(&desired_pixel, &config.top_left, &config.dimensions)
+    frame.find_pixel_random(
+        &desired_pixel,
+        &config.screen_config.screen_top_left,
+        &(&config.screen_config.screen_bottom_right - &config.screen_config.screen_top_left),
+    )
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = Config::from_args();
+    let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let inputbot = userinput::InputBot::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(config.userinput_config.clone());
 
     loop {
         match get_pixel_position(&config, &mut capturer) {

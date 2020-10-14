@@ -5,3 +5,10 @@ pub mod types;
 pub use constants::*;
 pub use controller::InputBot;
 pub use types::*;
+
+use structopt::StructOpt;
+#[derive(Debug,Clone, StructOpt)]
+pub struct Config {
+    #[structopt(long)]
+    pub mouse_paths_fpath: String, // Bincode file to read mouse positions from.
+}

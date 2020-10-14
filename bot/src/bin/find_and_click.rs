@@ -33,11 +33,11 @@ fn get_pixel_position(capturer: &mut screen::Capturer) -> Option<Position> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = Config::from_args();
+    let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut capturer = screen::Capturer::new();
-    let inputbot = userinput::InputBot::new(&config.in_fpath);
+    let inputbot = userinput::InputBot::new(config.userinput_config.clone());
 
     while !inputbot.move_to(&TOP_BAR_MIDDLE) {}
     inputbot.left_click();
