@@ -17,3 +17,9 @@ pub const ZERO_LOC: Location = Location {
     x: 0,
     y: 0,
 };
+
+/// If InputBot is told to move somewhere, we want this to always succeed.
+/// Sometimes the MouseMover needs multiple runs (for instance we don't handle
+/// hitting the edge of the screen well which can cause a failure.) To avoid an
+/// infinite loop though we define a timeout here.
+pub const MOVE_TO_TIMEOUT: Duration = Duration::from_secs(60);

@@ -74,6 +74,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
     dbg!(&config);
 
+    let mut inventory_action_descriptions = Vec::<Box<dyn bot::DescribeAction>>::new();
+    inventory_action_descriptions.push(Box::new(bot::DescribeActionForOpenScreen {
+        expected_pixels: vec![colors::ACTION_BLUE],
+        mouse_press: bot::MousePress::Left,
+        await_result_time: Duration::from_secs(1),
+    }));
+
     let mut player = controller::Player::new(config);
 
     player.fill_inventory(&get_action_description(/*use_oak=*/ true));

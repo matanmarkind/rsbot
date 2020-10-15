@@ -21,6 +21,8 @@ use util::*;
 // When searching for a pixel in a frame, how many attempts to make.
 pub const TIME_TO_FIND_PIXEL: Duration = Duration::from_millis(100);
 
+pub type DefaultFrame<'a> = UnownedFrame<scrap::Frame<'a>>;
+
 /// The interface for an unowned frame. Owned frames will also implement this.
 pub trait Frame {
     /// These are the "fields" that frames will all have. This is to allow the
@@ -344,7 +346,7 @@ impl Capturer {
 
     /// Takes a screenshot of the selected display and returns the BGRA frame.
     // TODO: Once I can compile with polonius, switch to '_unused_frame'.
-    pub fn frame(&mut self) -> Result<UnownedFrame<scrap::Frame>> {
+    pub fn frame(&mut self) -> Result<DefaultFrame> {
         let (width, height) = (self.capturer.width(), self.capturer.height());
         // Wait until there's a frame.
         match self.capturer.frame() {
@@ -485,9 +487,9 @@ impl FrameHandler {
         let mut i = 0;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
-                let pixel = frame.get_pixel(&pos);
+                // let pixel = frame.get_pixel(&pos);
                 // println!("slot_index={}, {:?}, {:?}", slot_index, pos, pixel);
-                if !expected_colors[i].matches(&pixel) {
+                if !frame.check_loose_pixel(&pos, &expected_colors[i]) {
                     return false;
                 }
                 pos = Position {
@@ -528,6 +530,9 @@ impl FrameHandler {
     }
 
     pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
+        // TODO: seems to work both for chat and level up, which is a bit
+        // surprising since chat has arrows for scrolling on the right. Could
+        // consister to moving to the outer edge if there is an issue.
         let top_left = self.locations.chatbox_inner_top_left();
         let bottom_right =
             top_left + (self.locations.chatbox_inner_dimensions() - DeltaPosition { dx: 1, dy: 1 });

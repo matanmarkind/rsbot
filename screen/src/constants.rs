@@ -2,6 +2,7 @@
 pub const RAW_PIXEL_SIZE: usize = 4;
 
 pub mod colors {
+    use crate::InventorySlotPixels;
     use crate::Locations;
     use crate::{FuzzyPixel, Pixel};
 
@@ -177,10 +178,10 @@ pub mod colors {
     };
 
     // Pixel arrays for matching items in the inventory.
-    pub const INVENTORY_SLOT_EMPTY: [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT] =
+    pub const INVENTORY_SLOT_EMPTY: InventorySlotPixels =
         [INVENTORY_BACKGROUND; Locations::NUM_CHECKS_PER_INVENTORY_SLOT];
 
-    pub const INVENTORY_RAW_SHRIMP: [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT] = [
+    pub const INVENTORY_RAW_SHRIMP: InventorySlotPixels = [
         INVENTORY_BACKGROUND,
         INVENTORY_BACKGROUND,
         FuzzyPixel {
@@ -230,7 +231,7 @@ pub mod colors {
         INVENTORY_BACKGROUND,
     ];
 
-    pub const INVENTORY_RAW_ANCHOVIES: [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT] = [
+    pub const INVENTORY_RAW_ANCHOVIES: InventorySlotPixels = [
         INVENTORY_BACKGROUND,
         INVENTORY_BACKGROUND,
         FuzzyPixel {
@@ -280,7 +281,7 @@ pub mod colors {
         INVENTORY_BACKGROUND,
     ];
 
-    pub const INVENTORY_TINDERBOX: [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT] = [
+    pub const INVENTORY_TINDERBOX: InventorySlotPixels = [
         INVENTORY_BACKGROUND,
         FuzzyPixel {
             blue_min: 91,
@@ -351,7 +352,7 @@ pub mod colors {
         INVENTORY_BACKGROUND,
     ];
 
-    pub const INVENTORY_OAK_LOGS: [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT] = [
+    pub const INVENTORY_OAK_LOGS: InventorySlotPixels = [
         INVENTORY_BACKGROUND,
         FuzzyPixel {
             blue_min: 21,

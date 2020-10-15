@@ -1,3 +1,4 @@
+use crate::types::*;
 use util::*;
 
 /// Used to calculate the pixel location of a desired object on the screen.
@@ -132,6 +133,8 @@ impl Locations {
         // tend to be closer to the player than things higher in the screen.
         // Therefore prefer widening the search more down the screen than up the
         // screen.
+        // TODO: move from constant size to constant number, which will scale
+        // with screen size.
         let step_size = 50;
         let mut box_dimensions = DeltaPosition { dx: 0, dy: 0 };
         loop {
@@ -178,6 +181,12 @@ impl Locations {
     }
     pub fn chatbox_inner_dimensions(&self) -> DeltaPosition {
         DeltaPosition { dx: 506, dy: 129 }
+    }
+    pub fn chatbox_middle(&self) -> Position {
+        Self::midpoint(
+            self.chatbox_inner_top_left(),
+            self.chatbox_inner_dimensions(),
+        )
     }
 
     // Locations given in reference to the top right corner of the screen.
@@ -268,6 +277,12 @@ impl Locations {
             y: y + 8 + row * dy,
         }
     }
+    pub fn inventory_slot_middle(&self, slot_index: i32) -> Position {
+        Self::midpoint(
+            self.inventory_slot_top_left(slot_index),
+            self.inventory_slot_dimensions(),
+        )
+    }
 
     // At the bottom of the screen, to the right of the chat icons are icons for
     // many different features with menus (inventory, combat, etc.). This
@@ -314,6 +329,8 @@ impl Locations {
         let mut ret = Vec::<(Position, DeltaPosition)>::new();
         let mut box_top_left = self.mid_screen();
 
+        // TODO: move from constant size to constant number, which will scale
+        // with screen size.
         let step_size = 50;
         let mut box_dimensions = DeltaPosition { dx: 0, dy: 0 };
         loop {
@@ -346,3 +363,5 @@ impl Locations {
         ret
     }
 }
+
+pub type InventorySlotPixels = [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT];

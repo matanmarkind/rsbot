@@ -8,7 +8,7 @@ pub mod types;
 /// screen::frame::Frame.
 pub use constants::*;
 pub use frame::*;
-pub use locations::Locations;
+pub use locations::{InventorySlotPixels, Locations};
 pub use types::*;
 
 use structopt::StructOpt;

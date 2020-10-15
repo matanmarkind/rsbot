@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let inputbot = userinput::InputBot::new(config.userinput_config.clone());
     let framehandler = screen::FrameHandler::new(config.screen_config.clone());
 
-    while !inputbot.move_to(&framehandler.locations.minimap_middle()) {}
+    inputbot.move_to(&framehandler.locations.minimap_middle());
     inputbot.left_click();
 
     loop {
@@ -45,15 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
-                if inputbot.move_to(&pos) {
-                    println!("{} - You made it!", time.elapsed().as_millis());
-                    inputbot.left_click();
-                } else {
-                    println!(
-                        "{} - At least you failed valiantly while trying.",
-                        time.elapsed().as_millis()
-                    );
-                }
+                inputbot.move_to(&pos);
             }
             None => println!("didn't find it :("),
         }

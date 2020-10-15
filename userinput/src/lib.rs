@@ -3,7 +3,7 @@ pub mod controller;
 pub mod types;
 
 pub use constants::*;
-pub use controller::InputBot;
+pub use controller::{InputBot, MouseMover};
 pub use types::*;
 
 use structopt::StructOpt;

@@ -1,5 +1,5 @@
 use bot::controller;
-use screen::{action_letters, colors};
+use screen::{action_letters, colors, Frame};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -53,8 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut player = controller::Player::new(config);
 
     player.fill_inventory(&catch_shrimp_description());
-    let frame = player.capturer.frame().unwrap();
-    // Find wood in inventory
+    println!("Dont filling inventory");
+
+    let mut frame = player.capturer.frame().unwrap();
     let oak_logs_slot = player
         .framehandler
         .first_matching_inventory_slot(&frame, &colors::INVENTORY_OAK_LOGS);
@@ -62,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         dbg!(oak_logs_slot);
         return Ok(());
     }
-    // Find tinderbox in inventory
+
     let tinderbox_slot = player
         .framehandler
         .first_matching_inventory_slot(&frame, &colors::INVENTORY_TINDERBOX);
@@ -70,13 +71,79 @@ fn main() -> Result<(), Box<dyn Error>> {
         dbg!(tinderbox_slot);
         return Ok(());
     }
+
+    let shrimp_slot = player
+        .framehandler
+        .first_matching_inventory_slot(&frame, &colors::INVENTORY_RAW_SHRIMP);
+    if shrimp_slot.is_none() {
+        dbg!(shrimp_slot);
+        return Ok(());
+    }
+
     // Start fire
-    // Find shrimp in inventory
-    // Find fire on screen
-    // Cook
+    player.press_inventory_slot(oak_logs_slot.unwrap());
+    player.press_inventory_slot(tinderbox_slot.unwrap());
+
+    // Find shrimp in inventory and click
+    player.press_inventory_slot(shrimp_slot.unwrap());
+
+    // Find fire on screen and click - probably need to right click.
+    // Fire starting can fail.
+    std::thread::sleep(Duration::from_secs(5));
+    frame = player.capturer.frame().unwrap();
+    for (top_left, dimensions) in player
+        .framehandler
+        .locations
+        .open_screen_search_boxes()
+        .iter()
+    {
+        for fuzzy_pixel in [colors::FIRE_OPAQUE, colors::FIRE_TRANSLUCENT].iter() {
+            let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
+            if position.is_none() {
+                println!("no matching pixel");
+                continue;
+            }
+
+            let position = position.unwrap();
+            player.inputbot.move_to(&position);
+        }
+    }
+    player.inputbot.left_click();
+
+    // Cook - probably fastest to always pick 1 so we can immediately move onto
+    // the next 1. That is likely a give for botting so give all and quickstop
+    // when we cook everything but also have timeout in case of level up.
+    player
+        .inputbot
+        .move_to(&player.framehandler.locations.chatbox_middle());
+    player.inputbot.left_click();
+    while !player
+        .framehandler
+        .first_matching_inventory_slot(&frame, &colors::INVENTORY_RAW_SHRIMP)
+        .is_none()
+    {
+        std::thread::sleep(Duration::from_secs(2));
+        frame = player.capturer.frame().unwrap();
+        // TODO: figure out how to close the chatbox if it is opened (due to
+        // level up?). Perhaps we can just ignore it and repress?
+    }
+    println!("All the shrimp are cooked");
+
     // Find anchovies in inventory
+    let anchovies_slot = player
+        .framehandler
+        .first_matching_inventory_slot(&frame, &colors::INVENTORY_RAW_ANCHOVIES);
+    if anchovies_slot.is_none() {
+        dbg!(anchovies_slot);
+        return Ok(());
+    }
+    player.press_inventory_slot(anchovies_slot.unwrap());
+
     // Find fire on screen
+
     // Cook
+
+    // Drop burned ones.
 
     Ok(())
 }

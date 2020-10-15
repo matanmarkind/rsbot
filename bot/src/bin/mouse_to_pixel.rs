@@ -34,14 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             Some(pos) => {
                 let time = std::time::Instant::now();
                 println!("{} - found it! {:?}", time.elapsed().as_millis(), pos);
-                if inputbot.move_to(&pos) {
-                    println!("{} - You made it!", time.elapsed().as_millis());
-                } else {
-                    println!(
-                        "{} - At least you failed valiantly while trying.",
-                        time.elapsed().as_millis()
-                    );
-                }
+                inputbot.move_to(&pos);
             }
             None => println!("didn't find it :("),
         }

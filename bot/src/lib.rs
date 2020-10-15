@@ -1,6 +1,6 @@
 pub mod controller;
 
-pub use controller::Player;
+pub use controller::*;
 
 use structopt::StructOpt;
 #[derive(Debug, StructOpt, Clone)]

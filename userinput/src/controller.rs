@@ -9,11 +9,14 @@ use std::thread::sleep;
 use std::time::Duration;
 use uinput::event::keyboard::Key;
 use util::*;
-// Struct used to moe the mouse around on the screen.
+
+// Struct used to move the mouse around on the screen.
 //
 // The quality of the mover is highly dependent on the set of MousePaths given
 // in.
-struct MouseMover {
+//
+// Should only be used within this crate. pub so that bin/replay can use.
+pub struct MouseMover {
     // Map of mouse paths to be followed. {PathSummary : MousePath}
     mouse_paths: MousePaths,
 
@@ -278,20 +281,25 @@ impl InputBot {
     pub fn right_click(&self) {
         self.click_mouse(&inputbot::MouseButton::RightButton);
     }
-    pub fn move_to(&self, dst: &Position) -> bool {
-        self.mouse.move_to(dst)
+    /// Moves the mouse to the given spot. This should never fail assuming the
+    /// mouse_paths are reasonably good.
+    pub fn move_to(&self, dst: &Position) {
+        let time = std::time::Instant::now();
+        while !self.mouse.move_to(dst) {
+            assert!(time.elapsed() < MOVE_TO_TIMEOUT);
+        }
     }
     /// Moves the mouse close to 'dst'.
     ///
     /// This is used to avoid pixel perfect placement.
-    pub fn move_near(&self, dst: &Position) -> bool {
+    pub fn move_near(&self, dst: &Position) {
         use std::cmp::max;
 
         let mut rng = thread_rng();
         self.move_to(&Position {
             x: dst.x + max(0, rng.gen_range(-1, 2)),
             y: dst.y + max(0, rng.gen_range(-1, 2)),
-        })
+        });
     }
     pub fn mouse_position(&self) -> Position {
         self.mouse.current_position()

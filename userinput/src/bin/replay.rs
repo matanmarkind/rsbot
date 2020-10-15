@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = userinput::Config::from_args();
     dbg!(&config);
 
-    let inputbot = userinput::InputBot::new(config);
+    let mouse = userinput::MouseMover::new(&config.mouse_paths_fpath);
     loop {
         println!("Enter location (x,y): ");
         let mut buffer = String::new();
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for result in reader.deserialize::<Position>() {
             match result {
                 Ok(dst) => {
-                    if inputbot.move_to(&dst) {
+                    if mouse.move_to(&dst) {
                         println!("You made it!");
                     } else {
                         println!("At least you failed valiantly while trying.");
@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 _ => println!("invalid input"),
             }
-            println!("current_position={:?}", inputbot.mouse_position());
+            println!("current_position={:?}", mouse.current_position());
         }
     }
 }
