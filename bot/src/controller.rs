@@ -218,6 +218,14 @@ pub enum MousePress {
 }
 
 pub trait DescribeAction {
+    /// Describes an action that the player should take.
+    ///
+    /// Returns a position to move the mouse to and how to click.
+    /// - Returning None for position or mouse press will result in either not
+    ///   moving the mouse or not pressing. So you can simply add a condition
+    ///   that doesn't cause an action by returning Some(None,
+    ///   MousePress::None).
+    /// - Returning None from the function indicates a failure.
     // Unfortunately we cannot allow frame to be any impl Frame. This is because
     // then we cannot create objects of DescribeAction due to a trait having a
     // generic param. We cannot then turn impl Frame to dyn Frame because we
@@ -237,23 +245,15 @@ pub trait DescribeAction {
     fn await_result(&self);
 }
 
-/// Basic unit of finding info in the screen and then acting on it. Next step
-/// for the player to take.
+/// Basic unit of finding info in the open screen and then acting on it. Assumes
+/// that the worldmap and chatbox are closed.
 pub struct DescribeActionForOpenScreen {
     pub expected_pixels: Vec<FuzzyPixel>,
     pub mouse_press: MousePress,
     pub await_result_time: Duration,
 }
 
-/// Describes an action based on assessing the worldmap. Assumes the worldmap is
-/// already open.
-pub struct DescribeActionForWorldmap {
-    /// The colors that if found likely correspond with the desired action.
-    pub expected_pixels: Vec<FuzzyPixel>,
-    pub mouse_press: MousePress,
-    pub await_result_time: Duration,
-}
-
+/// Used to confirm that an action we are about to take is the correct one.
 pub struct DescribeActionForActionText {
     pub action_text: Vec<(Letter, FuzzyPixel)>,
     pub mouse_press: MousePress,
@@ -265,6 +265,68 @@ pub struct DescribeActionForInventory {
     pub expected_pixels: Vec<screen::InventorySlotPixels>,
     pub mouse_press: MousePress,
     pub await_result_time: Duration,
+}
+
+/// Describes an action based on assessing the worldmap. Assumes the worldmap is
+/// already open. Finds a location of the desired pixel on the worldmap then
+/// uses the minimap to attempt to move in that direction.
+pub struct DescribeActionForWorldmap {
+    /// The pixels we are looking for, to match against.
+    pub expected_pixels: Vec<FuzzyPixel>,
+    /// Any nearby pixels we want to use to confirm the match.
+    pub check_pixels: Vec<FuzzyPixel>,
+
+    pub mouse_press: MousePress,
+    pub await_result_time: Duration,
+}
+
+// Find something in the inventory and possibly press it.
+pub struct DescribeActionForMinimap {
+    /// The pixels we are looking for, to match against.
+    pub expected_pixels: Vec<FuzzyPixel>,
+    /// Any nearby pixels we want to use to confirm the match.
+    pub check_pixels: Vec<FuzzyPixel>,
+
+    pub mouse_press: MousePress,
+    pub await_result_time: Duration,
+}
+
+impl DescribeAction for DescribeActionForMinimap {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> Option<(Option<Position>, MousePress)> {
+        println!("DescribeActionForMinimap.describe_action");
+        // Distance from where we find 'expected_pixel' in the minimap that we
+        // want to find the check_pixels.
+        const CHECK_RADIUS: f32 = 6.0;
+
+        for fuzzy_pixel in self.expected_pixels.iter() {
+            let pos = frame.find_pixel_random_polar(
+                *fuzzy_pixel,
+                framehandler.locations.minimap_middle(),
+                framehandler.locations.minimap_radius(),
+            );
+            if pos.is_none() {
+                continue;
+            }
+
+            for check in self.check_pixels.iter() {
+                if !frame
+                    .find_pixel_random_polar(*check, pos.unwrap(), CHECK_RADIUS)
+                    .is_none()
+                {
+                    return Some((pos, self.mouse_press));
+                }
+            }
+        }
+        None
+    }
+
+    fn await_result(&self) {
+        sleep(self.await_result_time);
+    }
 }
 
 impl DescribeAction for DescribeActionForOpenScreen {
@@ -297,11 +359,41 @@ impl DescribeAction for DescribeActionForWorldmap {
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
         println!("DescribeActionForWorldmap.describe_action");
+        // Distance from where we find 'expected_pixel' in the minimap that we
+        // want to find the check_pixels.
+        const CHECK_RADIUS: f32 = 6.0;
+
+        if !framehandler.is_worldmap_open(frame) {
+            println!("Expected worldmap to be open");
+            frame.save("/tmp/DescribeActionForWorldmap_WorldmapClosed.jpg");
+            assert!(false);
+        }
+
         for (top_left, dimensions) in framehandler.locations.worldmap_map_search_boxes().iter() {
             for fuzzy_pixel in self.expected_pixels.iter() {
-                let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
-                if !position.is_none() {
-                    return Some((position, self.mouse_press));
+                let pos = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
+                if pos.is_none() {
+                    continue;
+                }
+
+                for check in self.check_pixels.iter() {
+                    if !frame
+                        .find_pixel_random_polar(*check, pos.unwrap(), CHECK_RADIUS)
+                        .is_none()
+                    {
+                        // Get the angle from our character to the goal. We will
+                        // then map this to a location on the minimap to click
+                        // in order to move us in that direction.
+                        let angle_rads = (pos.unwrap()
+                            - framehandler.locations.worldmap_map_middle())
+                        .angle_rads();
+                        let minimap_pos = polar_to_cartesian(
+                            framehandler.locations.minimap_middle(),
+                            framehandler.locations.minimap_radius(),
+                            angle_rads,
+                        );
+                        return Some((Some(minimap_pos), self.mouse_press));
+                    }
                 }
             }
         }
@@ -384,8 +476,11 @@ impl Player {
         self.inputbot
             .move_near(&self.framehandler.locations.minimap_middle());
         self.inputbot.left_click();
+
         self.open_inventory();
         self.close_chatbox();
+        self.close_worldmap();
+
         sleep(util::REDRAW_TIME);
     }
 
@@ -403,25 +498,26 @@ impl Player {
         // dbg!(self.framehandler.is_inventory_open(&frame));
     }
 
-    /// Perform a list of actions. Returns false if failed to complete any of
-    /// them.
-    pub fn do_actions(&mut self, actions: &[Box<dyn DescribeAction>]) -> bool {
-        for act in actions {
-            match act.describe_action(&self.framehandler, &self.capturer.frame().unwrap()) {
-                None => return false,
-                Some((maybe_pos, mouse_press)) => {
-                    if !maybe_pos.is_none() {
-                        self.inputbot.move_to(&maybe_pos.unwrap());
-                    }
-                    match mouse_press {
-                        MousePress::None => (),
-                        MousePress::Left => self.inputbot.left_click(),
-                        MousePress::Right => self.inputbot.right_click(),
-                    }
-                }
-            }
+    pub fn open_worldmap(&mut self) {
+        let frame = self.capturer.frame().unwrap();
+        if self.framehandler.is_worldmap_open(&frame) {
+            // dbg!("frame already open");
+            return;
         }
-        true
+        self.inputbot
+            .move_near(&self.framehandler.locations.worldmap_icon());
+        self.inputbot.left_click();
+    }
+
+    pub fn close_worldmap(&mut self) {
+        let frame = self.capturer.frame().unwrap();
+        if !self.framehandler.is_worldmap_open(&frame) {
+            // dbg!("frame already open");
+            return;
+        }
+        self.inputbot
+            .move_near(&self.framehandler.locations.worldmap_icon());
+        self.inputbot.left_click();
     }
 
     fn close_chatbox(&mut self) {
@@ -457,6 +553,27 @@ impl Player {
         self.inputbot
             .move_near(&self.framehandler.locations.minimap_middle());
         self.inputbot.left_click();
+    }
+
+    /// Perform a list of actions. Returns false if failed to complete any of
+    /// them.
+    pub fn do_actions(&mut self, actions: &[Box<dyn DescribeAction>]) -> bool {
+        for act in actions {
+            match act.describe_action(&self.framehandler, &self.capturer.frame().unwrap()) {
+                None => return false,
+                Some((maybe_pos, mouse_press)) => {
+                    if !maybe_pos.is_none() {
+                        self.inputbot.move_to(&maybe_pos.unwrap());
+                    }
+                    match mouse_press {
+                        MousePress::None => (),
+                        MousePress::Left => self.inputbot.left_click(),
+                        MousePress::Right => self.inputbot.right_click(),
+                    }
+                }
+            }
+        }
+        true
     }
 
     pub fn press_inventory_slot(&mut self, slot_index: i32) {

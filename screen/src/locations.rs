@@ -34,26 +34,36 @@ impl Locations {
         }
     }
 
+    pub fn to_bottom_left(top_left: Position, dimensions: DeltaPosition) -> Position {
+        Position {
+            x: top_left.x,
+            y: top_left.y + dimensions.dy - 1,
+        }
+    }
+    pub fn to_top_right(top_left: Position, dimensions: DeltaPosition) -> Position {
+        Position {
+            x: top_left.x + dimensions.dx - 1,
+            y: top_left.y,
+        }
+    }
+    pub fn to_bottom_right(top_left: Position, dimensions: DeltaPosition) -> Position {
+        Position {
+            x: top_left.x + dimensions.dx - 1,
+            y: top_left.y + dimensions.dy - 1,
+        }
+    }
+
     // Corners of the screen.
     fn bottom_left(&self) -> Position {
-        Position {
-            x: self.top_left.x,
-            y: self.top_left.y + self.dimensions.dy - 1,
-        }
+        Self::to_bottom_left(self.top_left, self.dimensions)
     }
 
     fn top_right(&self) -> Position {
-        Position {
-            x: self.top_left.x + self.dimensions.dx - 1,
-            y: self.top_left.y,
-        }
+        Self::to_top_right(self.top_left, self.dimensions)
     }
 
     fn bottom_right(&self) -> Position {
-        Position {
-            x: self.top_left.x + self.dimensions.dx - 1,
-            y: self.top_left.y + self.dimensions.dy - 1,
-        }
+        Self::to_bottom_right(self.top_left, self.dimensions)
     }
 
     // Locations given in reference to the top left corner of the screen.
@@ -90,7 +100,7 @@ impl Locations {
         DeltaPosition {
             // There is a 5 pixel space between the worldmaps border ending and
             // the minimap box starting.
-            dx: self.minimap_top_left().x - x0 - 4 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
+            dx: self.minimap_plus_top_left().x - x0 - 4 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
             dy: self.chatbox_outer_top_left().y - y0 - Self::WORLDMAP_OUTER_BORDER_WIDTH,
         }
     }
@@ -191,21 +201,27 @@ impl Locations {
 
     // Locations given in reference to the top right corner of the screen.
 
-    /// Minimap top left is used to create a box around the mini map and the
-    /// icons around it such as health and compass etc.
-    pub fn minimap_top_left(&self) -> Position {
+    /// Minimap Plus top left is used to create a box around the mini map and
+    /// the icons around it such as health and compass etc.
+    pub fn minimap_plus_top_left(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position { x: x - 210, y }
     }
-    pub fn minimap_dimensions(&self) -> DeltaPosition {
+    pub fn minimap_plus_dimensions(&self) -> DeltaPosition {
         DeltaPosition { dx: 211, dy: 173 }
     }
+    /// The minimap radius is to the beginning of the green & blue part of the
+    /// worldmap icon. This is to avoid an issue of looking for a blue/green and
+    /// accidentally clicking the worldmap.
     pub fn minimap_middle(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position {
-            x: x - 80,
+            x: x - 82,
             y: y + 84,
         }
+    }
+    pub fn minimap_radius(&self) -> f32 {
+        72.0
     }
     pub fn worldmap_icon(&self) -> Position {
         let Position { x, y } = self.top_right();
@@ -319,7 +335,10 @@ impl Locations {
         let past_bottom_right = Position {
             // We usually play with the inventory open so only search as far right
             // as either the inventory or minimap extends left.
-            x: std::cmp::min(self.inventory_outer_top_left().x, self.minimap_top_left().x) + 1,
+            x: std::cmp::min(
+                self.inventory_outer_top_left().x,
+                self.minimap_plus_top_left().x,
+            ) + 1,
             // We assume that the chatbox is closed in which case the icons on the
             // bottom extend up higher than the chat buttons.
             y: self.leftmost_bottom_icon_top_left().y + 1,

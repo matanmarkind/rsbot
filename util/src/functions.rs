@@ -16,3 +16,17 @@ pub fn random_position(top_left: &Position, dimensions: &DeltaPosition) -> Posit
         y: rng.gen_range(top_left.y, top_left.y + dimensions.dy),
     }
 }
+
+pub fn random_position_polar(middle: Position, radius: f32) -> Position {
+    let mut rng = thread_rng();
+    let r = rng.gen_range(0.0, radius);
+    let angle = rng.gen_range(0.0, 2.0 * std::f32::consts::PI);
+    polar_to_cartesian(middle, r, angle)
+}
+
+pub fn polar_to_cartesian(middle: Position, radius: f32, angle_rad: f32) -> Position {
+    Position {
+        x: (middle.x as f32 + radius * angle_rad.cos()).round() as i32,
+        y: (middle.y as f32 + radius * angle_rad.sin()).round() as i32,
+    }
+}

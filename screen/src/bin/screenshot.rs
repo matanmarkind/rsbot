@@ -39,9 +39,6 @@ fn main() {
 
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
-    // Get Frame.
-    // Mark it up and save.
-    // Crop it.
 
     let frame;
     loop {
@@ -62,10 +59,10 @@ fn main() {
             }
         }
     }
-    dbg!(screenhandler.is_chatbox_open(&frame));
 
     let mut frame = frame.to_owned();
     frame.flip_to_rgb();
+    dbg!(screenhandler.is_inventory_open(&frame));
 
     frame.draw_red_box(
         &screenhandler.locations.top_left,
@@ -76,16 +73,8 @@ fn main() {
         &DeltaPosition { dx: 300, dy: 20 },
     );
     frame.draw_red_box(
-        &screenhandler.locations.chatbox_outer_top_left(),
-        &screenhandler.locations.chatbox_outer_dimensions(),
-    );
-    frame.draw_red_box(
-        &screenhandler.locations.chatbox_inner_top_left(),
-        &screenhandler.locations.chatbox_inner_dimensions(),
-    );
-    frame.draw_red_box(
-        &screenhandler.locations.minimap_top_left(),
-        &screenhandler.locations.minimap_dimensions(),
+        &screenhandler.locations.minimap_plus_top_left(),
+        &screenhandler.locations.minimap_plus_dimensions(),
     );
     frame.draw_red_box(
         &screenhandler.locations.inventory_outer_top_left(),
@@ -98,7 +87,6 @@ fn main() {
 
     surrounding_box(&mut frame, &screenhandler.locations.mid_screen());
     surrounding_box(&mut frame, &screenhandler.locations.all_chat_button());
-    surrounding_box(&mut frame, &screenhandler.locations.minimap_middle());
     surrounding_box(&mut frame, &screenhandler.locations.worldmap_icon());
     surrounding_box(&mut frame, &screenhandler.locations.compass_icon());
     surrounding_box(
@@ -136,10 +124,13 @@ fn main() {
 
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot.png");
-    println!("Saving {}. Open the worldmap...", ofpath);
-    frame.save(ofpath.as_str());
+    println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
+    // frame.save(ofpath.as_str());
 
     frame = capturer.frame().unwrap().to_owned();
+    dbg!(screenhandler.is_chatbox_open(&frame));
+    dbg!(screenhandler.is_worldmap_open(&frame));
+
     frame.flip_to_rgb();
     frame.draw_red_box(
         &screenhandler.locations.worldmap_top_left(),
@@ -153,6 +144,30 @@ fn main() {
     for (pos, dim) in screenhandler.locations.worldmap_map_search_boxes() {
         frame.draw_red_box(&pos, &dim);
     }
+
+    // The minimap is a circle so the outer border is defined in polar
+    // coordinates.
+    let mut angle = 0.0;
+    while angle < 2.0 * std::f32::consts::PI {
+        frame.recolor_pixel(
+            &polar_to_cartesian(
+                screenhandler.locations.minimap_middle(),
+                screenhandler.locations.minimap_radius(),
+                angle,
+            ),
+            &screen::colors::PURE_RED,
+        );
+        angle += 0.1;
+    }
+    frame.draw_red_box(
+        &screenhandler.locations.chatbox_outer_top_left(),
+        &screenhandler.locations.chatbox_outer_dimensions(),
+    );
+    frame.draw_red_box(
+        &screenhandler.locations.chatbox_inner_top_left(),
+        &screenhandler.locations.chatbox_inner_dimensions(),
+    );
+    surrounding_box(&mut frame, &screenhandler.locations.minimap_middle());
 
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");

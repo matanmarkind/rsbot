@@ -1,6 +1,8 @@
 // Each pixel is represented by 4 u8's, BGRA/RGBA. Each frame is a list of u8's.
 pub const RAW_PIXEL_SIZE: usize = 4;
 
+/// TODO: Break this into multiple modules. pixels, fuzzy_pixels,
+/// inventory_slot_pixels.
 pub mod colors {
     use crate::InventorySlotPixels;
     use crate::Locations;
@@ -14,39 +16,6 @@ pub mod colors {
     };
 
     // FuzzyPixels
-    pub const CHATBOX_INNER_TOP_LEFT: FuzzyPixel = FuzzyPixel {
-        blue_min: 64,
-        blue_max: 70,
-        green_min: 78,
-        green_max: 84,
-        red_min: 85,
-        red_max: 92,
-    };
-    pub const CHATBOX_INNER_BOTTOM_LEFT: FuzzyPixel = FuzzyPixel {
-        blue_min: 82,
-        blue_max: 89,
-        green_min: 100,
-        green_max: 108,
-        red_min: 109,
-        red_max: 118,
-    };
-    pub const CHATBOX_INNER_TOP_RIGHT: FuzzyPixel = FuzzyPixel {
-        blue_min: 115,
-        blue_max: 119,
-        green_min: 143,
-        green_max: 147,
-        red_min: 155,
-        red_max: 159,
-    };
-    pub const CHATBOX_INNER_BOTTOM_RIGHT: FuzzyPixel = FuzzyPixel {
-        blue_min: 115,
-        blue_max: 119,
-        green_min: 143,
-        green_max: 147,
-        red_min: 155,
-        red_max: 159,
-    };
-
     pub const ACTION_WHITE: FuzzyPixel = FuzzyPixel {
         blue_min: 180,
         blue_max: 255,
@@ -83,8 +52,10 @@ pub mod colors {
         red_max: 255,
     };
 
+    /// Colors for icons that show up on the maps (seems to be the same worldmap
+    /// and minimap.)
     // Used to make a dollar sign to mark a bank on the mini/worldmap.
-    pub const BANK_ICON_YELLOW: FuzzyPixel = FuzzyPixel {
+    pub const MAP_ICON_BANK_YELLOW: FuzzyPixel = FuzzyPixel {
         blue_min: 74,
         blue_max: 78,
         green_min: 207,

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::num::ParseIntError;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Mul, Sub};
 use std::str::FromStr;
 
 // TODO: remove Add/Sub that are based on references. These types are Copy so we
@@ -77,6 +77,17 @@ impl Add<DeltaPosition> for Position {
         Position {
             x: self.x + other.dx,
             y: self.y + other.dy,
+        }
+    }
+}
+
+impl Sub<DeltaPosition> for Position {
+    type Output = Position;
+
+    fn sub(self, other: DeltaPosition) -> Position {
+        Position {
+            x: self.x - other.dx,
+            y: self.y - other.dy,
         }
     }
 }
@@ -180,6 +191,17 @@ impl Sub for DeltaPosition {
         DeltaPosition {
             dx: self.dx - other.dx,
             dy: self.dy - other.dy,
+        }
+    }
+}
+
+impl Mul<f32> for DeltaPosition {
+    type Output = DeltaPosition;
+
+    fn mul(self, factor: f32) -> DeltaPosition {
+        DeltaPosition {
+            dx: (self.dx as f32 * factor).round() as i32,
+            dy: (self.dy as f32 * factor).round() as i32,
         }
     }
 }

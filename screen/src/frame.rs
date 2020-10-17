@@ -95,6 +95,29 @@ pub trait Frame {
         None
     }
 
+    /// Search for a matching pixel in the bounds given bounds. Bounds are given
+    /// in polar coordinates.
+    fn find_pixel_random_polar(
+        &self,
+        fuzzy_pixel: FuzzyPixel,
+        middle: Position,
+        radius: f32,
+    ) -> Option<Position> {
+        let batch_size = 1000;
+        let time = std::time::Instant::now();
+        while time.elapsed() < TIME_TO_FIND_PIXEL {
+            // To avoid wasting time by always checking the time, only check
+            // every 1k searches.
+            for _ in 0..batch_size {
+                let pos = random_position_polar(middle, radius);
+                if fuzzy_pixel.contains(&self.get_pixel(&pos)) {
+                    return Some(pos);
+                }
+            }
+        }
+        None
+    }
+
     /// Get the index to the first channel of the pixel as 'pos'.
     fn pixel_index(&self, pos: &Position) -> usize {
         self.width() * RAW_PIXEL_SIZE * pos.y as usize + pos.x as usize * RAW_PIXEL_SIZE
@@ -529,39 +552,131 @@ impl FrameHandler {
         self.first_matching_inventory_slot(frame, &colors::INVENTORY_SLOT_EMPTY)
     }
 
-    pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
-        // TODO: seems to work both for chat and level up, which is a bit
-        // surprising since chat has arrows for scrolling on the right. Could
-        // consister to moving to the outer edge if there is an issue.
-        let top_left = self.locations.chatbox_inner_top_left();
-        let bottom_right =
-            top_left + (self.locations.chatbox_inner_dimensions() - DeltaPosition { dx: 1, dy: 1 });
-
-        let pos_and_pixel = vec![
-            (top_left, colors::CHATBOX_INNER_TOP_LEFT),
+    /// Check the 4 corners of the box described by (top_left, dimensions)
+    /// loosely matches expectations.
+    ///
+    /// expected_pixels are expected to be in the order [top_left, bottom_left,
+    /// top_right, bottom_right]
+    fn check_corners(
+        frame: &impl Frame,
+        top_left: Position,
+        dimensions: DeltaPosition,
+        expected_pixels: [FuzzyPixel; 4],
+    ) -> bool {
+        let pos_and_pixel = [
+            (top_left, expected_pixels[0]),
             (
-                Position {
-                    x: top_left.x,
-                    y: bottom_right.y,
-                },
-                colors::CHATBOX_INNER_BOTTOM_LEFT,
+                Locations::to_bottom_left(top_left, dimensions),
+                expected_pixels[1],
             ),
             (
-                Position {
-                    x: bottom_right.x,
-                    y: bottom_right.y,
-                },
-                colors::CHATBOX_INNER_TOP_RIGHT,
+                Locations::to_top_right(top_left, dimensions),
+                expected_pixels[2],
             ),
-            (bottom_right, colors::CHATBOX_INNER_BOTTOM_RIGHT),
+            (
+                Locations::to_bottom_right(top_left, dimensions),
+                expected_pixels[3],
+            ),
         ];
         for (pos, fuzzy_pixel) in &pos_and_pixel {
-            let pixel = frame.get_pixel(pos);
+            // let pixel = frame.get_pixel(pos);
             // dbg!(pos, fuzzy_pixel, pixel);
-            if !fuzzy_pixel.matches(&pixel) {
+            if !frame.check_loose_pixel(&pos, &fuzzy_pixel) {
                 return false;
             }
         }
         true
+    }
+
+    pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
+        Self::check_corners(
+            frame,
+            self.locations.chatbox_inner_top_left(),
+            self.locations.chatbox_inner_dimensions(),
+            [
+                FuzzyPixel {
+                    blue_min: 63,
+                    blue_max: 67,
+                    green_min: 76,
+                    green_max: 80,
+                    red_min: 84,
+                    red_max: 88,
+                },
+                FuzzyPixel {
+                    blue_min: 81,
+                    blue_max: 85,
+                    green_min: 99,
+                    green_max: 103,
+                    red_min: 108,
+                    red_max: 112,
+                },
+                FuzzyPixel {
+                    blue_min: 83,
+                    blue_max: 87,
+                    green_min: 103,
+                    green_max: 107,
+                    red_min: 112,
+                    red_max: 116,
+                },
+                FuzzyPixel {
+                    blue_min: 115,
+                    blue_max: 119,
+                    green_min: 143,
+                    green_max: 147,
+                    red_min: 155,
+                    red_max: 159,
+                },
+            ],
+        )
+    }
+
+    pub fn is_worldmap_open(&self, frame: &impl Frame) -> bool {
+        // The worldmap dimensions are internal, which means the colors are
+        // variable (top left can be covered by action text, right size is on
+        // the map.) Creating an outer barier would put us outside the screen.
+        // Therefore we take the inner box and expand t a bit to rest on the
+        // worldmap border which we can use to identify the worldmap being open.
+        let expansion = DeltaPosition { dx: 3, dy: 3 };
+        let top_left = self.locations.worldmap_top_left() - expansion;
+        let dimensions = self.locations.worldmap_dimensions() + expansion * 2.0;
+        Self::check_corners(
+            frame,
+            top_left,
+            dimensions,
+            [
+                FuzzyPixel {
+                    blue_min: 51,
+                    blue_max: 55,
+                    green_min: 55,
+                    green_max: 59,
+                    red_min: 54,
+                    red_max: 58,
+                },
+                FuzzyPixel {
+                    blue_min: 51,
+                    blue_max: 55,
+                    green_min: 55,
+                    green_max: 59,
+                    red_min: 54,
+                    red_max: 58,
+                },
+                FuzzyPixel {
+                    blue_min: 58,
+                    blue_max: 62,
+                    green_min: 62,
+                    green_max: 66,
+                    red_min: 61,
+                    red_max: 65,
+                },
+                FuzzyPixel {
+                    blue_min: 249,
+                    blue_max: 255,
+                    green_min: 249,
+                    green_max: 255,
+                    red_min: 250,
+                    red_max: 255,
+                },
+            ],
+        )
     }
 }
