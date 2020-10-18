@@ -210,9 +210,7 @@ impl Locations {
     pub fn minimap_plus_dimensions(&self) -> DeltaPosition {
         DeltaPosition { dx: 211, dy: 173 }
     }
-    /// The minimap radius is to the beginning of the green & blue part of the
-    /// worldmap icon. This is to avoid an issue of looking for a blue/green and
-    /// accidentally clicking the worldmap.
+    /// The minimap is circular, so we analyze it using polar coordinates, middle & radius.
     pub fn minimap_middle(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position {
@@ -220,6 +218,9 @@ impl Locations {
             y: y + 84,
         }
     }
+    /// The minimap radius is to the beginning of the green & blue part of the
+    /// worldmap icon. This is to avoid an issue of looking for a blue/green and
+    /// accidentally clicking the worldmap.
     pub fn minimap_radius(&self) -> f32 {
         72.0
     }

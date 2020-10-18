@@ -1,7 +1,5 @@
 // From scrap github repo. Here for my convenience.
-use screen::{Frame, OwnedFrame, FRAME_PERIOD};
-use std::io::ErrorKind::WouldBlock;
-use std::thread;
+use screen::{Capturer, Frame, FrameHandler, OwnedFrame};
 use structopt::StructOpt;
 use util::*;
 
@@ -33,37 +31,11 @@ fn surrounding_box(frame: &mut OwnedFrame, center: &Position) {
     );
 }
 
-fn main() {
-    let config = Config::from_args();
-    dbg!(&config);
-
-    let mut capturer = screen::Capturer::new();
-    let screenhandler = screen::FrameHandler::new(config.screen_config);
-
-    let frame;
-    loop {
-        // Wait until there's a frame.
-        match capturer.frame() {
-            Ok(f) => {
-                frame = f;
-                break;
-            }
-            Err(error) => {
-                if error.kind() == WouldBlock {
-                    // Keep spinning.
-                    thread::sleep(FRAME_PERIOD);
-                    continue;
-                } else {
-                    panic!("Error: {}", error);
-                }
-            }
-        }
-    }
-
-    let mut frame = frame.to_owned();
-    frame.flip_to_rgb();
+fn marked_open_screen(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFrame {
+    let mut frame = cap.frame().unwrap().to_owned();
     dbg!(screenhandler.is_inventory_open(&frame));
 
+    frame.flip_to_rgb();
     frame.draw_red_box(
         &screenhandler.locations.top_left,
         &screenhandler.locations.dimensions,
@@ -94,40 +66,15 @@ fn main() {
         &screenhandler.locations.inventory_icon_background(),
     );
 
-    for i in 0..screen::Locations::NUM_INVENTORY_SLOTS {
-        let slot_top_left = screenhandler.locations.inventory_slot_top_left(i);
-        let slot_dimensions = screenhandler.locations.inventory_slot_dimensions();
-        frame.draw_red_box(&slot_top_left, &slot_dimensions);
-
-        let past_bottom_right = &slot_top_left + &slot_dimensions;
-        let slot_check_spacing = screen::Locations::INVENTORY_SLOT_CHECK_SPACING;
-        let first_pos = &slot_top_left + &slot_check_spacing;
-        let mut pos = first_pos;
-        while pos.y < past_bottom_right.y {
-            while pos.x < past_bottom_right.x {
-                frame.recolor_pixel(&pos, &screen::colors::PURE_RED);
-                pos = Position {
-                    x: pos.x + slot_check_spacing.dx,
-                    y: pos.y,
-                };
-            }
-            pos = Position {
-                x: first_pos.x,
-                y: pos.y + slot_check_spacing.dy,
-            };
-        }
-    }
-
     for (pos, dim) in screenhandler.locations.open_screen_search_boxes() {
         frame.draw_red_box(&pos, &dim);
     }
 
-    let mut ofpath = config.out_dir.clone();
-    ofpath.push_str("screenshot.png");
-    println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
-    // frame.save(ofpath.as_str());
+    frame
+}
 
-    frame = capturer.frame().unwrap().to_owned();
+fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFrame {
+    let mut frame = cap.frame().unwrap().to_owned();
     dbg!(screenhandler.is_chatbox_open(&frame));
     dbg!(screenhandler.is_worldmap_open(&frame));
 
@@ -168,9 +115,63 @@ fn main() {
         &screenhandler.locations.chatbox_inner_dimensions(),
     );
     surrounding_box(&mut frame, &screenhandler.locations.minimap_middle());
+    frame
+}
 
+fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFrame {
+    let mut frame = cap.frame().unwrap().to_owned();
+    // dbg!(screenhandler.is_bank_open(&frame));
+
+    frame.flip_to_rgb();
+    for i in 0..screen::Locations::NUM_INVENTORY_SLOTS {
+        let slot_top_left = screenhandler.locations.inventory_slot_top_left(i);
+        let slot_dimensions = screenhandler.locations.inventory_slot_dimensions();
+        frame.draw_red_box(&slot_top_left, &slot_dimensions);
+
+        let past_bottom_right = &slot_top_left + &slot_dimensions;
+        let slot_check_spacing = screen::Locations::INVENTORY_SLOT_CHECK_SPACING;
+        let first_pos = &slot_top_left + &slot_check_spacing;
+        let mut pos = first_pos;
+        while pos.y < past_bottom_right.y {
+            while pos.x < past_bottom_right.x {
+                frame.recolor_pixel(&pos, &screen::colors::PURE_RED);
+                pos = Position {
+                    x: pos.x + slot_check_spacing.dx,
+                    y: pos.y,
+                };
+            }
+            pos = Position {
+                x: first_pos.x,
+                y: pos.y + slot_check_spacing.dy,
+            };
+        }
+    }
+
+    frame
+}
+
+fn main() {
+    let config = Config::from_args();
+    dbg!(&config);
+
+    let mut capturer = screen::Capturer::new();
+    let screenhandler = screen::FrameHandler::new(config.screen_config);
+
+    let frame = marked_open_screen(&mut capturer, &screenhandler);
     let mut ofpath = config.out_dir.clone();
+    ofpath.push_str("screenshot_open_screen.png");
+    println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
+    // frame.save(ofpath.as_str());
+
+    let frame = marked_worldmap(&mut capturer, &screenhandler);
+    ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");
+    println!("Saving {}. Open the bank...", ofpath);
+    // frame.save(ofpath.as_str());
+
+    let frame = marked_inventories(&mut capturer, &screenhandler);
+    ofpath = config.out_dir.clone();
+    ofpath.push_str("screenshot_inventories.png");
     println!("Saving {}...", ofpath);
-    frame.save(ofpath.as_str());
+    // frame.save(ofpath.as_str());
 }

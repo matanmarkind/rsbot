@@ -588,6 +588,9 @@ impl FrameHandler {
         true
     }
 
+    /// Checks if the chatbox is open by chacking the corners. The coloring
+    /// changes depending on whether or not runelite is the active window. We
+    /// program on the assumption it is.
     pub fn is_chatbox_open(&self, frame: &impl Frame) -> bool {
         Self::check_corners(
             frame,
@@ -596,19 +599,19 @@ impl FrameHandler {
             [
                 FuzzyPixel {
                     blue_min: 63,
-                    blue_max: 67,
+                    blue_max: 71,
                     green_min: 76,
-                    green_max: 80,
+                    green_max: 85,
                     red_min: 84,
-                    red_max: 88,
+                    red_max: 93,
                 },
                 FuzzyPixel {
                     blue_min: 81,
-                    blue_max: 85,
+                    blue_max: 90,
                     green_min: 99,
-                    green_max: 103,
+                    green_max: 109,
                     red_min: 108,
-                    red_max: 112,
+                    red_max: 119,
                 },
                 FuzzyPixel {
                     blue_min: 83,
@@ -630,6 +633,9 @@ impl FrameHandler {
         )
     }
 
+    /// Checks if the worldmap is open by chacking the corners. The coloring
+    /// changes depending on whether or not runelite is the active window. We
+    /// program on the assumption it is.
     pub fn is_worldmap_open(&self, frame: &impl Frame) -> bool {
         // The worldmap dimensions are internal, which means the colors are
         // variable (top left can be covered by action text, right size is on
@@ -646,19 +652,19 @@ impl FrameHandler {
             [
                 FuzzyPixel {
                     blue_min: 51,
-                    blue_max: 55,
+                    blue_max: 62,
                     green_min: 55,
-                    green_max: 59,
+                    green_max: 66,
                     red_min: 54,
-                    red_max: 58,
+                    red_max: 65,
                 },
                 FuzzyPixel {
                     blue_min: 51,
-                    blue_max: 55,
+                    blue_max: 62,
                     green_min: 55,
-                    green_max: 59,
+                    green_max: 66,
                     red_min: 54,
-                    red_max: 58,
+                    red_max: 65,
                 },
                 FuzzyPixel {
                     blue_min: 58,
