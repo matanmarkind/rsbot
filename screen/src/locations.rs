@@ -199,6 +199,66 @@ impl Locations {
         )
     }
 
+    /// Locations for understanding the bank. This is for the bank being open,
+    /// not navigating around the location of a bank.
+    ///
+    /// The bank is surrounded by a border (like the worldmap) which seems to be
+    /// constant width on all sides. We will give locations internally, not to
+    /// the outside edge.
+    ///
+    /// The bank has 2 forms of symmetry.
+    /// - Vertically it is symmetric between the top of the screen and the
+    ///   chatbox. It extends to fill this space up until a certain max height,
+    ///   and then space is added symmetrically above and below.
+    /// - Horizontally the bank is centered around the center of the worldmap.
+    pub const BANK_BORDER_WIDTH: i32 = 6;
+    /// The bank expands to fill up more vertical space until the inside area is
+    /// 788 pixels high.
+    pub const BANK_MAX_HEIGHT: i32 = 788;
+
+    /// This gets the vertical distance from either the top of the screen or the
+    /// top of te chatbox to the first internal pixel of the bank (within the
+    /// border).
+    fn bank_top_offset(&self) -> i32 {
+        // There is always at least 2 pixels between the top of the screen and
+        // the top of the bank border. Below the screen there is always at least
+        // 1 pixel between the top of the chatbox and the bottom of the bank
+        // border.
+        let min_vertical_offset = 3 + 2 * Self::BANK_BORDER_WIDTH;
+        let total_vertical_space = self.chatbox_outer_top_left().y - self.top_left.y;
+
+        let height = total_vertical_space - min_vertical_offset;
+        if height > Self::BANK_MAX_HEIGHT {
+            ((total_vertical_space - Self::BANK_MAX_HEIGHT) as f32 / 2.0).round() as i32
+        } else {
+            2 + Self::BANK_BORDER_WIDTH
+        }
+    }
+    // The bank box extends from the top of the screen until the top of the
+    // chatbox up until a max height. Then space is added above and below it
+    // symmetrically between the top of the screen and the top of the
+    // chatbox.
+    pub fn bank_dimensions(&self) -> DeltaPosition {
+        // The spacing above the bank is 1 pixel larger than the spacing below the bank.
+        let vertical_spacing = 2 * self.bank_top_offset() - 1;
+        let total_vertical_space = self.chatbox_outer_top_left().y - self.top_left.y;
+        DeltaPosition {
+            dx: 476,
+            dy: total_vertical_space - vertical_spacing,
+        }
+    }
+    pub fn bank_top_left(&self) -> Position {
+        // Due to a difference in rounding centering the bank works better when
+        // we subtract 1 from the worldmap width.
+        let DeltaPosition {dx, dy} = self.worldmap_dimensions();
+        let Position { x, y: _y } =
+            Self::midpoint(self.worldmap_top_left(), DeltaPosition{dx:dx-1, dy});
+        Position {
+            x: x - (self.bank_dimensions().dx as f32 / 2.0).round() as i32,
+            y: self.top_left.y + self.bank_top_offset(),
+        }
+    }
+
     // Locations given in reference to the top right corner of the screen.
 
     /// Minimap Plus top left is used to create a box around the mini map and
@@ -331,20 +391,24 @@ impl Locations {
     }
 
     // Create boxes used for searching for things in the open screen.
-    pub fn open_screen_search_boxes(&self) -> Vec<(Position, DeltaPosition)> {
-        let top_left = self.top_left;
-        let past_bottom_right = Position {
+    pub fn open_screen_dimensions(&self) -> DeltaPosition {
+        DeltaPosition {
             // We usually play with the inventory open so only search as far right
             // as either the inventory or minimap extends left.
-            x: std::cmp::min(
+            dx: std::cmp::min(
                 self.inventory_outer_top_left().x,
                 self.minimap_plus_top_left().x,
-            ) + 1,
+            ) - self.top_left.x
+                + 1,
             // We assume that the chatbox is closed in which case the icons on the
             // bottom extend up higher than the chat buttons.
-            y: self.leftmost_bottom_icon_top_left().y + 1,
-        };
-        let dimensions = past_bottom_right - top_left;
+            dy: self.leftmost_bottom_icon_top_left().y - self.top_left.y + 1,
+        }
+    }
+    pub fn open_screen_search_boxes(&self) -> Vec<(Position, DeltaPosition)> {
+        let top_left = self.top_left;
+        let dimensions = self.open_screen_dimensions();
+        let past_bottom_right = top_left + dimensions;
 
         let mut ret = Vec::<(Position, DeltaPosition)>::new();
         let mut box_top_left = self.mid_screen();
