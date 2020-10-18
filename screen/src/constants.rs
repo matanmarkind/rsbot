@@ -52,6 +52,31 @@ pub mod colors {
         red_max: 255,
     };
 
+    pub const BANK_BROWN1: FuzzyPixel = FuzzyPixel {
+        blue_min: 1,
+        blue_max: 5,
+        green_min: 30,
+        green_max: 40,
+        red_min: 50,
+        red_max: 60,
+    };
+    pub const BANK_BROWN2: FuzzyPixel = FuzzyPixel {
+        blue_min: 1,
+        blue_max: 5,
+        green_min: 40,
+        green_max: 50,
+        red_min: 61,
+        red_max: 71,
+    };
+    pub const BANK_BROWN3: FuzzyPixel = FuzzyPixel {
+        blue_min: 20,
+        blue_max: 24,
+        green_min: 62,
+        green_max: 66,
+        red_min: 85,
+        red_max: 89,
+    };
+
     /// Colors for icons that show up on the maps (seems to be the same worldmap
     /// and minimap.)
     // Used to make a dollar sign to mark a bank on the mini/worldmap.

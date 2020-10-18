@@ -152,6 +152,9 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         &screenhandler.locations.bank_dimensions(),
     );
 
+    for i in 0..screen::Locations::NUM_BANK_SLOTS {
+        surrounding_box(&mut frame, &screenhandler.locations.bank_slot_center(i));
+    }
     frame
 }
 
@@ -166,13 +169,13 @@ fn main() {
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_open_screen.png");
     println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
-    frame.save(ofpath.as_str());
+    // frame.save(ofpath.as_str());
 
     let frame = marked_worldmap(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");
     println!("Saving {}. Open the bank...", ofpath);
-    frame.save(ofpath.as_str());
+    // frame.save(ofpath.as_str());
 
     let frame = marked_inventories(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();

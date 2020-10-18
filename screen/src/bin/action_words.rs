@@ -1,5 +1,5 @@
-/// Take a screenshot of the game and draw lines to separate the characters in
-/// the text that describes an action. This is a test to see if they are regular.
+/// Take a screenshot of the game and draw on the spots that are checked for
+/// these letters. Used to add new action_letters.
 use screen::{action_letters, colors};
 use structopt::StructOpt;
 
@@ -24,28 +24,23 @@ fn main() {
 
     let letter_and_matchers = vec![
         (action_letters::start(), colors::ACTION_WHITE),
-        (action_letters::upper_s(), colors::ACTION_WHITE),
-        (action_letters::lower_m(), colors::ACTION_WHITE),
+        // (action_letters::upper_t(), colors::ACTION_WHITE),
+        //
+        (action_letters::upper_b(), colors::ACTION_WHITE),
         (action_letters::lower_a(), colors::ACTION_WHITE),
-        (action_letters::lower_l(), colors::ACTION_WHITE),
-        (action_letters::lower_l(), colors::ACTION_WHITE),
+        (action_letters::lower_n(), colors::ACTION_WHITE),
+        (action_letters::lower_k(), colors::ACTION_WHITE),
         (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::upper_n(), colors::ACTION_WHITE),
-        (action_letters::lower_e(), colors::ACTION_WHITE),
-        (action_letters::lower_t(), colors::ACTION_WHITE),
+        (action_letters::upper_b(), colors::ACTION_BLUE),
+        (action_letters::lower_a(), colors::ACTION_BLUE),
+        (action_letters::lower_n(), colors::ACTION_BLUE),
+        (action_letters::lower_k(), colors::ACTION_BLUE),
         (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::upper_f(), colors::ACTION_YELLOW),
-        (action_letters::lower_i(), colors::ACTION_YELLOW),
-        (action_letters::lower_s(), colors::ACTION_YELLOW),
-        (action_letters::lower_h(), colors::ACTION_YELLOW),
-        (action_letters::lower_i(), colors::ACTION_YELLOW),
-        (action_letters::lower_n(), colors::ACTION_YELLOW),
-        (action_letters::lower_g(), colors::ACTION_YELLOW),
-        (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::lower_s(), colors::ACTION_YELLOW),
-        (action_letters::lower_p(), colors::ACTION_YELLOW),
-        (action_letters::lower_o(), colors::ACTION_YELLOW),
-        (action_letters::lower_t(), colors::ACTION_YELLOW),
+        (action_letters::lower_b(), colors::ACTION_BLUE),
+        (action_letters::lower_o(), colors::ACTION_BLUE),
+        (action_letters::lower_o(), colors::ACTION_BLUE),
+        (action_letters::lower_t(), colors::ACTION_BLUE),
+        (action_letters::lower_h(), colors::ACTION_BLUE),
         (action_letters::space(), colors::ACTION_WHITE),
         (action_letters::forward_slash(), colors::ACTION_WHITE),
     ];
@@ -54,9 +49,9 @@ fn main() {
     let frame = capturer.frame().unwrap();
     dbg!(screenhandler.check_action_letters(&frame, &letter_and_matchers));
 
-    println!("Saving...");
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_action_words.png");
+    println!("Saving {} ...", ofpath);
     screenhandler
         .mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
         .join()

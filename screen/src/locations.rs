@@ -212,6 +212,12 @@ impl Locations {
     ///   and then space is added symmetrically above and below.
     /// - Horizontally the bank is centered around the center of the worldmap.
     pub const BANK_BORDER_WIDTH: i32 = 6;
+    pub const NUM_BANK_COLUMNS: i32 = 8;
+    /// Maximum number of rows that we can assume to have access to. This number
+    /// can be much larger if the screen is expanded, but the bot will only use
+    /// the first 5.
+    pub const NUM_BANK_ROWS: i32 = 5;
+    pub const NUM_BANK_SLOTS: i32 = Self::NUM_BANK_COLUMNS * Self::NUM_BANK_ROWS;
     /// The bank expands to fill up more vertical space until the inside area is
     /// 788 pixels high.
     pub const BANK_MAX_HEIGHT: i32 = 788;
@@ -250,12 +256,43 @@ impl Locations {
     pub fn bank_top_left(&self) -> Position {
         // Due to a difference in rounding centering the bank works better when
         // we subtract 1 from the worldmap width.
-        let DeltaPosition {dx, dy} = self.worldmap_dimensions();
+        let DeltaPosition { dx, dy } = self.worldmap_dimensions();
         let Position { x, y: _y } =
-            Self::midpoint(self.worldmap_top_left(), DeltaPosition{dx:dx-1, dy});
+            Self::midpoint(self.worldmap_top_left(), DeltaPosition { dx: dx - 1, dy });
         Position {
             x: x - (self.bank_dimensions().dx as f32 / 2.0).round() as i32,
             y: self.top_left.y + self.bank_top_offset(),
+        }
+    }
+    pub fn bank_slot_dimensions(&self) -> DeltaPosition {
+        DeltaPosition { dx: 48, dy: 36 }
+    }
+    /// Only make use of the bank slot center. This is different than the
+    /// inventory which uses top_left and dimensions so that we can analyze the
+    /// contents. This is because I am a bit less confident my bank locations
+    /// scale perfectly and the numbers for items messes with the analysis. I
+    /// don't think it will be critical for me to analyze items and instead I
+    /// can just give an explicit slot_index for an item.
+    pub fn bank_slot_center(&self, slot_index: i32) -> Position {
+        const BANK_TITLE_BAR_HEIGHT: i32 = 23;
+        const BANK_TABS_HEIGHT: i32 = 40;
+        const BANK_INCINERATOR_WIDTH: i32 = 46;
+
+        assert!(slot_index < Self::NUM_BANK_SLOTS);
+        let row = slot_index / Self::NUM_BANK_COLUMNS;
+        let col = slot_index - row * Self::NUM_BANK_COLUMNS;
+
+        let Position { x, y } = self.bank_top_left();
+        let DeltaPosition { dx, dy } = self.bank_slot_dimensions();
+
+        // There is a border of open space in the inventory where items are
+        // never put. So there is an offset from the top left corner of the
+        // inventory to where teh first slot is placed.
+        let x0 = x + BANK_INCINERATOR_WIDTH;
+        let y0 = y + BANK_TITLE_BAR_HEIGHT + Self::BANK_BORDER_WIDTH + BANK_TABS_HEIGHT;
+        Position {
+            x: x0 + col * dx + dx / 2,
+            y: y0 + row * dy + dy / 2,
         }
     }
 

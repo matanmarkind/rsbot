@@ -19,6 +19,25 @@ pub struct Letter {
     pub checkpoints: Vec<DeltaPosition>,
 }
 
+pub fn upper_b() -> Letter {
+    Letter {
+        width: 8,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 1, dy: 2 },
+            DeltaPosition { dx: 1, dy: 5 },
+            DeltaPosition { dx: 1, dy: 8 },
+            DeltaPosition { dx: 1, dy: 11 },
+            DeltaPosition { dx: 3, dy: 2 },
+            DeltaPosition { dx: 3, dy: 6 },
+            DeltaPosition { dx: 3, dy: 11 },
+            DeltaPosition { dx: 5, dy: 4 },
+            DeltaPosition { dx: 5, dy: 9 },
+        ],
+    }
+}
+
 pub fn upper_c() -> Letter {
     Letter {
         width: 8,
@@ -120,7 +139,7 @@ pub fn upper_t() -> Letter {
 
 pub fn lower_a() -> Letter {
     Letter {
-        width: 8,
+        width: 9,
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
@@ -130,6 +149,23 @@ pub fn lower_a() -> Letter {
             DeltaPosition { dx: 3, dy: 11 },
             DeltaPosition { dx: 5, dy: 7 },
             DeltaPosition { dx: 5, dy: 10 },
+        ],
+    }
+}
+
+pub fn lower_b() -> Letter {
+    Letter {
+        width: 8,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 1, dy: 2 },
+            DeltaPosition { dx: 1, dy: 5 },
+            DeltaPosition { dx: 1, dy: 8 },
+            DeltaPosition { dx: 1, dy: 11 },
+            DeltaPosition { dx: 3, dy: 6 },
+            DeltaPosition { dx: 3, dy: 11 },
+            DeltaPosition { dx: 5, dy: 9 },
         ],
     }
 }
@@ -211,7 +247,7 @@ pub fn lower_g() -> Letter {
 
 pub fn lower_k() -> Letter {
     Letter {
-        width: 8,
+        width: 7,
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
