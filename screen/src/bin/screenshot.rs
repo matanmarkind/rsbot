@@ -170,18 +170,16 @@ fn main() {
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
-    /*
     let frame = marked_open_screen(&mut capturer, &screenhandler);
     ofpath.push_str("screenshot_open_screen.png");
     println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
-    // frame.save(ofpath.as_str());
+    frame.save(ofpath.as_str());
 
     let frame = marked_worldmap(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");
     println!("Saving {}. Open the bank...", ofpath);
     frame.save(ofpath.as_str());
-    */
 
     let frame = marked_inventories(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();

@@ -485,6 +485,9 @@ impl FrameHandler {
         )
     }
 
+    /// Checks if the inventory is open via the icon in the bottom right of the
+    /// screen. Note there are times this icon is not visible, such as when the
+    /// bank is open. (In that case the inventory is automatically open though).
     pub fn is_inventory_open(&self, frame: &impl Frame) -> bool {
         // Use check_loose_pixel because the background color of the icons is very
         // distinct between on and off and the satchel depicted is also a

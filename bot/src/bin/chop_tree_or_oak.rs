@@ -6,27 +6,29 @@
 /// 6. How do I know when I have completed? Going to have to work on
 ///    understanding my inventory.
 use bot::{
-    controller, Activity, DescribeActionForActionText, DescribeActionForOpenScreen, FillInventory,
-    MousePress,
+    controller, AwaitAction, ConsumeInventoryOptions, DescribeActionForActionText,
+    DescribeActionForOpenScreen, MousePress,
 };
 use screen::{action_letters, colors};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
 
-fn chop_down_tree_activity() -> FillInventory {
-    FillInventory {
+fn chop_down_tree_activity() -> ConsumeInventoryOptions {
+    ConsumeInventoryOptions {
         timeout: Duration::from_secs(10),
-        multi_item_action: false,
+        multi_slot_action: false,
+        reset_period: Some(Duration::from_secs(300)),
+        inventory_consumption_pixels: vec![colors::INVENTORY_SLOT_EMPTY],
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![colors::TREE_BARK],
                 mouse_press: MousePress::None,
-                await_result_time: Duration::from_nanos(1),
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
-                await_result_time: Duration::from_nanos(1),
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
                 action_text: vec![
                     (action_letters::upper_c(), colors::ACTION_WHITE),
                     (action_letters::lower_h(), colors::ACTION_WHITE),
@@ -50,19 +52,21 @@ fn chop_down_tree_activity() -> FillInventory {
     }
 }
 
-fn chop_down_oak_activity() -> FillInventory {
-    FillInventory {
+fn chop_down_oak_activity() -> ConsumeInventoryOptions {
+    ConsumeInventoryOptions {
         timeout: Duration::from_secs(20),
-        multi_item_action: true,
+        multi_slot_action: true,
+        reset_period: Some(Duration::from_secs(300)),
+        inventory_consumption_pixels: vec![colors::INVENTORY_SLOT_EMPTY],
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![colors::OAK_BARK],
                 mouse_press: MousePress::None,
-                await_result_time: Duration::from_nanos(1),
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
-                await_result_time: Duration::from_nanos(1),
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
                 action_text: vec![
                     (action_letters::upper_c(), colors::ACTION_WHITE),
                     (action_letters::lower_h(), colors::ACTION_WHITE),
@@ -85,7 +89,7 @@ fn chop_down_oak_activity() -> FillInventory {
     }
 }
 
-fn get_activity_description(use_oak: bool) -> FillInventory {
+fn get_activity_description(use_oak: bool) -> ConsumeInventoryOptions {
     if use_oak {
         chop_down_oak_activity()
     } else {
@@ -98,8 +102,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     dbg!(&config);
 
     let mut player = controller::Player::new(config);
-
-    get_activity_description(/*use_oak=*/ true).do_activity(&mut player);
+    player.consume_inventory(&get_activity_description(/*use_oak=*/ true));
 
     Ok(())
 }

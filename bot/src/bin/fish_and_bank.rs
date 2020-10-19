@@ -1,5 +1,5 @@
 use bot::{
-    controller, ConsumeInventoryOptions, DescribeAction, DescribeActionForActionText,
+    controller, AwaitAction, ConsumeInventoryOptions, DescribeAction, DescribeActionForActionText,
     DescribeActionForInventory, DescribeActionForMinimap, DescribeActionForOpenScreen, MousePress,
 };
 use screen::{action_letters, colors};
@@ -9,7 +9,7 @@ use structopt::StructOpt;
 
 fn fish_small_net_activity() -> ConsumeInventoryOptions {
     ConsumeInventoryOptions {
-        multi_item_action: true,
+        multi_slot_action: true,
         timeout: Duration::from_secs(20),
         reset_period: Some(Duration::from_secs(300)),
         inventory_consumption_pixels: vec![colors::INVENTORY_SLOT_EMPTY],
@@ -17,11 +17,11 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![colors::SMALL_NET_FISHING_SPOT],
                 mouse_press: MousePress::None,
-                await_result_time: Duration::from_secs(1),
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
-                await_result_time: Duration::from_nanos(1),
+                await_action: AwaitAction::Time(Duration::from_nanos(1)),
                 action_text: vec![
                     (action_letters::start(), colors::ACTION_WHITE),
                     (action_letters::upper_s(), colors::ACTION_WHITE),
@@ -56,7 +56,7 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
 
 fn deposit_in_bank() -> ConsumeInventoryOptions {
     ConsumeInventoryOptions {
-        multi_item_action: false,
+        multi_slot_action: false,
         timeout: Duration::from_secs(3),
         reset_period: None,
         inventory_consumption_pixels: vec![
@@ -69,7 +69,7 @@ fn deposit_in_bank() -> ConsumeInventoryOptions {
                 colors::INVENTORY_RAW_ANCHOVIES_BANK,
             ],
             mouse_press: MousePress::Left,
-            await_result_time: Duration::from_nanos(1),
+            await_action: AwaitAction::Time(Duration::from_nanos(1)),
         })],
     }
 }
@@ -126,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             expected_pixels: vec![colors::MAP_ICON_BANK_YELLOW],
             check_pixels: vec![colors::MAP_ICON_LIGHT_GRAY],
             mouse_press: MousePress::Left,
-            await_result_time: Duration::from_secs(20),
+            await_action: AwaitAction::Time(Duration::from_secs(20)),
         })];
         player.do_actions(&actions[..]);
         while !player
@@ -141,11 +141,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                         colors::BANK_BROWN3,
                     ],
                     mouse_press: MousePress::None,
-                    await_result_time: Duration::from_secs(2),
+                    await_action: AwaitAction::Time(Duration::from_secs(1)),
                 }),
                 Box::new(DescribeActionForActionText {
                     mouse_press: MousePress::Left,
-                    await_result_time: Duration::from_secs(3),
+                    await_action: AwaitAction::IsBankOpen(util::REDRAW_TIME),
                     action_text: vec![
                         (action_letters::start(), colors::ACTION_WHITE),
                         (action_letters::upper_b(), colors::ACTION_WHITE),
@@ -180,7 +180,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             expected_pixels: vec![colors::MAP_ICON_FISH_DARK_BLUE],
             check_pixels: vec![colors::MAP_ICON_FISH_LIGHT_BLUE],
             mouse_press: MousePress::Left,
-            await_result_time: Duration::from_secs(20),
+            await_action: AwaitAction::Time(Duration::from_secs(20)),
         })];
         player.do_actions(&actions[..]);
     }

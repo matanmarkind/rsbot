@@ -4,150 +4,63 @@ use std::time::Duration;
 use userinput::InputBot;
 use util::*;
 
-pub struct ActionDescription {
-    /// The colors that if found likely correspond with the desired action.
-    pub colors: Vec<FuzzyPixel>,
-
-    pub action_text: Vec<(Letter, FuzzyPixel)>,
-
-    /// Can taking this action result in us receiving multiple items over time.
-    /// If so, we will continue resetting the timer every time we receive an
-    /// item. For example, a single click on an oak tree can result in us
-    /// cutting many logs.
-    pub multi_item_action: bool,
-    /// Amount of time to wait for item to appear in inventory before assuming
-    /// we are done (resource exhausted, failed to reach resource, etc.)
-    pub timeout: Duration,
-}
-
-pub const ACTIVITY_AWAIT_RESULT_PERIOD: Duration = Duration::from_secs(1);
-
-/// An activity represents something the player should do with semantic meaning,
-/// they are named for goals. As opposed to DescribeAction which is a specific
-/// step. Activities are comprised of multiple Actions.
-pub trait Activity {
-    /// To perform an activity we pass in the player mutably. This is because an
-    /// activity requires there to be some state between actions to track
-    /// progress.
-    fn do_activity(&self, player: &mut Player);
-}
-
-/// Describes actions to be taken to fill the inventory.
-///
-/// TODO: Remove. FillInvetory is a subset of ConsumeInventory passing in
-/// INVENTORY_SLOT_EMPTY.
-pub struct FillInventory {
-    /// Can taking this action result in us receiving multiple items over time.
-    /// If so, we will continue resetting the timer every time we receive an
-    /// item. For example, a single click on an oak tree can result in us
-    /// cutting many logs.
-    pub multi_item_action: bool,
-
-    /// Amount of time to wait for item to appear in inventory before assuming
-    /// we are done (resource exhausted, failed to reach resource, etc.)
-    pub timeout: Duration,
-
-    /// List of specific steps performed in order to fill the inventory with the
-    /// desired good.
-    pub actions: Vec<Box<dyn DescribeAction>>,
-}
-
-/// Describes actions to be taken to consume items in the inventory. This action
-/// is complete when we can no longer find an item to be consumed in the
-/// inventory.
-///
-/// TODO: Turn this into a function of Player. I don't think we will need too
-/// many Activities.
-pub struct ConsumeInventoryOptions {
-    /// Can taking this action result in us receiving multiple items over time.
-    /// If so, we will continue resetting the timer every time we receive an
-    /// item. For example, a single click on an oak tree can result in us
-    /// cutting many logs.
-    pub multi_item_action: bool,
-
-    /// Amount of time to wait between items disappearing from the inventory
-    /// before we begin actions again.
-    pub timeout: Duration,
-
-    /// Every so often we can rest just to make sure the screen is properly set
-    /// up. This is only useful for open screen actions. For things like banking
-    /// it can be a hindrance.
-    pub reset_period: Option<Duration>,
-
-    /// Items that we wish to consume from the inventory.
-    pub inventory_consumption_pixels: Vec<screen::InventorySlotPixels>,
-
-    /// List of specific steps performed in order to fill the inventory with the
-    /// desired good.
-    pub actions: Vec<Box<dyn DescribeAction>>,
-}
-
-impl Activity for FillInventory {
-    fn do_activity(&self, player: &mut Player) {
-        println!("FillInventory.do_activity");
-        player.reset();
-
-        let mut time = std::time::Instant::now();
-        let mut num_consecutive_failures = 0;
-        loop {
-            if time.elapsed() > Duration::from_secs(300) {
-                time = std::time::Instant::now();
-                player.reset();
-            }
-
-            let mut frame = player.capturer.frame().unwrap();
-            let mut first_open_inventory_slot =
-                player.framehandler.first_open_inventory_slot(&frame);
-            if first_open_inventory_slot.is_none() {
-                println!("Inventory is full. Goodbye.");
-                // frame.save("/tmp/screenshot_inventory_full.jpg");
-                return;
-            }
-
-            let failed_action = player.do_actions(&self.actions[..]);
-
-            if failed_action {
-                num_consecutive_failures += 1;
-                if num_consecutive_failures > 3 {
-                    player.inputbot.pan_left(37.0);
-                    num_consecutive_failures = 0;
-                }
-                continue;
-            }
-
-            num_consecutive_failures = 0;
-            let mut waiting_time = std::time::Instant::now();
-            while waiting_time.elapsed() < self.timeout {
-                sleep(Duration::from_secs(1));
-                frame = player.capturer.frame().unwrap();
-                let open_slot = player.framehandler.first_open_inventory_slot(&frame);
-                if open_slot == first_open_inventory_slot {
-                    // Nothing new in the inventory, just keep waiting.
-                    continue;
-                }
-
-                first_open_inventory_slot = open_slot;
-
-                if !self.multi_item_action || open_slot.is_none() {
-                    // We just received the item we were after, and we can't
-                    // continue to receive, so stop waiting for the action to
-                    // complete. Or the inventory is full.
-                    break;
-                }
-
-                // We have received an item so reset the timer to allow us to get more.
-                println!("reset timer for multi_item_action");
-                waiting_time = std::time::Instant::now();
-            }
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 pub enum MousePress {
     None,
     Left,
     Right,
+}
+
+/// Enum to define what conditions we are waiting to be fulfilled before an
+/// action is deemed complete. There are 2 parts generally.
+/// - The enum variant, which describes the condition checked for. Time only
+///   waits a set amount of time before returning true.
+/// - The duration to wait between checks. This is defined in AwaitActionResult
+///   since Player will call to DescribeActions.await_result in a busy loop.
+///
+/// Note that waiting happens after an action has been taken, and this is meant
+/// to deal with delay in things like game rendering or effects such as lighting
+/// a fire. This is not used to await action letters matching since the actions
+/// associated with moving to a location and pressing must be taken before the
+/// wait, and for action letters we want to prevent clicking until after the
+/// check.
+///
+/// TODO: Add a generic to take a function.
+#[derive(Clone, Copy)]
+pub enum AwaitAction {
+    Time(Duration),
+    IsBankOpen(Duration),
+    IsInventoryOpen(Duration),
+    IsWorldMapOpen(Duration),
+}
+
+fn await_result(
+    await_config: &AwaitAction,
+    framehandler: &FrameHandler,
+    frame: &screen::DefaultFrame,
+) -> bool {
+    match await_config {
+        AwaitAction::Time(duration) => sleep(*duration),
+        AwaitAction::IsBankOpen(duration) => {
+            if !framehandler.is_bank_open(frame) {
+                sleep(*duration);
+                return false;
+            }
+        }
+        AwaitAction::IsInventoryOpen(duration) => {
+            if !framehandler.is_inventory_open(frame) {
+                sleep(*duration);
+                return false;
+            }
+        }
+        AwaitAction::IsWorldMapOpen(duration) => {
+            if !framehandler.is_worldmap_open(frame) {
+                sleep(*duration);
+                return false;
+            }
+        }
+    }
+    true
 }
 
 pub trait DescribeAction {
@@ -172,10 +85,15 @@ pub trait DescribeAction {
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)>;
 
-    // Once an action is taken it can sometimes take time for the result to
-    // become visible (aka lighting a fire). So we may need to wait before
-    // taking the next action.
-    fn await_result(&self);
+    /// Once an action is taken it can take time for the result to become
+    /// visible (aka lighting a fire). So we may need to wait before taking the
+    /// next action.
+    ///
+    /// This is called in a busy loop so delays between checks should be
+    /// programmed into this function.
+    ///
+    /// Returns true once the action is complete.
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool;
 }
 
 /// Basic unit of finding info in the open screen and then acting on it. Assumes
@@ -183,21 +101,21 @@ pub trait DescribeAction {
 pub struct DescribeActionForOpenScreen {
     pub expected_pixels: Vec<FuzzyPixel>,
     pub mouse_press: MousePress,
-    pub await_result_time: Duration,
+    pub await_action: AwaitAction,
 }
 
 /// Used to confirm that an action we are about to take is the correct one.
 pub struct DescribeActionForActionText {
     pub action_text: Vec<(Letter, FuzzyPixel)>,
     pub mouse_press: MousePress,
-    pub await_result_time: Duration,
+    pub await_action: AwaitAction,
 }
 
 // Find something in the inventory and possibly press it.
 pub struct DescribeActionForInventory {
     pub expected_pixels: Vec<screen::InventorySlotPixels>,
     pub mouse_press: MousePress,
-    pub await_result_time: Duration,
+    pub await_action: AwaitAction,
 }
 
 /// Describes an action based on assessing the worldmap. Assumes the worldmap is
@@ -210,7 +128,7 @@ pub struct DescribeActionForWorldmap {
     pub check_pixels: Vec<FuzzyPixel>,
 
     pub mouse_press: MousePress,
-    pub await_result_time: Duration,
+    pub await_action: AwaitAction,
 }
 
 // Find something in the inventory and possibly press it.
@@ -221,7 +139,7 @@ pub struct DescribeActionForMinimap {
     pub check_pixels: Vec<FuzzyPixel>,
 
     pub mouse_press: MousePress,
-    pub await_result_time: Duration,
+    pub await_action: AwaitAction,
 }
 
 impl DescribeAction for DescribeActionForMinimap {
@@ -257,8 +175,8 @@ impl DescribeAction for DescribeActionForMinimap {
         None
     }
 
-    fn await_result(&self) {
-        sleep(self.await_result_time);
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
     }
 }
 
@@ -280,8 +198,8 @@ impl DescribeAction for DescribeActionForOpenScreen {
         None
     }
 
-    fn await_result(&self) {
-        sleep(self.await_result_time);
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
     }
 }
 
@@ -333,8 +251,8 @@ impl DescribeAction for DescribeActionForWorldmap {
         None
     }
 
-    fn await_result(&self) {
-        sleep(self.await_result_time);
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
     }
 }
 
@@ -352,8 +270,8 @@ impl DescribeAction for DescribeActionForActionText {
         None
     }
 
-    fn await_result(&self) {
-        sleep(self.await_result_time);
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
     }
 }
 
@@ -383,9 +301,39 @@ impl DescribeAction for DescribeActionForInventory {
         None
     }
 
-    fn await_result(&self) {
-        sleep(self.await_result_time);
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
     }
+}
+
+/// Describes actions to be taken to consume items in the inventory. This action
+/// is complete when we can no longer find an item to be consumed in the
+/// inventory.
+///
+/// TODO: Turn this into a function of Player. I don't think we will need too
+/// many Activities.
+pub struct ConsumeInventoryOptions {
+    /// Can taking this action result in us consuming multiple slots over time.
+    /// If so, we will continue resetting the timer every time we receive an
+    /// item. For example, a single click on an oak tree can result in us
+    /// cutting many logs.
+    pub multi_slot_action: bool,
+
+    /// Amount of time to wait between items disappearing from the inventory
+    /// before we begin actions again.
+    pub timeout: Duration,
+
+    /// Every so often we can rest just to make sure the screen is properly set
+    /// up. This is only useful for open screen actions. For things like banking
+    /// it can be a hindrance.
+    pub reset_period: Option<Duration>,
+
+    /// Items that we wish to consume from the inventory.
+    pub inventory_consumption_pixels: Vec<screen::InventorySlotPixels>,
+
+    /// List of specific steps performed in order to fill the inventory with the
+    /// desired good.
+    pub actions: Vec<Box<dyn DescribeAction>>,
 }
 
 // This is the player class that will tie together the userinput and screen
@@ -463,7 +411,6 @@ impl Player {
     }
 
     pub fn press_compass(&mut self) {
-        let frame = self.capturer.frame().unwrap();
         self.inputbot
             .move_near(&self.framehandler.locations.compass_icon());
         self.inputbot.left_click();
@@ -486,6 +433,7 @@ impl Player {
         if !self.framehandler.is_chatbox_open(&frame) {
             return;
         }
+
         // Go click on the All tab
         self.inputbot
             .move_near(&self.framehandler.locations.all_chat_button());
@@ -497,8 +445,10 @@ impl Player {
         // leveling up. This closes by left clicking most things
         if !self.framehandler.is_chatbox_open(&frame) {
             return;
-        } // Click the center of the minimap since this will only move us a small
-          // amount. Safest/easiest way I could think of torandomly left click.
+        }
+
+        // Click the center of the minimap since this will only move us a small
+        // amount. Safest/easiest way I could think of torandomly left click.
         self.inputbot
             .move_near(&self.framehandler.locations.minimap_middle());
         self.inputbot.left_click();
@@ -531,7 +481,7 @@ impl Player {
                         MousePress::Right => self.inputbot.right_click(),
                     }
 
-                    act.await_result();
+                    while !act.await_result(&self.framehandler, &self.capturer.frame().unwrap()) {}
                 }
             }
         }
@@ -545,7 +495,7 @@ impl Player {
         let mut num_consecutive_failures = 0;
         loop {
             match options.reset_period {
-                Some(perios) => {
+                Some(_) => {
                     if time.elapsed() > Duration::from_secs(300) {
                         time = std::time::Instant::now();
                         self.reset();
@@ -566,8 +516,9 @@ impl Player {
                     break;
                 }
             }
+
             if first_matching_inventory_slot.is_none() {
-                println!("Inventory is consumed. Goodbye.");
+                println!("Inventory is consumed.");
                 // frame.save("/tmp/screenshot_inventory_full.jpg");
                 return;
             }
@@ -599,7 +550,7 @@ impl Player {
 
                 first_matching_inventory_slot = matching_slot;
 
-                if !options.multi_item_action || matching_slot.is_none() {
+                if !options.multi_slot_action || matching_slot.is_none() {
                     // We just received the item we were after, and we can't
                     // continue to receive, so stop waiting for the action to
                     // complete. Or the inventory is full.
