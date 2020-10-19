@@ -52,6 +52,22 @@ pub mod colors {
         red_max: 255,
     };
 
+    pub const BANK_QUANTITY_ON: FuzzyPixel = FuzzyPixel {
+        blue_min: 22,
+        blue_max: 35,
+        green_min: 27,
+        green_max: 35,
+        red_min: 115,
+        red_max: 138,
+    };
+    pub const BANK_QUANTITY_OFF: FuzzyPixel = FuzzyPixel {
+        blue_min: 56,
+        blue_max: 85,
+        green_min: 61,
+        green_max: 90,
+        red_min: 64,
+        red_max: 89,
+    };
     pub const BANK_BROWN1: FuzzyPixel = FuzzyPixel {
         blue_min: 1,
         blue_max: 5,
@@ -87,6 +103,22 @@ pub mod colors {
         green_max: 211,
         red_min: 230,
         red_max: 234,
+    };
+    pub const MAP_ICON_FISH_DARK_BLUE: FuzzyPixel = FuzzyPixel {
+        blue_min: 218,
+        blue_max: 222,
+        green_min: 56,
+        green_max: 60,
+        red_min: 5,
+        red_max: 9,
+    };
+    pub const MAP_ICON_FISH_LIGHT_BLUE: FuzzyPixel = FuzzyPixel {
+        blue_min: 246,
+        blue_max: 255,
+        green_min: 101,
+        green_max: 135,
+        red_min: 35,
+        red_max: 43,
     };
 
     // Far from the picture within the icon, outside of its shadow.
@@ -226,6 +258,57 @@ pub mod colors {
         },
         INVENTORY_BACKGROUND,
     ];
+    /// Opening the bank removes the shadows on items in the inventory, so some
+    /// pixels are different.
+    pub const INVENTORY_RAW_SHRIMP_BANK: InventorySlotPixels = [
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 105,
+            blue_max: 109,
+            green_min: 119,
+            green_max: 123,
+            red_min: 145,
+            red_max: 149,
+        },
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 0,
+            blue_max: 3,
+            green_min: 0,
+            green_max: 2,
+            red_min: 0,
+            red_max: 2,
+        },
+        FuzzyPixel {
+            blue_min: 35,
+            blue_max: 39,
+            green_min: 50,
+            green_max: 54,
+            red_min: 78,
+            red_max: 82,
+        },
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 99,
+            blue_max: 103,
+            green_min: 111,
+            green_max: 115,
+            red_min: 135,
+            red_max: 139,
+        },
+        FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        },
+        INVENTORY_BACKGROUND,
+    ];
 
     pub const INVENTORY_RAW_ANCHOVIES: InventorySlotPixels = [
         INVENTORY_BACKGROUND,
@@ -273,6 +356,56 @@ pub mod colors {
             green_max: 34,
             red_min: 46,
             red_max: 50,
+        },
+        INVENTORY_BACKGROUND,
+    ];
+
+    pub const INVENTORY_RAW_ANCHOVIES_BANK: InventorySlotPixels = [
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 108,
+            blue_max: 112,
+            green_min: 80,
+            green_max: 84,
+            red_min: 79,
+            red_max: 83,
+        },
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 0,
+            blue_max: 3,
+            green_min: 0,
+            green_max: 2,
+            red_min: 0,
+            red_max: 2,
+        },
+        FuzzyPixel {
+            blue_min: 51,
+            blue_max: 55,
+            green_min: 45,
+            green_max: 49,
+            red_min: 45,
+            red_max: 49,
+        },
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        INVENTORY_BACKGROUND,
+        FuzzyPixel {
+            blue_min: 101,
+            blue_max: 105,
+            green_min: 74,
+            green_max: 78,
+            red_min: 73,
+            red_max: 77,
+        },
+        FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
         },
         INVENTORY_BACKGROUND,
     ];

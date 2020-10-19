@@ -58,7 +58,7 @@ pub struct FillInventory {
 ///
 /// TODO: Turn this into a function of Player. I don't think we will need too
 /// many Activities.
-pub struct ConsumeInventory {
+pub struct ConsumeInventoryOptions {
     /// Can taking this action result in us receiving multiple items over time.
     /// If so, we will continue resetting the timer every time we receive an
     /// item. For example, a single click on an oak tree can result in us
@@ -69,84 +69,17 @@ pub struct ConsumeInventory {
     /// before we begin actions again.
     pub timeout: Duration,
 
+    /// Every so often we can rest just to make sure the screen is properly set
+    /// up. This is only useful for open screen actions. For things like banking
+    /// it can be a hindrance.
+    pub reset_period: Option<Duration>,
+
     /// Items that we wish to consume from the inventory.
-    pub expected_pixels: Vec<screen::InventorySlotPixels>,
+    pub inventory_consumption_pixels: Vec<screen::InventorySlotPixels>,
 
     /// List of specific steps performed in order to fill the inventory with the
     /// desired good.
     pub actions: Vec<Box<dyn DescribeAction>>,
-}
-
-impl Activity for ConsumeInventory {
-    fn do_activity(&self, player: &mut Player) {
-        println!("ConsumeInventory.do_activity");
-        player.reset();
-
-        let mut time = std::time::Instant::now();
-        let mut num_consecutive_failures = 0;
-        loop {
-            if time.elapsed() > Duration::from_secs(300) {
-                time = std::time::Instant::now();
-                player.reset();
-            }
-
-            let mut frame = player.capturer.frame().unwrap();
-            let mut first_open_inventory_slot = None;
-            let mut iventory_slot_pixels = colors::INVENTORY_SLOT_EMPTY;
-            for pixels in self.expected_pixels.iter() {
-                first_open_inventory_slot = player
-                    .framehandler
-                    .first_matching_inventory_slot(&frame, pixels);
-                if !first_open_inventory_slot.is_none() {
-                    iventory_slot_pixels = *pixels;
-                    break;
-                }
-            }
-            if first_open_inventory_slot.is_none() {
-                println!("Inventory is consumed. Goodbye.");
-                // frame.save("/tmp/screenshot_inventory_full.jpg");
-                return;
-            }
-
-            let failed_action = player.do_actions(&self.actions[..]);
-
-            if failed_action {
-                num_consecutive_failures += 1;
-                if num_consecutive_failures > 3 {
-                    player.inputbot.pan_left(37.0);
-                    num_consecutive_failures = 0;
-                }
-                continue;
-            }
-
-            num_consecutive_failures = 0;
-            let mut waiting_time = std::time::Instant::now();
-            while waiting_time.elapsed() < self.timeout {
-                sleep(Duration::from_secs(1));
-                frame = player.capturer.frame().unwrap();
-                let open_slot = player
-                    .framehandler
-                    .first_matching_inventory_slot(&frame, &iventory_slot_pixels);
-                if open_slot == first_open_inventory_slot {
-                    // Nothing new in the inventory, just keep waiting.
-                    continue;
-                }
-
-                first_open_inventory_slot = open_slot;
-
-                if !self.multi_item_action || open_slot.is_none() {
-                    // We just received the item we were after, and we can't
-                    // continue to receive, so stop waiting for the action to
-                    // complete. Or the inventory is full.
-                    break;
-                }
-
-                // We have received an item so reset the timer to allow us to get more.
-                println!("reset timer for multi_item_action");
-                waiting_time = std::time::Instant::now();
-            }
-        }
-    }
 }
 
 impl Activity for FillInventory {
@@ -297,7 +230,7 @@ impl DescribeAction for DescribeActionForMinimap {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForMinimap.describe_action");
+        println!("DescribeActionForMinimap");
         // Distance from where we find 'expected_pixel' in the minimap that we
         // want to find the check_pixels.
         const CHECK_RADIUS: f32 = 6.0;
@@ -335,7 +268,7 @@ impl DescribeAction for DescribeActionForOpenScreen {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForOpenScreen.describe_action");
+        println!("DescribeActionForOpenScreen");
         for (top_left, dimensions) in framehandler.locations.open_screen_search_boxes().iter() {
             for fuzzy_pixel in self.expected_pixels.iter() {
                 let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
@@ -411,10 +344,11 @@ impl DescribeAction for DescribeActionForActionText {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForActionText.describe_action");
+        println!("DescribeActionForActionText");
         if framehandler.check_action_letters(frame, &self.action_text[..]) {
             return Some((None, self.mouse_press));
         }
+        dbg!("No matchning words.");
         None
     }
 
@@ -429,11 +363,16 @@ impl DescribeAction for DescribeActionForInventory {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForInventory.describe_action");
+        println!("DescribeActionForInventory");
         for fuzzy_pixel in self.expected_pixels.iter() {
+            // dbg!(fuzzy_pixel);
             match framehandler.first_matching_inventory_slot(frame, &fuzzy_pixel) {
-                None => (),
+                None => {
+                    dbg!("None");
+                    ()
+                }
                 Some(slot_index) => {
+                    dbg!(slot_index);
                     return Some((
                         Some(framehandler.locations.inventory_slot_middle(slot_index)),
                         self.mouse_press,
@@ -478,8 +417,11 @@ impl Player {
         self.inputbot.left_click();
 
         self.open_inventory();
-        self.close_chatbox();
         self.close_worldmap();
+        self.press_compass();
+        // At the bottom in to give time for pressing in the middle of the map
+        // to take effect.
+        self.close_chatbox();
 
         sleep(util::REDRAW_TIME);
     }
@@ -520,6 +462,13 @@ impl Player {
         self.inputbot.left_click();
     }
 
+    pub fn press_compass(&mut self) {
+        let frame = self.capturer.frame().unwrap();
+        self.inputbot
+            .move_near(&self.framehandler.locations.compass_icon());
+        self.inputbot.left_click();
+    }
+
     fn close_chatbox(&mut self) {
         let mut frame = self.capturer.frame().unwrap();
         if !self.framehandler.is_chatbox_open(&frame) {
@@ -555,6 +504,16 @@ impl Player {
         self.inputbot.left_click();
     }
 
+    pub fn press_inventory_slot(&mut self, slot_index: i32) {
+        self.inputbot.move_near(
+            &self
+                .framehandler
+                .locations
+                .inventory_slot_middle(slot_index),
+        );
+        self.inputbot.left_click();
+    }
+
     /// Perform a list of actions. Returns false if failed to complete any of
     /// them.
     pub fn do_actions(&mut self, actions: &[Box<dyn DescribeAction>]) -> bool {
@@ -565,24 +524,92 @@ impl Player {
                     if !maybe_pos.is_none() {
                         self.inputbot.move_to(&maybe_pos.unwrap());
                     }
+
                     match mouse_press {
                         MousePress::None => (),
                         MousePress::Left => self.inputbot.left_click(),
                         MousePress::Right => self.inputbot.right_click(),
                     }
+
+                    act.await_result();
                 }
             }
         }
         true
     }
 
-    pub fn press_inventory_slot(&mut self, slot_index: i32) {
-        self.inputbot.move_near(
-            &self
-                .framehandler
-                .locations
-                .inventory_slot_middle(slot_index),
-        );
-        self.inputbot.left_click();
+    pub fn consume_inventory(&mut self, options: &ConsumeInventoryOptions) {
+        println!("player.consume_inventory");
+
+        let mut time = std::time::Instant::now();
+        let mut num_consecutive_failures = 0;
+        loop {
+            match options.reset_period {
+                Some(perios) => {
+                    if time.elapsed() > Duration::from_secs(300) {
+                        time = std::time::Instant::now();
+                        self.reset();
+                    }
+                }
+                _ => (),
+            }
+
+            let mut frame = self.capturer.frame().unwrap();
+            let mut first_matching_inventory_slot = None;
+            let mut iventory_slot_pixels = colors::INVENTORY_SLOT_EMPTY;
+            for pixels in options.inventory_consumption_pixels.iter() {
+                first_matching_inventory_slot = self
+                    .framehandler
+                    .first_matching_inventory_slot(&frame, pixels);
+                if !first_matching_inventory_slot.is_none() {
+                    iventory_slot_pixels = *pixels;
+                    break;
+                }
+            }
+            if first_matching_inventory_slot.is_none() {
+                println!("Inventory is consumed. Goodbye.");
+                // frame.save("/tmp/screenshot_inventory_full.jpg");
+                return;
+            }
+
+            let actions_succeeded = self.do_actions(&options.actions[..]);
+
+            if !actions_succeeded {
+                dbg!(actions_succeeded);
+                num_consecutive_failures += 1;
+                if num_consecutive_failures > 3 {
+                    self.inputbot.pan_left(37.0);
+                    num_consecutive_failures = 0;
+                }
+                continue;
+            }
+            num_consecutive_failures = 0;
+
+            let mut waiting_time = std::time::Instant::now();
+            while waiting_time.elapsed() < options.timeout {
+                sleep(Duration::from_secs(1));
+                frame = self.capturer.frame().unwrap();
+                let matching_slot = self
+                    .framehandler
+                    .first_matching_inventory_slot(&frame, &iventory_slot_pixels);
+                if matching_slot == first_matching_inventory_slot {
+                    // Nothing new in the inventory, just keep waiting.
+                    continue;
+                }
+
+                first_matching_inventory_slot = matching_slot;
+
+                if !options.multi_item_action || matching_slot.is_none() {
+                    // We just received the item we were after, and we can't
+                    // continue to receive, so stop waiting for the action to
+                    // complete. Or the inventory is full.
+                    dbg!(matching_slot);
+                    break;
+                }
+
+                // We have received an item so reset the timer to allow us to get more.
+                waiting_time = std::time::Instant::now();
+            }
+        }
     }
 }

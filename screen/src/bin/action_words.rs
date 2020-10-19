@@ -24,8 +24,6 @@ fn main() {
 
     let letter_and_matchers = vec![
         (action_letters::start(), colors::ACTION_WHITE),
-        // (action_letters::upper_t(), colors::ACTION_WHITE),
-        //
         (action_letters::upper_b(), colors::ACTION_WHITE),
         (action_letters::lower_a(), colors::ACTION_WHITE),
         (action_letters::lower_n(), colors::ACTION_WHITE),

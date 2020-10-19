@@ -295,6 +295,20 @@ impl Locations {
             y: y0 + row * dy + dy / 2,
         }
     }
+    pub fn bank_quantity_all(&self) -> Position {
+        let Position { x, y } = Self::to_bottom_right(self.bank_top_left(), self.bank_dimensions());
+        Position {
+            x: x - 166,
+            y: y - 5,
+        }
+    }
+    pub fn bank_quantity_one(&self) -> Position {
+        let Position { x, y } = Self::to_bottom_right(self.bank_top_left(), self.bank_dimensions());
+        Position {
+            x: x - 267,
+            y: y - 10,
+        }
+    }
 
     // Locations given in reference to the top right corner of the screen.
 

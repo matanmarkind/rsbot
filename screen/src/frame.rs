@@ -57,10 +57,15 @@ pub trait Frame {
     }
 
     // Check that one of the pixels around 'pos' (+-1) match the expectation.
-    fn check_loose_pixel(&self, pos: &Position, expected_pixel: &FuzzyPixel) -> bool {
+    fn check_loose_pixel_explicit(
+        &self,
+        pos: &Position,
+        expected_pixel: &FuzzyPixel,
+        tolerance: i32,
+    ) -> bool {
         // dbg!(pos, expected_pixel);
-        for x_shift in [0, -1, 1].iter() {
-            for y_shift in [0, -1, 1].iter() {
+        for x_shift in -tolerance..=tolerance {
+            for y_shift in -tolerance..=tolerance {
                 let pos = Position {
                     x: min(max(0, pos.x + x_shift), self.width() as i32 - 1),
                     y: min(max(0, pos.y + y_shift), self.height() as i32 - 1),
@@ -71,6 +76,9 @@ pub trait Frame {
             }
         }
         false
+    }
+    fn check_loose_pixel(&self, pos: &Position, expected_pixel: &FuzzyPixel) -> bool {
+        self.check_loose_pixel_explicit(pos, expected_pixel, /*tolerance=*/ 1)
     }
 
     /// Search for a matching pixel in the bounds given bounds. This
@@ -433,6 +441,9 @@ impl Capturer {
 /// during play.
 pub struct FrameHandler {
     pub locations: crate::Locations,
+    // Tolerance when checking loose pixels in the inventory. Having the bank
+    // open seems to change things a bit.
+    pub inventory_tolerance: i32,
 }
 
 impl FrameHandler {
@@ -445,6 +456,7 @@ impl FrameHandler {
                     dy: config.screen_bottom_right.y - config.screen_top_left.y + 1,
                 },
             ),
+            inventory_tolerance: 1,
         }
     }
 
@@ -510,9 +522,19 @@ impl FrameHandler {
         let mut i = 0;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
-                // let pixel = frame.get_pixel(&pos);
-                // println!("slot_index={}, {:?}, {:?}", slot_index, pos, pixel);
-                if !frame.check_loose_pixel(&pos, &expected_colors[i]) {
+                {
+                    // let pixel = frame.get_pixel(&pos);
+                    // let dbgstr = format!(
+                    //     "slot_index={}, {:?}, {:?} {:?}",
+                    //     slot_index, pos, pixel, expected_colors[i]
+                    // );
+                    // dbg!(dbgstr);
+                }
+                if !frame.check_loose_pixel_explicit(
+                    &pos,
+                    &expected_colors[i],
+                    self.inventory_tolerance,
+                ) {
                     return false;
                 }
                 pos = Position {
@@ -683,6 +705,72 @@ impl FrameHandler {
                     red_max: 255,
                 },
             ],
+        )
+    }
+
+    /// Checks if the bank is open by chacking the corners. The coloring
+    /// changes depending on whether or not runelite is the active window. We
+    /// program on the assumption it is.
+    pub fn is_bank_open(&self, frame: &impl Frame) -> bool {
+        // The bank dimensions are internal, which means the colors are
+        // variable (top left can be covered by action text, right size is on
+        // the map.) Creating an outer barier would put us outside the screen.
+        // Therefore we take the inner box and expand t a bit to rest on the
+        // worldmap border which we can use to identify the worldmap being open.
+        let expansion = DeltaPosition { dx: 3, dy: 3 };
+        let top_left = self.locations.bank_top_left() - expansion;
+        let dimensions = self.locations.bank_dimensions() + expansion * 2.0;
+        Self::check_corners(
+            frame,
+            top_left,
+            dimensions,
+            [
+                FuzzyPixel {
+                    blue_min: 51,
+                    blue_max: 62,
+                    green_min: 55,
+                    green_max: 66,
+                    red_min: 54,
+                    red_max: 65,
+                },
+                FuzzyPixel {
+                    blue_min: 51,
+                    blue_max: 62,
+                    green_min: 55,
+                    green_max: 66,
+                    red_min: 54,
+                    red_max: 65,
+                },
+                FuzzyPixel {
+                    blue_min: 58,
+                    blue_max: 62,
+                    green_min: 62,
+                    green_max: 66,
+                    red_min: 61,
+                    red_max: 65,
+                },
+                FuzzyPixel {
+                    blue_min: 58,
+                    blue_max: 62,
+                    green_min: 62,
+                    green_max: 66,
+                    red_min: 61,
+                    red_max: 65,
+                },
+            ],
+        )
+    }
+
+    pub fn is_bank_quantity_all(&self, frame: &impl Frame) -> bool {
+        frame.check_loose_pixel(
+            &self.locations.bank_quantity_all(),
+            &colors::BANK_QUANTITY_ON,
+        )
+    }
+    pub fn is_bank_quantity_one(&self, frame: &impl Frame) -> bool {
+        frame.check_loose_pixel(
+            &self.locations.bank_quantity_one(),
+            &colors::BANK_QUANTITY_ON,
         )
     }
 }
