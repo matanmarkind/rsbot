@@ -1,5 +1,5 @@
 // From scrap github repo. Here for my convenience.
-use screen::{Capturer, Frame, FrameHandler, OwnedFrame};
+use screen::{Capturer, Frame, FrameHandler, Locations, OwnedFrame};
 use structopt::StructOpt;
 use util::*;
 
@@ -99,7 +99,16 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
         frame.recolor_pixel(
             &polar_to_cartesian(
                 screenhandler.locations.minimap_middle(),
-                screenhandler.locations.minimap_radius(),
+                Locations::MINIMAP_RADIUS,
+                angle,
+            ),
+            &screen::colors::PURE_RED,
+        );
+        // Shows the radius for the close search used in bot::AwaitResult::IsCloseOnMinimap.
+        frame.recolor_pixel(
+            &polar_to_cartesian(
+                screenhandler.locations.minimap_middle(),
+                Locations::MINIMAP_SMALL_RADIUS,
                 angle,
             ),
             &screen::colors::PURE_RED,
@@ -125,13 +134,13 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
     dbg!(screenhandler.is_bank_quantity_one(&frame));
 
     frame.flip_to_rgb();
-    for i in 0..screen::Locations::NUM_INVENTORY_SLOTS {
+    for i in 0..Locations::NUM_INVENTORY_SLOTS {
         let slot_top_left = screenhandler.locations.inventory_slot_top_left(i);
         let slot_dimensions = screenhandler.locations.inventory_slot_dimensions();
         frame.draw_red_box(&slot_top_left, &slot_dimensions);
 
         let past_bottom_right = &slot_top_left + &slot_dimensions;
-        let slot_check_spacing = screen::Locations::INVENTORY_SLOT_CHECK_SPACING;
+        let slot_check_spacing = Locations::INVENTORY_SLOT_CHECK_SPACING;
         let first_pos = &slot_top_left + &slot_check_spacing;
         let mut pos = first_pos;
         while pos.y < past_bottom_right.y {
@@ -154,7 +163,7 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         &screenhandler.locations.bank_dimensions(),
     );
 
-    for i in 0..screen::Locations::NUM_BANK_SLOTS {
+    for i in 0..Locations::NUM_BANK_SLOTS {
         surrounding_box(&mut frame, &screenhandler.locations.bank_slot_center(i));
     }
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_all());

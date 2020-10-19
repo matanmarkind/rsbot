@@ -1,8 +1,47 @@
-use screen::{action_letters::Letter, colors, Capturer, Frame, FrameHandler, FuzzyPixel};
+use screen::{
+    action_letters::Letter, colors, Capturer, Frame, FrameHandler, FuzzyPixel, Locations,
+};
 use std::thread::sleep;
 use std::time::Duration;
 use userinput::InputBot;
 use util::*;
+
+/// Looks for a pixel matching 'expected_pixels' in the minimap section of the
+/// frame. This is done in a circle centered at minimap center and expands to
+/// the given radius. If a matching pixel is found, we check in the immediate
+/// vicinity for a 'check_pixel' to confirm we found what we want.
+fn check_minimap_pixels(
+    framehandler: &FrameHandler,
+    frame: &screen::DefaultFrame,
+    radius: f32,
+    expected_pixels: &[FuzzyPixel],
+    check_pixels: &[FuzzyPixel],
+) -> Option<Position> {
+    for fuzzy_pixel in expected_pixels.iter() {
+        let pos = frame.find_pixel_random_polar(
+            *fuzzy_pixel,
+            framehandler.locations.minimap_middle(),
+            radius,
+        );
+        if pos.is_none() {
+            continue;
+        }
+
+        for check in check_pixels.iter() {
+            if !frame
+                .find_pixel_random_polar(
+                    *check,
+                    pos.unwrap(),
+                    Locations::CHECK_ADJACENT_MINIMAP_PIXELS_RADIUS,
+                )
+                .is_none()
+            {
+                return pos;
+            }
+        }
+    }
+    None
+}
 
 #[derive(Clone, Copy)]
 pub enum MousePress {
@@ -26,12 +65,17 @@ pub enum MousePress {
 /// check.
 ///
 /// TODO: Add a generic to take a function.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub enum AwaitAction {
     Time(Duration),
     IsBankOpen(Duration),
     IsInventoryOpen(Duration),
     IsWorldMapOpen(Duration),
+    IsCloseOnMinimap(Duration, Vec<FuzzyPixel>, Vec<FuzzyPixel>),
+
+    // Only to be used with DescribeActionForMinimap which converts this to
+    // IsCloseOnMinimap. Otherwise this is the equivalent of Time.
+    IsCloseOnMinimapIncomplete(Duration),
 }
 
 fn await_result(
@@ -41,6 +85,10 @@ fn await_result(
 ) -> bool {
     match await_config {
         AwaitAction::Time(duration) => sleep(*duration),
+        AwaitAction::IsCloseOnMinimapIncomplete(duration) => {
+            sleep(*duration);
+            dbg!("Illegal call to IsCloseOnMinimapIncomplete");
+        }
         AwaitAction::IsBankOpen(duration) => {
             if !framehandler.is_bank_open(frame) {
                 sleep(*duration);
@@ -59,10 +107,27 @@ fn await_result(
                 return false;
             }
         }
+        AwaitAction::IsCloseOnMinimap(duration, expected_pixels, check_pixels) => {
+            if check_minimap_pixels(
+                framehandler,
+                frame,
+                Locations::MINIMAP_SMALL_RADIUS,
+                expected_pixels,
+                check_pixels,
+            )
+            .is_none()
+            {
+                sleep(*duration);
+                return false;
+            }
+        }
     }
     true
 }
 
+/// This is the interface used to describe discreet actions that Player should
+/// take, moving the mouse and pressing button. Actions are stitched together to
+/// have the player perform a meaningful activity.
 pub trait DescribeAction {
     /// Describes an action that the player should take.
     ///
@@ -72,6 +137,7 @@ pub trait DescribeAction {
     ///   that doesn't cause an action by returning Some(None,
     ///   MousePress::None).
     /// - Returning None from the function indicates a failure.
+    ///
     // Unfortunately we cannot allow frame to be any impl Frame. This is because
     // then we cannot create objects of DescribeAction due to a trait having a
     // generic param. We cannot then turn impl Frame to dyn Frame because we
@@ -149,34 +215,31 @@ impl DescribeAction for DescribeActionForMinimap {
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
         println!("DescribeActionForMinimap");
-        // Distance from where we find 'expected_pixel' in the minimap that we
-        // want to find the check_pixels.
-        const CHECK_RADIUS: f32 = 6.0;
-
-        for fuzzy_pixel in self.expected_pixels.iter() {
-            let pos = frame.find_pixel_random_polar(
-                *fuzzy_pixel,
-                framehandler.locations.minimap_middle(),
-                framehandler.locations.minimap_radius(),
-            );
-            if pos.is_none() {
-                continue;
-            }
-
-            for check in self.check_pixels.iter() {
-                if !frame
-                    .find_pixel_random_polar(*check, pos.unwrap(), CHECK_RADIUS)
-                    .is_none()
-                {
-                    return Some((pos, self.mouse_press));
-                }
-            }
+        match check_minimap_pixels(
+            framehandler,
+            frame,
+            Locations::MINIMAP_RADIUS,
+            &self.expected_pixels,
+            &self.check_pixels,
+        ) {
+            None => None,
+            Some(pos) => Some((Some(pos), self.mouse_press)),
         }
-        None
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
-        await_result(&self.await_action, framehandler, frame)
+        let await_action;
+        match self.await_action {
+            AwaitAction::IsCloseOnMinimapIncomplete(duration) => {
+                await_action = AwaitAction::IsCloseOnMinimap(
+                    duration,
+                    self.expected_pixels.clone(),
+                    self.check_pixels.clone(),
+                )
+            }
+            _ => await_action = self.await_action.clone(),
+        }
+        await_result(&await_action, framehandler, frame)
     }
 }
 
@@ -240,7 +303,7 @@ impl DescribeAction for DescribeActionForWorldmap {
                         .angle_rads();
                         let minimap_pos = polar_to_cartesian(
                             framehandler.locations.minimap_middle(),
-                            framehandler.locations.minimap_radius(),
+                            Locations::MINIMAP_RADIUS,
                             angle_rads,
                         );
                         return Some((Some(minimap_pos), self.mouse_press));

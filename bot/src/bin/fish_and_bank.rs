@@ -126,50 +126,47 @@ fn main() -> Result<(), Box<dyn Error>> {
             expected_pixels: vec![colors::MAP_ICON_BANK_YELLOW],
             check_pixels: vec![colors::MAP_ICON_LIGHT_GRAY],
             mouse_press: MousePress::Left,
-            await_action: AwaitAction::Time(Duration::from_secs(20)),
+            await_action: AwaitAction::IsCloseOnMinimapIncomplete(Duration::from_secs(10)),
         })];
         player.do_actions(&actions[..]);
-        while !player
-            .framehandler
-            .is_bank_open(&player.capturer.frame().unwrap())
-        {
-            let actions: Vec<Box<dyn DescribeAction>> = vec![
-                Box::new(DescribeActionForOpenScreen {
-                    expected_pixels: vec![
-                        colors::BANK_BROWN1,
-                        colors::BANK_BROWN2,
-                        colors::BANK_BROWN3,
-                    ],
-                    mouse_press: MousePress::None,
-                    await_action: AwaitAction::Time(Duration::from_secs(1)),
-                }),
-                Box::new(DescribeActionForActionText {
-                    mouse_press: MousePress::Left,
-                    await_action: AwaitAction::IsBankOpen(util::REDRAW_TIME),
-                    action_text: vec![
-                        (action_letters::start(), colors::ACTION_WHITE),
-                        (action_letters::upper_b(), colors::ACTION_WHITE),
-                        (action_letters::lower_a(), colors::ACTION_WHITE),
-                        (action_letters::lower_n(), colors::ACTION_WHITE),
-                        (action_letters::lower_k(), colors::ACTION_WHITE),
-                        (action_letters::space(), colors::ACTION_WHITE),
-                        (action_letters::upper_b(), colors::ACTION_BLUE),
-                        (action_letters::lower_a(), colors::ACTION_BLUE),
-                        (action_letters::lower_n(), colors::ACTION_BLUE),
-                        (action_letters::lower_k(), colors::ACTION_BLUE),
-                        (action_letters::space(), colors::ACTION_WHITE),
-                        (action_letters::lower_b(), colors::ACTION_BLUE),
-                        (action_letters::lower_o(), colors::ACTION_BLUE),
-                        (action_letters::lower_o(), colors::ACTION_BLUE),
-                        (action_letters::lower_t(), colors::ACTION_BLUE),
-                        (action_letters::lower_h(), colors::ACTION_BLUE),
-                        (action_letters::space(), colors::ACTION_WHITE),
-                        (action_letters::forward_slash(), colors::ACTION_WHITE),
-                    ],
-                }),
-            ];
-            player.do_actions(&actions[..]);
-        }
+
+        let actions: Vec<Box<dyn DescribeAction>> = vec![
+            Box::new(DescribeActionForOpenScreen {
+                expected_pixels: vec![
+                    colors::BANK_BROWN1,
+                    colors::BANK_BROWN2,
+                    colors::BANK_BROWN3,
+                ],
+                mouse_press: MousePress::None,
+                await_action: AwaitAction::Time(Duration::from_secs(1)),
+            }),
+            Box::new(DescribeActionForActionText {
+                mouse_press: MousePress::Left,
+                await_action: AwaitAction::IsBankOpen(util::REDRAW_TIME),
+                action_text: vec![
+                    (action_letters::start(), colors::ACTION_WHITE),
+                    (action_letters::upper_b(), colors::ACTION_WHITE),
+                    (action_letters::lower_a(), colors::ACTION_WHITE),
+                    (action_letters::lower_n(), colors::ACTION_WHITE),
+                    (action_letters::lower_k(), colors::ACTION_WHITE),
+                    (action_letters::space(), colors::ACTION_WHITE),
+                    (action_letters::upper_b(), colors::ACTION_BLUE),
+                    (action_letters::lower_a(), colors::ACTION_BLUE),
+                    (action_letters::lower_n(), colors::ACTION_BLUE),
+                    (action_letters::lower_k(), colors::ACTION_BLUE),
+                    (action_letters::space(), colors::ACTION_WHITE),
+                    (action_letters::lower_b(), colors::ACTION_BLUE),
+                    (action_letters::lower_o(), colors::ACTION_BLUE),
+                    (action_letters::lower_o(), colors::ACTION_BLUE),
+                    (action_letters::lower_t(), colors::ACTION_BLUE),
+                    (action_letters::lower_h(), colors::ACTION_BLUE),
+                    (action_letters::space(), colors::ACTION_WHITE),
+                    (action_letters::forward_slash(), colors::ACTION_WHITE),
+                ],
+            }),
+        ];
+        player.do_actions(&actions[..]);
+
         println!("We're at the bank (I hope).");
 
         println!("Done depositing.");
@@ -180,7 +177,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             expected_pixels: vec![colors::MAP_ICON_FISH_DARK_BLUE],
             check_pixels: vec![colors::MAP_ICON_FISH_LIGHT_BLUE],
             mouse_press: MousePress::Left,
-            await_action: AwaitAction::Time(Duration::from_secs(20)),
+            await_action: AwaitAction::IsCloseOnMinimapIncomplete(Duration::from_secs(10)),
         })];
         player.do_actions(&actions[..]);
     }
