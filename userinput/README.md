@@ -50,3 +50,8 @@ Move movement uses the inputbot crate, which require sudo to move the mouse.
 ```
 rsbot$ cargo build -p mouse --bin replay && sudo ./target/debug/replay --in-fpath /path/to/mouse_paths.bincode
 ```
+
+# Libraries with dependencies
+device_query
+inputbot
+uinput

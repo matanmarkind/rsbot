@@ -285,10 +285,16 @@ impl InputBot {
     /// mouse_paths are reasonably good.
     pub fn move_to(&self, dst: &Position) {
         let time = std::time::Instant::now();
-        while !self.mouse.move_to(dst) {
-            assert!(time.elapsed() < MOVE_TO_TIMEOUT);
-        }
+        while !self.mouse.move_to(dst) && time.elapsed() < MOVE_TO_TIMEOUT {}
+
+        // We didn't make it exactly there, but it's possible that this is due
+        // to hitting the edge of the screen since move_near doesn't know the
+        // max x/y.
+        dbg!("move_to didn't make it")
+        let DeltaPosition { dx, dy } = dst - self.mouse_position();
+        assert!(dx <= 1 && dy <= 1);
     }
+
     /// Moves the mouse close to 'dst'.
     ///
     /// This is used to avoid pixel perfect placement.
@@ -297,8 +303,8 @@ impl InputBot {
 
         let mut rng = thread_rng();
         self.move_to(&Position {
-            x: dst.x + max(0, rng.gen_range(-1, 2)),
-            y: dst.y + max(0, rng.gen_range(-1, 2)),
+            x: max(0, dst.x + rng.gen_range(-1, 2)),
+            y: max(0, dst.y + rng.gen_range(-1, 2)),
         });
     }
     pub fn mouse_position(&self) -> Position {
