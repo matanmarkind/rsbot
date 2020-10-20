@@ -20,11 +20,11 @@ fn open_bank_actions() -> Vec<Box<dyn DescribeAction>> {
                 fuzzy_pixels::bank_brown3(),
             ],
             mouse_press: MousePress::None,
-            await_action: AwaitFrame::Time(Duration::from_nanos(1)),
+            await_action: AwaitFrame::Time(Duration::from_secs(1)),
         }),
         Box::new(DescribeActionForActionText {
             mouse_press: MousePress::Left,
-            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(2)),
+            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
             action_text: vec![
                 (action_letters::start(), action_text_white()),
                 (action_letters::upper_b(), action_text_white()),
@@ -59,7 +59,7 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![fuzzy_pixels::small_net_fishing_spot()],
                 mouse_press: MousePress::None,
-                await_action: AwaitFrame::Time(Duration::from_secs(1)),
+                await_action: AwaitFrame::Time(util::REDRAW_TIME),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
@@ -109,7 +109,7 @@ fn deposit_in_bank() -> ConsumeInventoryOptions {
         actions: vec![Box::new(DescribeActionForInventory {
             expected_pixels: inventory_pixels.clone(),
             mouse_press: MousePress::Left,
-            await_action: AwaitFrame::Time(Duration::from_nanos(1)),
+            await_action: AwaitFrame::Time(Duration::from_secs(1)),
         })],
     }
 }
@@ -131,8 +131,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     player.reset();
     while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
         player.travel_to(
-            /*expected_pixels=*/ &vec![fuzzy_pixels::map_icon_fish_dark_blue()],
-            /*check_pixels=*/ &vec![fuzzy_pixels::map_icon_fish_light_blue()],
+            /*expected_pixels=*/
+            &vec![
+                fuzzy_pixels::map_icon_fish_light_blue(),
+                fuzzy_pixels::map_icon_fish_dark_blue(),
+            ],
+            /*check_pixels=*/
+            &vec![
+                fuzzy_pixels::map_icon_light_gray(),
+                fuzzy_pixels::map_icon_fish_light_blue(),
+                fuzzy_pixels::map_icon_fish_dark_blue(),
+                fuzzy_pixels::black(),
+            ],
         );
         println!("We are at the fishies");
 
@@ -142,7 +152,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         player.travel_to(
             /*expected_pixels=*/ &vec![fuzzy_pixels::map_icon_bank_yellow()],
-            /*check_pixels=*/ &vec![fuzzy_pixels::map_icon_light_gray()],
+            /*check_pixels=*/
+            &vec![fuzzy_pixels::map_icon_light_gray()],
         );
         println!("We're at the bank (I hope).");
 

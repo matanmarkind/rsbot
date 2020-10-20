@@ -287,11 +287,10 @@ impl InputBot {
         let time = std::time::Instant::now();
         while !self.mouse.move_to(dst) && time.elapsed() < MOVE_TO_TIMEOUT {}
 
-        // We didn't make it exactly there, but it's possible that this is due
+        // If we didn't make it exactly there, it's possible that this is due
         // to hitting the edge of the screen since move_near doesn't know the
         // max x/y.
-        dbg!("move_to didn't make it")
-        let DeltaPosition { dx, dy } = dst - self.mouse_position();
+        let DeltaPosition { dx, dy } = *dst - self.mouse_position();
         assert!(dx <= 1 && dy <= 1);
     }
 

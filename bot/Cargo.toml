@@ -12,3 +12,4 @@ userinput = {path="../userinput"}
 screen = {path="../screen"}
 structopt = "0.3.17"
 scrap = "0.5.0"
+rand = "0.7.3"

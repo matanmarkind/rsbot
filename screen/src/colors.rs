@@ -40,6 +40,17 @@ pub mod pixels {
 pub mod fuzzy_pixels {
     use crate::FuzzyPixel;
 
+    pub fn black() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 0,
+            blue_max: 3,
+            green_min: 0,
+            green_max: 3,
+            red_min: 0,
+            red_max: 3,
+        }
+    }
+
     /// Colors used in the action text at the top left of the screen.
     pub fn action_text_white() -> FuzzyPixel {
         FuzzyPixel {
