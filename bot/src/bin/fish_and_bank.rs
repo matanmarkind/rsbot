@@ -3,7 +3,7 @@ use bot::{
     DescribeActionForInventory, DescribeActionForMinimap, DescribeActionForOpenScreen, MousePress,
 };
 use screen::{
-    action_letters, colors, fuzzy_pixels,
+    action_letters, fuzzy_pixels,
     fuzzy_pixels::{action_text_blue, action_text_white, action_text_yellow},
     inventory_slot_pixels,
 };
@@ -60,9 +60,9 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
 
 fn deposit_in_bank() -> ConsumeInventoryOptions {
     let inventory_pixels = vec![
-            inventory_slot_pixels::raw_shrimp_bank(),
-            inventory_slot_pixels::raw_anchovies_bank(),
-        ];
+        inventory_slot_pixels::raw_shrimp_bank(),
+        inventory_slot_pixels::raw_anchovies_bank(),
+    ];
     ConsumeInventoryOptions {
         multi_slot_action: false,
         timeout: Duration::from_secs(3),

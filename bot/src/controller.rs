@@ -1,5 +1,6 @@
 use screen::{
-    action_letters::Letter,inventory_slot_pixels, colors, Capturer, Frame, FrameHandler, FuzzyPixel, Locations,
+    action_letters::Letter, inventory_slot_pixels, Capturer, Frame, FrameHandler, FuzzyPixel,
+    Locations,
 };
 use std::thread::sleep;
 use std::time::Duration;

@@ -1,4 +1,3 @@
-use crate::types::*;
 use util::*;
 
 /// Used to calculate the pixel location of a desired object on the screen.
@@ -501,5 +500,3 @@ impl Locations {
         ret
     }
 }
-
-pub type InventorySlotPixels = [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT];

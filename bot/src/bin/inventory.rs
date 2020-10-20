@@ -1,4 +1,4 @@
-use screen::{colors, inventory_slot_pixels, Capturer, FrameHandler};
+use screen::{inventory_slot_pixels, Capturer, FrameHandler};
 /// Builds off of mouse_to_pixel. Now we will move the mouse to the desired
 /// pixel and left click on it. Instead of a config with a single rectangle
 /// bounding the search, we will have multiple rectangles. This is because parts

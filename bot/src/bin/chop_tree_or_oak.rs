@@ -10,8 +10,9 @@ use bot::{
     DescribeActionForOpenScreen, MousePress,
 };
 use screen::{
-    action_letters, colors, fuzzy_pixels,inventory_slot_pixels,
+    action_letters, fuzzy_pixels,
     fuzzy_pixels::{action_text_blue, action_text_white},
+    inventory_slot_pixels,
 };
 use std::error::Error;
 use std::time::Duration;

@@ -6,7 +6,6 @@
 /// owning activities. For the sake of feedback it can be useful to mark up and
 /// save the image, which requires ownership.
 use crate::action_letters;
-use crate::constants::*;
 use crate::types::*;
 use crate::Locations;
 use crate::{fuzzy_pixels, inventory_slot_pixels};
@@ -18,6 +17,9 @@ use std::ops::Deref;
 use std::thread::sleep;
 use std::time::Duration;
 use util::*;
+
+// Each pixel is represented by 4 u8's, BGRA/RGBA. Each frame is a list of u8's.
+pub const RAW_PIXEL_SIZE: usize = 4;
 
 // When searching for a pixel in a frame, how many attempts to make.
 pub const TIME_TO_FIND_PIXEL: Duration = Duration::from_millis(100);

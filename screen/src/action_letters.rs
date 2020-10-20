@@ -1,5 +1,6 @@
 use crate::types::*;
 use crate::{pixels, Frame};
+use std::fmt;
 use util::*;
 
 /// When the mouse is placed over an object to act on, the top left of the
@@ -7,6 +8,8 @@ use util::*;
 /// do that action.
 ///
 /// These are all expected to be constants, so the lifetimes will be static.
+///
+/// TODO: Make letter private and word public.
 pub struct Letter {
     /// How wide is the letter, use to figure out the offset of the next letter.
     pub width: i32,
@@ -16,6 +19,33 @@ pub struct Letter {
     /// y=52. Letters are drawn in white, and the background can be of any
     /// color.
     pub checkpoints: Vec<DeltaPosition>,
+
+    /// Letter represented.
+    pub display: &'static str,
+}
+
+impl fmt::Display for Letter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.display)
+    }
+}
+
+pub struct Word {
+    pub letters: Vec<Letter>,
+}
+
+impl fmt::Display for Word {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.letters
+                .iter()
+                .map(|l| l.display)
+                .collect::<Vec<&str>>()
+                .join("")
+        )
+    }
 }
 
 pub fn upper_b() -> Letter {
@@ -34,6 +64,8 @@ pub fn upper_b() -> Letter {
             DeltaPosition { dx: 5, dy: 4 },
             DeltaPosition { dx: 5, dy: 9 },
         ],
+
+        display: "B",
     }
 }
 
@@ -49,6 +81,8 @@ pub fn upper_c() -> Letter {
             DeltaPosition { dx: 4, dy: 3 },
             DeltaPosition { dx: 4, dy: 10 },
         ],
+
+        display: "C",
     }
 }
 
@@ -65,6 +99,8 @@ pub fn upper_f() -> Letter {
             DeltaPosition { dx: 3, dy: 6 },
             DeltaPosition { dx: 5, dy: 2 },
         ],
+
+        display: "D",
     }
 }
 
@@ -83,6 +119,8 @@ pub fn upper_n() -> Letter {
             DeltaPosition { dx: 6, dy: 6 },
             DeltaPosition { dx: 6, dy: 10 },
         ],
+
+        display: "N",
     }
 }
 
@@ -101,6 +139,8 @@ pub fn upper_o() -> Letter {
             DeltaPosition { dx: 6, dy: 3 },
             DeltaPosition { dx: 7, dy: 6 },
         ],
+
+        display: "O",
     }
 }
 
@@ -118,6 +158,8 @@ pub fn upper_s() -> Letter {
             DeltaPosition { dx: 5, dy: 3 },
             DeltaPosition { dx: 5, dy: 8 },
         ],
+
+        display: "S",
     }
 }
 
@@ -133,6 +175,8 @@ pub fn upper_t() -> Letter {
             DeltaPosition { dx: 2, dy: 11 },
             DeltaPosition { dx: 4, dy: 2 },
         ],
+
+        display: "T",
     }
 }
 
@@ -149,6 +193,8 @@ pub fn lower_a() -> Letter {
             DeltaPosition { dx: 5, dy: 7 },
             DeltaPosition { dx: 5, dy: 10 },
         ],
+
+        display: "a",
     }
 }
 
@@ -166,6 +212,8 @@ pub fn lower_b() -> Letter {
             DeltaPosition { dx: 3, dy: 11 },
             DeltaPosition { dx: 5, dy: 9 },
         ],
+
+        display: "b",
     }
 }
 
@@ -181,6 +229,8 @@ pub fn lower_d() -> Letter {
             DeltaPosition { dx: 5, dy: 2 },
             DeltaPosition { dx: 5, dy: 10 },
         ],
+
+        display: "d",
     }
 }
 
@@ -197,6 +247,8 @@ pub fn lower_e() -> Letter {
             DeltaPosition { dx: 3, dy: 11 },
             DeltaPosition { dx: 4, dy: 7 },
         ],
+
+        display: "e",
     }
 }
 
@@ -211,6 +263,8 @@ pub fn lower_h() -> Letter {
             DeltaPosition { dx: 2, dy: 6 },
             DeltaPosition { dx: 4, dy: 10 },
         ],
+
+        display: "h",
     }
 }
 
@@ -224,6 +278,8 @@ pub fn lower_i() -> Letter {
             DeltaPosition { dx: 0, dy: 7 },
             DeltaPosition { dx: 0, dy: 10 },
         ],
+
+        display: "i",
     }
 }
 
@@ -241,6 +297,8 @@ pub fn lower_g() -> Letter {
             DeltaPosition { dx: 4, dy: 8 },
             DeltaPosition { dx: 4, dy: 13 },
         ],
+
+        display: "g",
     }
 }
 
@@ -256,6 +314,8 @@ pub fn lower_k() -> Letter {
             DeltaPosition { dx: 4, dy: 6 },
             DeltaPosition { dx: 5, dy: 11 },
         ],
+
+        display: "k",
     }
 }
 
@@ -270,6 +330,8 @@ pub fn lower_l() -> Letter {
             DeltaPosition { dx: 1, dy: 8 },
             DeltaPosition { dx: 1, dy: 11 },
         ],
+
+        display: "l",
     }
 }
 
@@ -287,6 +349,8 @@ pub fn lower_m() -> Letter {
             DeltaPosition { dx: 6, dy: 7 },
             DeltaPosition { dx: 6, dy: 10 },
         ],
+
+        display: "m",
     }
 }
 
@@ -302,6 +366,8 @@ pub fn lower_n() -> Letter {
             DeltaPosition { dx: 4, dy: 7 },
             DeltaPosition { dx: 4, dy: 10 },
         ],
+
+        display: "n",
     }
 }
 
@@ -316,6 +382,8 @@ pub fn lower_o() -> Letter {
             DeltaPosition { dx: 2, dy: 11 },
             DeltaPosition { dx: 4, dy: 8 },
         ],
+
+        display: "o",
     }
 }
 
@@ -331,6 +399,8 @@ pub fn lower_p() -> Letter {
             DeltaPosition { dx: 2, dy: 11 },
             DeltaPosition { dx: 4, dy: 8 },
         ],
+
+        display: "p",
     }
 }
 
@@ -344,6 +414,8 @@ pub fn lower_r() -> Letter {
             DeltaPosition { dx: 1, dy: 11 },
             DeltaPosition { dx: 3, dy: 6 },
         ],
+
+        display: "r",
     }
 }
 
@@ -361,6 +433,8 @@ pub fn lower_s() -> Letter {
             DeltaPosition { dx: 5, dy: 6 },
             DeltaPosition { dx: 5, dy: 9 },
         ],
+
+        display: "s",
     }
 }
 
@@ -376,6 +450,8 @@ pub fn lower_t() -> Letter {
             DeltaPosition { dx: 3, dy: 6 },
             DeltaPosition { dx: 3, dy: 11 },
         ],
+
+        display: "t",
     }
 }
 
@@ -391,6 +467,8 @@ pub fn lower_w() -> Letter {
             DeltaPosition { dx: 6, dy: 6 },
             DeltaPosition { dx: 6, dy: 9 },
         ],
+
+        display: "w",
     }
 }
 
@@ -400,6 +478,8 @@ pub fn space() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: Vec::<DeltaPosition>::new(),
+
+        display: " ",
     }
 }
 
@@ -411,6 +491,8 @@ pub fn start() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: Vec::<DeltaPosition>::new(),
+
+        display: "",
     }
 }
 
@@ -425,6 +507,8 @@ pub fn forward_slash() -> Letter {
             DeltaPosition { dx: 2, dy: 4 },
             DeltaPosition { dx: 3, dy: 1 },
         ],
+
+        display: "/",
     }
 }
 

@@ -1,14 +1,12 @@
 pub mod action_letters;
 pub mod colors;
-pub mod constants;
 pub mod frame;
 pub mod locations;
 pub mod types;
 
 pub use colors::*;
-pub use constants::*;
 pub use frame::*;
-pub use locations::{InventorySlotPixels, Locations};
+pub use locations::Locations;
 pub use types::*;
 
 use structopt::StructOpt;

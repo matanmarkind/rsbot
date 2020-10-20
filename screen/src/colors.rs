@@ -5,6 +5,10 @@
 ///
 /// In case of future changes to handle other brightnesses I am wrapping these
 /// constants into functions.
+use crate::types::FuzzyPixel;
+use crate::Locations;
+pub type InventorySlotPixels = [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT];
+
 pub mod pixels {
     use crate::Pixel;
 
