@@ -333,7 +333,7 @@ impl Locations {
     /// worldmap icon. This is to avoid an issue of looking for a blue/green and
     /// accidentally clicking the worldmap.
     pub const MINIMAP_RADIUS: f32 = 72.0;
-    pub const MINIMAP_SMALL_RADIUS: f32 = Self::MINIMAP_RADIUS / 4.0;
+    pub const MINIMAP_SMALL_RADIUS: f32 = Self::MINIMAP_RADIUS / 6.0;
     /// When we find something interesting in the minimap we often want to check the
     /// adjacent pixels to confirm this is not an abberant pixel.
     pub const CHECK_ADJACENT_MINIMAP_PIXELS_RADIUS: f32 = 6.0;

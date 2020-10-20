@@ -1,5 +1,5 @@
 use screen::{
-    action_letters::Letter, colors, Capturer, Frame, FrameHandler, FuzzyPixel, Locations,
+    action_letters::Letter,inventory_slot_pixels, colors, Capturer, Frame, FrameHandler, FuzzyPixel, Locations,
 };
 use std::thread::sleep;
 use std::time::Duration;
@@ -54,8 +54,8 @@ pub enum MousePress {
 /// action is deemed complete. There are 2 parts generally.
 /// - The enum variant, which describes the condition checked for. Time only
 ///   waits a set amount of time before returning true.
-/// - The duration to wait between checks. This is defined in AwaitActionResult
-///   since Player will call to DescribeActions.await_result in a busy loop.
+/// - The maximum amount of time to wait before giving up and returning a
+///   failure status. Time explicitly waits for Duration and returns true.
 ///
 /// Note that waiting happens after an action has been taken, and this is meant
 /// to deal with delay in things like game rendering or effects such as lighting
@@ -66,7 +66,7 @@ pub enum MousePress {
 ///
 /// TODO: Add a generic to take a function.
 #[derive(Clone)]
-pub enum AwaitAction {
+pub enum AwaitFrame {
     Time(Duration),
     IsBankOpen(Duration),
     IsInventoryOpen(Duration),
@@ -78,36 +78,34 @@ pub enum AwaitAction {
     IsCloseOnMinimapIncomplete(Duration),
 }
 
+/// Checks the described action and returns true if the condition is met.
 fn await_result(
-    await_config: &AwaitAction,
+    await_config: &AwaitFrame,
     framehandler: &FrameHandler,
     frame: &screen::DefaultFrame,
 ) -> bool {
     match await_config {
-        AwaitAction::Time(duration) => sleep(*duration),
-        AwaitAction::IsCloseOnMinimapIncomplete(duration) => {
-            sleep(*duration);
+        AwaitFrame::Time(duration) => sleep(*duration),
+        AwaitFrame::IsCloseOnMinimapIncomplete(_) => {
             dbg!("Illegal call to IsCloseOnMinimapIncomplete");
+            return false;
         }
-        AwaitAction::IsBankOpen(duration) => {
+        AwaitFrame::IsBankOpen(_) => {
             if !framehandler.is_bank_open(frame) {
-                sleep(*duration);
                 return false;
             }
         }
-        AwaitAction::IsInventoryOpen(duration) => {
+        AwaitFrame::IsInventoryOpen(_) => {
             if !framehandler.is_inventory_open(frame) {
-                sleep(*duration);
                 return false;
             }
         }
-        AwaitAction::IsWorldMapOpen(duration) => {
+        AwaitFrame::IsWorldMapOpen(_) => {
             if !framehandler.is_worldmap_open(frame) {
-                sleep(*duration);
                 return false;
             }
         }
-        AwaitAction::IsCloseOnMinimap(duration, expected_pixels, check_pixels) => {
+        AwaitFrame::IsCloseOnMinimap(_, expected_pixels, check_pixels) => {
             if check_minimap_pixels(
                 framehandler,
                 frame,
@@ -117,12 +115,22 @@ fn await_result(
             )
             .is_none()
             {
-                sleep(*duration);
                 return false;
             }
         }
     }
     true
+}
+
+fn await_result_timeout(await_config: &AwaitFrame) -> Duration {
+    match await_config {
+        AwaitFrame::Time(duration) => *duration,
+        AwaitFrame::IsCloseOnMinimapIncomplete(duration) => *duration,
+        AwaitFrame::IsBankOpen(duration) => *duration,
+        AwaitFrame::IsInventoryOpen(duration) => *duration,
+        AwaitFrame::IsWorldMapOpen(duration) => *duration,
+        AwaitFrame::IsCloseOnMinimap(duration, _, _) => *duration,
+    }
 }
 
 /// This is the interface used to describe discreet actions that Player should
@@ -160,6 +168,12 @@ pub trait DescribeAction {
     ///
     /// Returns true once the action is complete.
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool;
+
+    /// The deadline that an action has for being complete. This is the max
+    /// amount of time we will wait after performaing the action described in
+    /// do_action for it to be considered true before considering this to be a
+    /// failure.
+    fn await_result_timeout(&self) -> Duration;
 }
 
 /// Basic unit of finding info in the open screen and then acting on it. Assumes
@@ -167,21 +181,21 @@ pub trait DescribeAction {
 pub struct DescribeActionForOpenScreen {
     pub expected_pixels: Vec<FuzzyPixel>,
     pub mouse_press: MousePress,
-    pub await_action: AwaitAction,
+    pub await_action: AwaitFrame,
 }
 
 /// Used to confirm that an action we are about to take is the correct one.
 pub struct DescribeActionForActionText {
     pub action_text: Vec<(Letter, FuzzyPixel)>,
     pub mouse_press: MousePress,
-    pub await_action: AwaitAction,
+    pub await_action: AwaitFrame,
 }
 
 // Find something in the inventory and possibly press it.
 pub struct DescribeActionForInventory {
     pub expected_pixels: Vec<screen::InventorySlotPixels>,
     pub mouse_press: MousePress,
-    pub await_action: AwaitAction,
+    pub await_action: AwaitFrame,
 }
 
 /// Describes an action based on assessing the worldmap. Assumes the worldmap is
@@ -194,7 +208,7 @@ pub struct DescribeActionForWorldmap {
     pub check_pixels: Vec<FuzzyPixel>,
 
     pub mouse_press: MousePress,
-    pub await_action: AwaitAction,
+    pub await_action: AwaitFrame,
 }
 
 // Find something in the inventory and possibly press it.
@@ -205,7 +219,7 @@ pub struct DescribeActionForMinimap {
     pub check_pixels: Vec<FuzzyPixel>,
 
     pub mouse_press: MousePress,
-    pub await_action: AwaitAction,
+    pub await_action: AwaitFrame,
 }
 
 impl DescribeAction for DescribeActionForMinimap {
@@ -230,8 +244,8 @@ impl DescribeAction for DescribeActionForMinimap {
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         let await_action;
         match self.await_action {
-            AwaitAction::IsCloseOnMinimapIncomplete(duration) => {
-                await_action = AwaitAction::IsCloseOnMinimap(
+            AwaitFrame::IsCloseOnMinimapIncomplete(duration) => {
+                await_action = AwaitFrame::IsCloseOnMinimap(
                     duration,
                     self.expected_pixels.clone(),
                     self.check_pixels.clone(),
@@ -240,6 +254,10 @@ impl DescribeAction for DescribeActionForMinimap {
             _ => await_action = self.await_action.clone(),
         }
         await_result(&await_action, framehandler, frame)
+    }
+
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
     }
 }
 
@@ -263,6 +281,9 @@ impl DescribeAction for DescribeActionForOpenScreen {
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
     }
 }
 
@@ -317,6 +338,9 @@ impl DescribeAction for DescribeActionForWorldmap {
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         await_result(&self.await_action, framehandler, frame)
     }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
 }
 
 impl DescribeAction for DescribeActionForActionText {
@@ -329,12 +353,14 @@ impl DescribeAction for DescribeActionForActionText {
         if framehandler.check_action_letters(frame, &self.action_text[..]) {
             return Some((None, self.mouse_press));
         }
-        dbg!("No matchning words.");
         None
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
     }
 }
 
@@ -348,10 +374,7 @@ impl DescribeAction for DescribeActionForInventory {
         for fuzzy_pixel in self.expected_pixels.iter() {
             // dbg!(fuzzy_pixel);
             match framehandler.first_matching_inventory_slot(frame, &fuzzy_pixel) {
-                None => {
-                    dbg!("None");
-                    ()
-                }
+                None => (),
                 Some(slot_index) => {
                     dbg!(slot_index);
                     return Some((
@@ -366,6 +389,9 @@ impl DescribeAction for DescribeActionForInventory {
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
     }
 }
 
@@ -544,7 +570,13 @@ impl Player {
                         MousePress::Right => self.inputbot.right_click(),
                     }
 
-                    while !act.await_result(&self.framehandler, &self.capturer.frame().unwrap()) {}
+                    let time = std::time::Instant::now();
+                    while !act.await_result(&self.framehandler, &self.capturer.frame().unwrap()) {
+                        if time.elapsed() > act.await_result_timeout() {
+                            return false;
+                        }
+                        sleep(Duration::from_secs(1));
+                    }
                 }
             }
         }
@@ -569,13 +601,13 @@ impl Player {
 
             let mut frame = self.capturer.frame().unwrap();
             let mut first_matching_inventory_slot = None;
-            let mut iventory_slot_pixels = colors::INVENTORY_SLOT_EMPTY;
+            let mut inventory_slot_pixels = inventory_slot_pixels::empty();
             for pixels in options.inventory_consumption_pixels.iter() {
                 first_matching_inventory_slot = self
                     .framehandler
                     .first_matching_inventory_slot(&frame, pixels);
                 if !first_matching_inventory_slot.is_none() {
-                    iventory_slot_pixels = *pixels;
+                    inventory_slot_pixels = *pixels;
                     break;
                 }
             }
@@ -605,7 +637,7 @@ impl Player {
                 frame = self.capturer.frame().unwrap();
                 let matching_slot = self
                     .framehandler
-                    .first_matching_inventory_slot(&frame, &iventory_slot_pixels);
+                    .first_matching_inventory_slot(&frame, &inventory_slot_pixels);
                 if matching_slot == first_matching_inventory_slot {
                     // Nothing new in the inventory, just keep waiting.
                     continue;

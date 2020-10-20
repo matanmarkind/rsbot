@@ -1,6 +1,5 @@
-use crate::colors;
 use crate::types::*;
-use crate::Frame;
+use crate::{pixels, Frame};
 use util::*;
 
 /// When the mouse is placed over an object to act on, the top left of the
@@ -525,7 +524,7 @@ pub fn mark_letters_and_save(
                 x: x_offset + dx,
                 y: action_text_top_left.y + dy,
             };
-            img.recolor_pixel(&pos, &colors::PURE_RED);
+            img.recolor_pixel(&pos, &pixels::red());
         }
         x_offset += letter.width;
     }

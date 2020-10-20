@@ -9,6 +9,7 @@ use crate::action_letters;
 use crate::constants::*;
 use crate::types::*;
 use crate::Locations;
+use crate::{fuzzy_pixels, inventory_slot_pixels};
 use std::cmp::{max, min};
 use std::fs::File;
 use std::io::ErrorKind::WouldBlock;
@@ -496,7 +497,7 @@ impl FrameHandler {
         // positive is relatively low.
         frame.check_loose_pixel(
             &self.locations.inventory_icon_background(),
-            &colors::INVENTORY_ICON_BACKGROUND_OPEN,
+            &fuzzy_pixels::inventory_icon_background_open(),
         )
     }
 
@@ -555,7 +556,7 @@ impl FrameHandler {
     }
 
     pub fn is_inventory_slot_open(&self, frame: &impl Frame, slot_index: i32) -> bool {
-        self.check_inventory_slot(frame, slot_index, &colors::INVENTORY_SLOT_EMPTY)
+        self.check_inventory_slot(frame, slot_index, &inventory_slot_pixels::empty())
     }
 
     /// Get the minimum slot_index [0,NUM_INVENTORY_SLOTS) which points to a
@@ -574,7 +575,7 @@ impl FrameHandler {
     }
 
     pub fn first_open_inventory_slot(&self, frame: &impl Frame) -> Option<i32> {
-        self.first_matching_inventory_slot(frame, &colors::INVENTORY_SLOT_EMPTY)
+        self.first_matching_inventory_slot(frame, &inventory_slot_pixels::empty())
     }
 
     /// Check the 4 corners of the box described by (top_left, dimensions)
@@ -767,13 +768,13 @@ impl FrameHandler {
     pub fn is_bank_quantity_all(&self, frame: &impl Frame) -> bool {
         frame.check_loose_pixel(
             &self.locations.bank_quantity_all(),
-            &colors::BANK_QUANTITY_ON,
+            &fuzzy_pixels::bank_quantity_on(),
         )
     }
     pub fn is_bank_quantity_one(&self, frame: &impl Frame) -> bool {
         frame.check_loose_pixel(
             &self.locations.bank_quantity_one(),
-            &colors::BANK_QUANTITY_ON,
+            &fuzzy_pixels::bank_quantity_on(),
         )
     }
 }

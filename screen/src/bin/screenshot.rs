@@ -1,5 +1,5 @@
 // From scrap github repo. Here for my convenience.
-use screen::{Capturer, Frame, FrameHandler, Locations, OwnedFrame};
+use screen::{pixels, Capturer, Frame, FrameHandler, Locations, OwnedFrame};
 use structopt::StructOpt;
 use util::*;
 
@@ -102,7 +102,7 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
                 Locations::MINIMAP_RADIUS,
                 angle,
             ),
-            &screen::colors::PURE_RED,
+            &pixels::red(),
         );
         // Shows the radius for the close search used in bot::AwaitResult::IsCloseOnMinimap.
         frame.recolor_pixel(
@@ -111,7 +111,7 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
                 Locations::MINIMAP_SMALL_RADIUS,
                 angle,
             ),
-            &screen::colors::PURE_RED,
+            &pixels::red(),
         );
         angle += 0.1;
     }
@@ -145,7 +145,7 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         let mut pos = first_pos;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
-                frame.recolor_pixel(&pos, &screen::colors::PURE_RED);
+                frame.recolor_pixel(&pos, &pixels::red());
                 pos = Position {
                     x: pos.x + slot_check_spacing.dx,
                     y: pos.y,

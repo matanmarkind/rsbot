@@ -1,8 +1,12 @@
 use bot::{
-    controller, AwaitAction, ConsumeInventoryOptions, DescribeAction, DescribeActionForActionText,
+    controller, AwaitFrame, ConsumeInventoryOptions, DescribeAction, DescribeActionForActionText,
     DescribeActionForInventory, DescribeActionForMinimap, DescribeActionForOpenScreen, MousePress,
 };
-use screen::{action_letters, colors};
+use screen::{
+    action_letters, colors, fuzzy_pixels,
+    fuzzy_pixels::{action_text_blue, action_text_white, action_text_yellow},
+    inventory_slot_pixels,
+};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -12,42 +16,42 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
         multi_slot_action: true,
         timeout: Duration::from_secs(20),
         reset_period: Some(Duration::from_secs(300)),
-        inventory_consumption_pixels: vec![colors::INVENTORY_SLOT_EMPTY],
+        inventory_consumption_pixels: vec![inventory_slot_pixels::empty()],
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
-                expected_pixels: vec![colors::SMALL_NET_FISHING_SPOT],
+                expected_pixels: vec![fuzzy_pixels::small_net_fishing_spot()],
                 mouse_press: MousePress::None,
-                await_action: AwaitAction::Time(Duration::from_secs(1)),
+                await_action: AwaitFrame::Time(Duration::from_secs(1)),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
-                await_action: AwaitAction::Time(Duration::from_nanos(1)),
+                await_action: AwaitFrame::Time(Duration::from_nanos(1)),
                 action_text: vec![
-                    (action_letters::start(), colors::ACTION_WHITE),
-                    (action_letters::upper_s(), colors::ACTION_WHITE),
-                    (action_letters::lower_m(), colors::ACTION_WHITE),
-                    (action_letters::lower_a(), colors::ACTION_WHITE),
-                    (action_letters::lower_l(), colors::ACTION_WHITE),
-                    (action_letters::lower_l(), colors::ACTION_WHITE),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::upper_n(), colors::ACTION_WHITE),
-                    (action_letters::lower_e(), colors::ACTION_WHITE),
-                    (action_letters::lower_t(), colors::ACTION_WHITE),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::upper_f(), colors::ACTION_YELLOW),
-                    (action_letters::lower_i(), colors::ACTION_YELLOW),
-                    (action_letters::lower_s(), colors::ACTION_YELLOW),
-                    (action_letters::lower_h(), colors::ACTION_YELLOW),
-                    (action_letters::lower_i(), colors::ACTION_YELLOW),
-                    (action_letters::lower_n(), colors::ACTION_YELLOW),
-                    (action_letters::lower_g(), colors::ACTION_YELLOW),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::lower_s(), colors::ACTION_YELLOW),
-                    (action_letters::lower_p(), colors::ACTION_YELLOW),
-                    (action_letters::lower_o(), colors::ACTION_YELLOW),
-                    (action_letters::lower_t(), colors::ACTION_YELLOW),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::forward_slash(), colors::ACTION_WHITE),
+                    (action_letters::start(), action_text_white()),
+                    (action_letters::upper_s(), action_text_white()),
+                    (action_letters::lower_m(), action_text_white()),
+                    (action_letters::lower_a(), action_text_white()),
+                    (action_letters::lower_l(), action_text_white()),
+                    (action_letters::lower_l(), action_text_white()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::upper_n(), action_text_white()),
+                    (action_letters::lower_e(), action_text_white()),
+                    (action_letters::lower_t(), action_text_white()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::upper_f(), action_text_yellow()),
+                    (action_letters::lower_i(), action_text_yellow()),
+                    (action_letters::lower_s(), action_text_yellow()),
+                    (action_letters::lower_h(), action_text_yellow()),
+                    (action_letters::lower_i(), action_text_yellow()),
+                    (action_letters::lower_n(), action_text_yellow()),
+                    (action_letters::lower_g(), action_text_yellow()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::lower_s(), action_text_yellow()),
+                    (action_letters::lower_p(), action_text_yellow()),
+                    (action_letters::lower_o(), action_text_yellow()),
+                    (action_letters::lower_t(), action_text_yellow()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::forward_slash(), action_text_white()),
                 ],
             }),
         ],
@@ -55,21 +59,19 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
 }
 
 fn deposit_in_bank() -> ConsumeInventoryOptions {
+    let inventory_pixels = vec![
+            inventory_slot_pixels::raw_shrimp_bank(),
+            inventory_slot_pixels::raw_anchovies_bank(),
+        ];
     ConsumeInventoryOptions {
         multi_slot_action: false,
         timeout: Duration::from_secs(3),
         reset_period: None,
-        inventory_consumption_pixels: vec![
-            colors::INVENTORY_RAW_SHRIMP_BANK,
-            colors::INVENTORY_RAW_ANCHOVIES_BANK,
-        ],
+        inventory_consumption_pixels: inventory_pixels.clone(),
         actions: vec![Box::new(DescribeActionForInventory {
-            expected_pixels: vec![
-                colors::INVENTORY_RAW_SHRIMP_BANK,
-                colors::INVENTORY_RAW_ANCHOVIES_BANK,
-            ],
+            expected_pixels: inventory_pixels.clone(),
             mouse_press: MousePress::Left,
-            await_action: AwaitAction::Time(Duration::from_nanos(1)),
+            await_action: AwaitFrame::Time(Duration::from_nanos(1)),
         })],
     }
 }
@@ -123,49 +125,52 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         player.reset();
         let actions: Vec<Box<dyn DescribeAction>> = vec![Box::new(DescribeActionForMinimap {
-            expected_pixels: vec![colors::MAP_ICON_BANK_YELLOW],
-            check_pixels: vec![colors::MAP_ICON_LIGHT_GRAY],
+            expected_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
+            check_pixels: vec![fuzzy_pixels::map_icon_light_gray()],
             mouse_press: MousePress::Left,
-            await_action: AwaitAction::IsCloseOnMinimapIncomplete(Duration::from_secs(10)),
+            await_action: AwaitFrame::IsCloseOnMinimapIncomplete(Duration::from_secs(30)),
         })];
         player.do_actions(&actions[..]);
 
         let actions: Vec<Box<dyn DescribeAction>> = vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![
-                    colors::BANK_BROWN1,
-                    colors::BANK_BROWN2,
-                    colors::BANK_BROWN3,
+                    fuzzy_pixels::bank_brown1(),
+                    fuzzy_pixels::bank_brown2(),
+                    fuzzy_pixels::bank_brown3(),
                 ],
                 mouse_press: MousePress::None,
-                await_action: AwaitAction::Time(Duration::from_secs(1)),
+                await_action: AwaitFrame::Time(Duration::from_secs(1)),
             }),
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
-                await_action: AwaitAction::IsBankOpen(util::REDRAW_TIME),
+                await_action: AwaitFrame::IsBankOpen(Duration::from_secs(2)),
                 action_text: vec![
-                    (action_letters::start(), colors::ACTION_WHITE),
-                    (action_letters::upper_b(), colors::ACTION_WHITE),
-                    (action_letters::lower_a(), colors::ACTION_WHITE),
-                    (action_letters::lower_n(), colors::ACTION_WHITE),
-                    (action_letters::lower_k(), colors::ACTION_WHITE),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::upper_b(), colors::ACTION_BLUE),
-                    (action_letters::lower_a(), colors::ACTION_BLUE),
-                    (action_letters::lower_n(), colors::ACTION_BLUE),
-                    (action_letters::lower_k(), colors::ACTION_BLUE),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::lower_b(), colors::ACTION_BLUE),
-                    (action_letters::lower_o(), colors::ACTION_BLUE),
-                    (action_letters::lower_o(), colors::ACTION_BLUE),
-                    (action_letters::lower_t(), colors::ACTION_BLUE),
-                    (action_letters::lower_h(), colors::ACTION_BLUE),
-                    (action_letters::space(), colors::ACTION_WHITE),
-                    (action_letters::forward_slash(), colors::ACTION_WHITE),
+                    (action_letters::start(), action_text_white()),
+                    (action_letters::upper_b(), action_text_white()),
+                    (action_letters::lower_a(), action_text_white()),
+                    (action_letters::lower_n(), action_text_white()),
+                    (action_letters::lower_k(), action_text_white()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::upper_b(), action_text_blue()),
+                    (action_letters::lower_a(), action_text_blue()),
+                    (action_letters::lower_n(), action_text_blue()),
+                    (action_letters::lower_k(), action_text_blue()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::lower_b(), action_text_blue()),
+                    (action_letters::lower_o(), action_text_blue()),
+                    (action_letters::lower_o(), action_text_blue()),
+                    (action_letters::lower_t(), action_text_blue()),
+                    (action_letters::lower_h(), action_text_blue()),
+                    (action_letters::space(), action_text_white()),
+                    (action_letters::forward_slash(), action_text_white()),
                 ],
             }),
         ];
-        player.do_actions(&actions[..]);
+        while !player.do_actions(&actions[..]) {
+            // Repeat until we we find the bank successfully since minimap
+            // action can quit before we stop walking.
+        }
 
         println!("We're at the bank (I hope).");
 
@@ -174,10 +179,10 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         player.reset();
         let actions: Vec<Box<dyn DescribeAction>> = vec![Box::new(DescribeActionForMinimap {
-            expected_pixels: vec![colors::MAP_ICON_FISH_DARK_BLUE],
-            check_pixels: vec![colors::MAP_ICON_FISH_LIGHT_BLUE],
+            expected_pixels: vec![fuzzy_pixels::map_icon_fish_dark_blue()],
+            check_pixels: vec![fuzzy_pixels::map_icon_fish_light_blue()],
             mouse_press: MousePress::Left,
-            await_action: AwaitAction::IsCloseOnMinimapIncomplete(Duration::from_secs(10)),
+            await_action: AwaitFrame::IsCloseOnMinimapIncomplete(Duration::from_secs(30)),
         })];
         player.do_actions(&actions[..]);
     }

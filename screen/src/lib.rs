@@ -1,11 +1,11 @@
 pub mod action_letters;
+pub mod colors;
 pub mod constants;
 pub mod frame;
 pub mod locations;
 pub mod types;
 
-/// Publish internals so users can use screen::Frame instead of
-/// screen::frame::Frame.
+pub use colors::*;
 pub use constants::*;
 pub use frame::*;
 pub use locations::{InventorySlotPixels, Locations};

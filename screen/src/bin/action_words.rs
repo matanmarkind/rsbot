@@ -1,6 +1,9 @@
 /// Take a screenshot of the game and draw on the spots that are checked for
 /// these letters. Used to add new action_letters.
-use screen::{action_letters, colors};
+use screen::{
+    action_letters,
+    fuzzy_pixels::{action_text_blue, action_text_white},
+};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -23,24 +26,24 @@ fn main() {
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
     let letter_and_matchers = vec![
-        (action_letters::start(), colors::ACTION_WHITE),
-        (action_letters::upper_b(), colors::ACTION_WHITE),
-        (action_letters::lower_a(), colors::ACTION_WHITE),
-        (action_letters::lower_n(), colors::ACTION_WHITE),
-        (action_letters::lower_k(), colors::ACTION_WHITE),
-        (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::upper_b(), colors::ACTION_BLUE),
-        (action_letters::lower_a(), colors::ACTION_BLUE),
-        (action_letters::lower_n(), colors::ACTION_BLUE),
-        (action_letters::lower_k(), colors::ACTION_BLUE),
-        (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::lower_b(), colors::ACTION_BLUE),
-        (action_letters::lower_o(), colors::ACTION_BLUE),
-        (action_letters::lower_o(), colors::ACTION_BLUE),
-        (action_letters::lower_t(), colors::ACTION_BLUE),
-        (action_letters::lower_h(), colors::ACTION_BLUE),
-        (action_letters::space(), colors::ACTION_WHITE),
-        (action_letters::forward_slash(), colors::ACTION_WHITE),
+        (action_letters::start(), action_text_white()),
+        (action_letters::upper_b(), action_text_white()),
+        (action_letters::lower_a(), action_text_white()),
+        (action_letters::lower_n(), action_text_white()),
+        (action_letters::lower_k(), action_text_white()),
+        (action_letters::space(), action_text_white()),
+        (action_letters::upper_b(), action_text_blue()),
+        (action_letters::lower_a(), action_text_blue()),
+        (action_letters::lower_n(), action_text_blue()),
+        (action_letters::lower_k(), action_text_blue()),
+        (action_letters::space(), action_text_white()),
+        (action_letters::lower_b(), action_text_blue()),
+        (action_letters::lower_o(), action_text_blue()),
+        (action_letters::lower_o(), action_text_blue()),
+        (action_letters::lower_t(), action_text_blue()),
+        (action_letters::lower_h(), action_text_blue()),
+        (action_letters::space(), action_text_white()),
+        (action_letters::forward_slash(), action_text_white()),
     ];
 
     println!("Capturing, cropping, flipping, drawing...");

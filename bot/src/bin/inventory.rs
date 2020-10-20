@@ -1,4 +1,4 @@
-use screen::{colors, Capturer, FrameHandler};
+use screen::{colors, inventory_slot_pixels, Capturer, FrameHandler};
 /// Builds off of mouse_to_pixel. Now we will move the mouse to the desired
 /// pixel and left click on it. Instead of a config with a single rectangle
 /// bounding the search, we will have multiple rectangles. This is because parts
@@ -20,13 +20,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let empty_slot = framehandler.first_open_inventory_slot(&frame);
     let shrimp_slot =
-        framehandler.first_matching_inventory_slot(&frame, &colors::INVENTORY_RAW_SHRIMP);
+        framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::raw_shrimp());
     let anchovies_slot =
-        framehandler.first_matching_inventory_slot(&frame, &colors::INVENTORY_RAW_ANCHOVIES);
+        framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::raw_anchovies());
     let tinderbox_slot =
-        framehandler.first_matching_inventory_slot(&frame, &colors::INVENTORY_TINDERBOX);
+        framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::tinderbox());
     let oak_logs_slot =
-        framehandler.first_matching_inventory_slot(&frame, &colors::INVENTORY_OAK_LOGS);
+        framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::oak_logs());
     println!(
         "empty_slot={:?} shrimp_slot={:?} anchovies_slot={:?} tinderbox_slot={:?} oak_logs_slot={:?}",
         empty_slot, shrimp_slot, anchovies_slot, tinderbox_slot, oak_logs_slot
