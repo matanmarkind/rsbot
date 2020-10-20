@@ -149,6 +149,9 @@ pub mod fuzzy_pixels {
             red_max: 234,
         }
     }
+    // 253, 133, 41
+    // 248, 103, 37
+    // 220, 58, 7
     pub fn map_icon_fish_dark_blue() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 218,
@@ -159,13 +162,23 @@ pub mod fuzzy_pixels {
             red_max: 9,
         }
     }
-    pub fn map_icon_fish_light_blue() -> FuzzyPixel {
+    pub fn map_icon_fish_medium_blue() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 246,
-            blue_max: 255,
+            blue_max: 250,
             green_min: 101,
-            green_max: 135,
+            green_max: 105,
             red_min: 35,
+            red_max: 39,
+        }
+    }
+    pub fn map_icon_fish_light_blue() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 251,
+            blue_max: 255,
+            green_min: 131,
+            green_max: 135,
+            red_min: 39,
             red_max: 43,
         }
     }

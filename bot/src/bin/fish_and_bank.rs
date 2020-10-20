@@ -134,12 +134,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             /*expected_pixels=*/
             &vec![
                 fuzzy_pixels::map_icon_fish_light_blue(),
+                fuzzy_pixels::map_icon_fish_medium_blue(),
                 fuzzy_pixels::map_icon_fish_dark_blue(),
             ],
             /*check_pixels=*/
             &vec![
                 fuzzy_pixels::map_icon_light_gray(),
                 fuzzy_pixels::map_icon_fish_light_blue(),
+                fuzzy_pixels::map_icon_fish_medium_blue(),
                 fuzzy_pixels::map_icon_fish_dark_blue(),
                 fuzzy_pixels::black(),
             ],
