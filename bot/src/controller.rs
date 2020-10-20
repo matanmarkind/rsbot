@@ -18,10 +18,9 @@ fn shift_position(pos: Position) -> Position {
     }
 }
 
-/// Looks for a pixel matching 'expected_pixels' in the minimap section of the
-/// frame. This is done in a circle centered at minimap center and expands to
-/// the given radius. If a matching pixel is found, we check in the immediate
-/// vicinity for a 'check_pixel' to confirm we found what we want.
+/// Looks for a pixel matching 'expected_pixels' in the circle defined by
+/// middle, radius. If a matching pixel is found, we check in the immediate
+/// vicinity for all 'check_pixel's to confirm we found what we want.
 fn check_map_pixels(
     frame: &screen::DefaultFrame,
     middle: Position,
@@ -35,8 +34,10 @@ fn check_map_pixels(
             continue;
         }
 
+        // Check that the found pixel is in the correct situation.
+        let mut failed_check = false;
         for check in check_pixels.iter() {
-            if !frame
+            if frame
                 .find_pixel_random_polar(
                     *check,
                     pos.unwrap(),
@@ -44,8 +45,13 @@ fn check_map_pixels(
                 )
                 .is_none()
             {
-                return pos;
+                failed_check = true;
+                break;
             }
+        }
+
+        if !failed_check {
+            return pos;
         }
     }
     None
@@ -219,9 +225,12 @@ pub struct DescribeActionForWorldmap {
 pub struct DescribeActionForMinimap {
     /// The pixels we are looking for, to match against.
     pub expected_pixels: Vec<FuzzyPixel>,
-    /// Any nearby pixels we want to use to confirm the match.
-    /// TODO:make this an all check like DescribeActionForWorldmap.
+
+    /// Nearby pixels which all must be found.
     pub check_pixels: Vec<FuzzyPixel>,
+
+    /// Max amount of time to spend searching 1 frame.
+    pub search_time: Duration,
 
     pub mouse_press: MousePress,
     pub await_action: AwaitFrame,
@@ -404,16 +413,20 @@ impl DescribeAction for DescribeActionForMinimap {
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
         dbg!("DescribeActionForMinimap");
-        match check_map_pixels(
-            frame,
-            framehandler.locations.minimap_middle(),
-            Locations::MINIMAP_RADIUS,
-            &self.expected_pixels,
-            &self.check_pixels,
-        ) {
-            None => FAILURE,
-            Some(pos) => Some((Some(pos), self.mouse_press)),
+        let time = std::time::Instant::now();
+        while time.elapsed() < self.search_time {
+            match check_map_pixels(
+                frame,
+                framehandler.locations.minimap_middle(),
+                Locations::MINIMAP_RADIUS,
+                &self.expected_pixels,
+                &self.check_pixels,
+            ) {
+                None => (),
+                Some(pos) => return Some((Some(pos), self.mouse_press)),
+            }
         }
+        FAILURE
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -855,6 +868,7 @@ impl Player {
                 check_pixels: check_pixels.clone(),
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::IsCloseOnMinimapIncomplete(Duration::from_secs(30)),
+                search_time: util::REDRAW_TIME,
             })];
 
         let orient: Vec<Box<dyn DescribeAction>> = vec![DescribeActionPressCompass::new()];
