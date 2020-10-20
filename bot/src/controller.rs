@@ -1,3 +1,4 @@
+use rand::{thread_rng, Rng};
 use screen::{
     action_letters::Letter, inventory_slot_pixels, Capturer, Frame, FrameHandler, FuzzyPixel,
     Locations,
@@ -7,23 +8,29 @@ use std::time::Duration;
 use userinput::InputBot;
 use util::*;
 
+/// Return a position within 1 of each dimension.
+fn shift_position(pos: Position) -> Position {
+    use std::cmp::{max, min};
+    let mut rng = thread_rng();
+    Position {
+        x: max(0, pos.x + rng.gen_range(-1, 2)),
+        y: max(0, pos.y + rng.gen_range(-1, 2)),
+    }
+}
+
 /// Looks for a pixel matching 'expected_pixels' in the minimap section of the
 /// frame. This is done in a circle centered at minimap center and expands to
 /// the given radius. If a matching pixel is found, we check in the immediate
 /// vicinity for a 'check_pixel' to confirm we found what we want.
-fn check_minimap_pixels(
-    framehandler: &FrameHandler,
+fn check_map_pixels(
     frame: &screen::DefaultFrame,
+    middle: Position,
     radius: f32,
     expected_pixels: &[FuzzyPixel],
     check_pixels: &[FuzzyPixel],
 ) -> Option<Position> {
     for fuzzy_pixel in expected_pixels.iter() {
-        let pos = frame.find_pixel_random_polar(
-            *fuzzy_pixel,
-            framehandler.locations.minimap_middle(),
-            radius,
-        );
+        let pos = frame.find_pixel_random_polar(*fuzzy_pixel, middle, radius);
         if pos.is_none() {
             continue;
         }
@@ -86,41 +93,26 @@ fn await_result(
     frame: &screen::DefaultFrame,
 ) -> bool {
     match await_config {
-        AwaitFrame::Time(duration) => sleep(*duration),
+        AwaitFrame::Time(duration) => {
+            sleep(*duration);
+            true
+        }
         AwaitFrame::IsCloseOnMinimapIncomplete(_) => {
             dbg!("Illegal call to IsCloseOnMinimapIncomplete");
-            return false;
+            false
         }
-        AwaitFrame::IsBankOpen(_) => {
-            if !framehandler.is_bank_open(frame) {
-                return false;
-            }
-        }
-        AwaitFrame::IsInventoryOpen(_) => {
-            if !framehandler.is_inventory_open(frame) {
-                return false;
-            }
-        }
-        AwaitFrame::IsWorldMapOpen(_) => {
-            if !framehandler.is_worldmap_open(frame) {
-                return false;
-            }
-        }
-        AwaitFrame::IsCloseOnMinimap(_, expected_pixels, check_pixels) => {
-            if check_minimap_pixels(
-                framehandler,
-                frame,
-                Locations::MINIMAP_SMALL_RADIUS,
-                expected_pixels,
-                check_pixels,
-            )
-            .is_none()
-            {
-                return false;
-            }
-        }
+        AwaitFrame::IsBankOpen(_) => framehandler.is_bank_open(frame),
+        AwaitFrame::IsInventoryOpen(_) => framehandler.is_inventory_open(frame),
+        AwaitFrame::IsWorldMapOpen(_) => framehandler.is_worldmap_open(frame),
+        AwaitFrame::IsCloseOnMinimap(_, expected_pixels, check_pixels) => check_map_pixels(
+            frame,
+            framehandler.locations.minimap_middle(),
+            Locations::MINIMAP_SMALL_RADIUS,
+            expected_pixels,
+            check_pixels,
+        )
+        .is_some(),
     }
-    true
 }
 
 fn await_result_timeout(await_config: &AwaitFrame) -> Duration {
@@ -223,40 +215,28 @@ pub struct DescribeActionForMinimap {
     pub await_action: AwaitFrame,
 }
 
-impl DescribeAction for DescribeActionForMinimap {
+// Opens the worldmap. If it's already open will do nothing.
+pub struct DescribeActionForOpenWorldmap {}
+
+impl DescribeAction for DescribeActionForOpenWorldmap {
     fn describe_action(
         &self,
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForMinimap");
-        match check_minimap_pixels(
-            framehandler,
-            frame,
-            Locations::MINIMAP_RADIUS,
-            &self.expected_pixels,
-            &self.check_pixels,
-        ) {
-            None => None,
-            Some(pos) => Some((Some(pos), self.mouse_press)),
+        if self.framehandler.is_worldmap_open(&frame) {
+            // dbg!("frame already open");
+            return None;
         }
+        Some((
+            Some(self.framehandler.locations.worldmap_icon()),
+            MousePress::Left,
+        ))
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
-        let await_action;
-        match self.await_action {
-            AwaitFrame::IsCloseOnMinimapIncomplete(duration) => {
-                await_action = AwaitFrame::IsCloseOnMinimap(
-                    duration,
-                    self.expected_pixels.clone(),
-                    self.check_pixels.clone(),
-                )
-            }
-            _ => await_action = self.await_action.clone(),
-        }
-        await_result(&await_action, framehandler, frame)
+        await_result(&self.await_action, framehandler, frame)
     }
-
     fn await_result_timeout(&self) -> Duration {
         await_result_timeout(&self.await_action)
     }
@@ -274,62 +254,6 @@ impl DescribeAction for DescribeActionForOpenScreen {
                 let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
                 if !position.is_none() {
                     return Some((position, self.mouse_press));
-                }
-            }
-        }
-        None
-    }
-
-    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
-        await_result(&self.await_action, framehandler, frame)
-    }
-    fn await_result_timeout(&self) -> Duration {
-        await_result_timeout(&self.await_action)
-    }
-}
-
-impl DescribeAction for DescribeActionForWorldmap {
-    fn describe_action(
-        &self,
-        framehandler: &FrameHandler,
-        frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        println!("DescribeActionForWorldmap.describe_action");
-        // Distance from where we find 'expected_pixel' in the minimap that we
-        // want to find the check_pixels.
-        const CHECK_RADIUS: f32 = 6.0;
-
-        if !framehandler.is_worldmap_open(frame) {
-            println!("Expected worldmap to be open");
-            frame.save("/tmp/DescribeActionForWorldmap_WorldmapClosed.jpg");
-            assert!(false);
-        }
-
-        for (top_left, dimensions) in framehandler.locations.worldmap_map_search_boxes().iter() {
-            for fuzzy_pixel in self.expected_pixels.iter() {
-                let pos = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
-                if pos.is_none() {
-                    continue;
-                }
-
-                for check in self.check_pixels.iter() {
-                    if !frame
-                        .find_pixel_random_polar(*check, pos.unwrap(), CHECK_RADIUS)
-                        .is_none()
-                    {
-                        // Get the angle from our character to the goal. We will
-                        // then map this to a location on the minimap to click
-                        // in order to move us in that direction.
-                        let angle_rads = (pos.unwrap()
-                            - framehandler.locations.worldmap_map_middle())
-                        .angle_rads();
-                        let minimap_pos = polar_to_cartesian(
-                            framehandler.locations.minimap_middle(),
-                            Locations::MINIMAP_RADIUS,
-                            angle_rads,
-                        );
-                        return Some((Some(minimap_pos), self.mouse_press));
-                    }
                 }
             }
         }
@@ -391,6 +315,101 @@ impl DescribeAction for DescribeActionForInventory {
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
         await_result(&self.await_action, framehandler, frame)
     }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeAction for DescribeActionForWorldmap {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> Option<(Option<Position>, MousePress)> {
+        println!("DescribeActionForWorldmap.describe_action");
+        if !framehandler.is_worldmap_open(frame) {
+            println!("Expected worldmap to be open");
+            frame.save("/tmp/DescribeActionForWorldmap_WorldmapClosed.jpg");
+            assert!(false);
+        }
+
+        for (top_left, dimensions) in framehandler.locations.worldmap_map_search_boxes().iter() {
+            for fuzzy_pixel in self.expected_pixels.iter() {
+                let pos = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
+                if pos.is_none() {
+                    continue;
+                }
+
+                for check in self.check_pixels.iter() {
+                    if !frame
+                        .find_pixel_random_polar(
+                            *check,
+                            pos.unwrap(),
+                            Locations::CHECK_ADJACENT_MINIMAP_PIXELS_RADIUS,
+                        )
+                        .is_none()
+                    {
+                        // Get the angle from our character to the goal. We will
+                        // then map this to a location on the minimap to click
+                        // in order to move us in that direction.
+                        let angle_rads = (pos.unwrap()
+                            - framehandler.locations.worldmap_map_middle())
+                        .angle_rads();
+                        let minimap_pos = polar_to_cartesian(
+                            framehandler.locations.minimap_middle(),
+                            Locations::MINIMAP_RADIUS,
+                            angle_rads,
+                        );
+                        return Some((Some(minimap_pos), self.mouse_press));
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeAction for DescribeActionForMinimap {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> Option<(Option<Position>, MousePress)> {
+        println!("DescribeActionForMinimap");
+        match check_map_pixels(
+            frame,
+            framehandler.locations.minimap_middle(),
+            Locations::MINIMAP_RADIUS,
+            &self.expected_pixels,
+            &self.check_pixels,
+        ) {
+            None => None,
+            Some(pos) => Some((Some(pos), self.mouse_press)),
+        }
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        let await_action;
+        match self.await_action {
+            AwaitFrame::IsCloseOnMinimapIncomplete(duration) => {
+                await_action = AwaitFrame::IsCloseOnMinimap(
+                    duration,
+                    self.expected_pixels.clone(),
+                    self.check_pixels.clone(),
+                )
+            }
+            _ => await_action = self.await_action.clone(),
+        }
+        await_result(&await_action, framehandler, frame)
+    }
+
     fn await_result_timeout(&self) -> Duration {
         await_result_timeout(&self.await_action)
     }
@@ -656,6 +675,41 @@ impl Player {
 
                 // We have received an item so reset the timer to allow us to get more.
                 waiting_time = std::time::Instant::now();
+            }
+        }
+    }
+
+    /// expected_pixels - The pixels we are looking for, to match against.
+    /// check_pixels - Any nearby pixels we want to use to confirm the match.
+    ///
+    /// Assumes colors are the same on worldmap and minimap.
+    pub fn travel_to(&mut self, expected_pixels: &Vec<FuzzyPixel>, check_pixels: &Vec<FuzzyPixel>) {
+        let worldmap_action: Vec<Box<dyn DescribeAction>> =
+            vec![Box::new(DescribeActionForWorldmap {
+                expected_pixels: expected_pixels.clone(),
+                check_pixels: check_pixels.clone(),
+                mouse_press: MousePress::Left,
+                await_action: AwaitFrame::Time(Duration::from_secs(10)),
+            })];
+        let minimap_action: Vec<Box<dyn DescribeAction>> =
+            vec![Box::new(DescribeActionForMinimap {
+                expected_pixels: expected_pixels.clone(),
+                check_pixels: check_pixels.clone(),
+                mouse_press: MousePress::Left,
+                await_action: AwaitFrame::IsCloseOnMinimapIncomplete(Duration::from_secs(30)),
+            })];
+
+        // We have to press the compass icon to make sure the worldmap and minimap orientations align.
+        self.press_compass();
+        while !self.do_actions(&minimap_action) {
+            // TODO: find a way to turn this into a DescribeAction with
+            // AwaitFrame::IsWorldmapOpen.
+            self.open_worldmap();
+            sleep(Duration::from_secs(1));
+
+            // Follow the worldmap until we find the target on the minimap.
+            if !self.do_actions(&worldmap_action) {
+                dbg!("Failed at traveling");
             }
         }
     }

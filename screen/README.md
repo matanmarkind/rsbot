@@ -28,3 +28,6 @@ Now that we have decided what to look for, we need to find it. We search for rel
 ```
 $ cargo run -p screen --bin find_pixel_fuzzy -- --top-left 960,40 --past-bottom-right 1920,1040
 ```
+
+# Libraries with dependencies
+scrap
