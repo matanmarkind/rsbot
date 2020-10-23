@@ -31,3 +31,5 @@ $ cargo run -p screen --bin find_pixel_fuzzy -- --top-left 960,40 --past-bottom-
 
 # Libraries with dependencies
 scrap
+
+I am dependent on runelight popping up icons such as shrimp on fishing spots. TBH if I was a regular player I'd really want this since seeing certain things is quite difficult.

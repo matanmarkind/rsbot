@@ -6,7 +6,7 @@
 /// 6. How do I know when I have completed? Going to have to work on
 ///    understanding my inventory.
 use bot::{
-    controller, AwaitFrame, ConsumeInventoryOptions, DescribeActionForActionText,
+    controller, AwaitFrame, ConsumeInventoryParams, DescribeActionForActionText,
     DescribeActionForOpenScreen, MousePress,
 };
 use screen::{
@@ -18,12 +18,12 @@ use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
 
-fn chop_down_tree_activity() -> ConsumeInventoryOptions {
-    ConsumeInventoryOptions {
-        timeout: Duration::from_secs(10),
+fn chop_down_tree_activity() -> ConsumeInventoryParams {
+    ConsumeInventoryParams {
+        slot_consumption_waittime: Duration::from_secs(10),
         multi_slot_action: false,
-        reset_period: Some(Duration::from_secs(300)),
-        inventory_consumption_pixels: vec![inventory_slot_pixels::empty()],
+        item_to_consume: inventory_slot_pixels::empty(),
+        activity_timeout: Duration::from_secs(10 * 60),
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![fuzzy_pixels::tree_bark()],
@@ -56,12 +56,12 @@ fn chop_down_tree_activity() -> ConsumeInventoryOptions {
     }
 }
 
-fn chop_down_oak_activity() -> ConsumeInventoryOptions {
-    ConsumeInventoryOptions {
-        timeout: Duration::from_secs(20),
+fn chop_down_oak_activity() -> ConsumeInventoryParams {
+    ConsumeInventoryParams {
+        slot_consumption_waittime: Duration::from_secs(20),
         multi_slot_action: true,
-        reset_period: Some(Duration::from_secs(300)),
-        inventory_consumption_pixels: vec![inventory_slot_pixels::empty()],
+        item_to_consume: inventory_slot_pixels::empty(),
+        activity_timeout: Duration::from_secs(10 * 60),
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![fuzzy_pixels::oak_bark()],
@@ -93,7 +93,7 @@ fn chop_down_oak_activity() -> ConsumeInventoryOptions {
     }
 }
 
-fn get_activity_description(use_oak: bool) -> ConsumeInventoryOptions {
+fn get_activity_description(use_oak: bool) -> ConsumeInventoryParams {
     if use_oak {
         chop_down_oak_activity()
     } else {

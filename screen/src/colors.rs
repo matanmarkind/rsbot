@@ -7,6 +7,7 @@
 /// constants into functions.
 use crate::types::FuzzyPixel;
 use crate::Locations;
+
 pub type InventorySlotPixels = [FuzzyPixel; Locations::NUM_CHECKS_PER_INVENTORY_SLOT];
 
 pub mod pixels {
@@ -78,6 +79,16 @@ pub mod fuzzy_pixels {
             blue_max: 30,
             green_min: 190,
             green_max: 235,
+            red_min: 190,
+            red_max: 235,
+        }
+    }
+    pub fn action_text_orange() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 45,
+            blue_max: 65,
+            green_min: 106,
+            green_max: 138,
             red_min: 190,
             red_max: 235,
         }
@@ -202,6 +213,122 @@ pub mod fuzzy_pixels {
             red_max: 193,
         }
     }
+    pub fn map_holiday_item_trader_icon_red() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 38,
+            blue_max: 46,
+            green_min: 40,
+            green_max: 48,
+            red_min: 190,
+            red_max: 210,
+        }
+    }
+    pub fn map_border_white() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 237,
+            blue_max: 241,
+            green_min: 243,
+            green_max: 247,
+            red_min: 233,
+            red_max: 237,
+        }
+    }
+    pub fn map_floor_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 80,
+            blue_max: 84,
+            green_min: 79,
+            green_max: 83,
+            red_min: 88,
+            red_max: 82,
+        }
+    }
+
+    // It seems that a lot of things in the map change color throughout the day,
+    // so these may be unreliable.
+    pub fn map_plant_green() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 68,
+            blue_max: 72,
+            green_min: 117,
+            green_max: 121,
+            red_min: 79,
+            red_max: 83,
+        }
+    }
+    pub fn map_all_trees_leaves_light() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 23,
+            blue_max: 27,
+            green_min: 87,
+            green_max: 91,
+            red_min: 28,
+            red_max: 32,
+        }
+    }
+    pub fn map_all_trees_leaves_dark() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 26,
+            blue_max: 30,
+            green_min: 65,
+            green_max: 69,
+            red_min: 23,
+            red_max: 27,
+        }
+    }
+    pub fn map_oak_leaves_dark() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 21,
+            blue_max: 25,
+            green_min: 57,
+            green_max: 61,
+            red_min: 55,
+            red_max: 59,
+        }
+    }
+    pub fn map_tree_bark_dark() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 26,
+            blue_max: 30,
+            green_min: 55,
+            green_max: 59,
+            red_min: 80,
+            red_max: 84,
+        }
+    }
+    pub fn map_tree_bark_light() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 35,
+            blue_max: 39,
+            green_min: 70,
+            green_max: 74,
+            red_min: 91,
+            red_max: 95,
+        }
+    }
+    pub fn map_oak_bark_dark() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 35,
+            blue_max: 39,
+            green_min: 34,
+            green_max: 38,
+            red_min: 31,
+            red_max: 35,
+        }
+    }
+    pub fn map_oak_bark_light() -> FuzzyPixel {
+        map_tree_bark_light()
+    }
+    pub fn map_willow_bark() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 21,
+            blue_max: 25,
+            green_min: 57,
+            green_max: 61,
+            red_min: 55,
+            red_max: 59,
+        }
+    }
 
     pub fn inventory_background() -> FuzzyPixel {
         FuzzyPixel {
@@ -288,7 +415,7 @@ pub mod fuzzy_pixels {
 /// When the bank is open the shadows for the items disappears so some of the
 /// pixels must change.
 pub mod inventory_slot_pixels {
-    use super::fuzzy_pixels::inventory_background;
+    use super::fuzzy_pixels::{black, inventory_background};
     use crate::Locations;
     use crate::{FuzzyPixel, InventorySlotPixels};
 
@@ -348,6 +475,118 @@ pub mod inventory_slot_pixels {
     }
     pub fn raw_shrimp_bank() -> InventorySlotPixels {
         let mut pixels = raw_shrimp();
+        pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn cooked_shrimp() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 7,
+                blue_max: 11,
+                green_min: 90,
+                green_max: 94,
+                red_min: 151,
+                red_max: 155,
+            },
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 1,
+                blue_max: 5,
+                green_min: 31,
+                green_max: 35,
+                red_min: 76,
+                red_max: 80,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 7,
+                blue_max: 11,
+                green_min: 83,
+                green_max: 87,
+                red_min: 141,
+                red_max: 145,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn cooked_shrimp_bank() -> InventorySlotPixels {
+        let mut pixels = cooked_shrimp();
+        pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn burned_shrimp() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 57,
+                blue_max: 61,
+                green_min: 57,
+                green_max: 61,
+                red_min: 62,
+                red_max: 66,
+            },
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 18,
+                blue_max: 22,
+                green_min: 18,
+                green_max: 22,
+                red_min: 20,
+                red_max: 24,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 52,
+                blue_max: 56,
+                green_min: 52,
+                green_max: 56,
+                red_min: 58,
+                red_max: 62,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn burned_shrimp_bank() -> InventorySlotPixels {
+        let mut pixels = burned_shrimp();
         pixels[10] = FuzzyPixel {
             blue_min: 49,
             blue_max: 53,
@@ -557,5 +796,8 @@ pub mod inventory_slot_pixels {
             inventory_background(),
             inventory_background(),
         ]
+    }
+    pub fn oak_logs_bank() -> InventorySlotPixels {
+        oak_logs()
     }
 }

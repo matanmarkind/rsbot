@@ -68,7 +68,7 @@ impl Locations {
     // Locations given in reference to the top left corner of the screen.
     pub fn action_text_top_left(&self) -> Position {
         Position {
-            x: self.top_left.x + 4,
+            x: self.top_left.x + 5,
             y: self.top_left.y + 3,
         }
     }

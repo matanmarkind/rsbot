@@ -30,3 +30,7 @@ pub fn polar_to_cartesian(middle: Position, radius: f32, angle_rad: f32) -> Posi
         y: (middle.y as f32 + radius * angle_rad.sin()).round() as i32,
     }
 }
+
+pub fn degrees_to_radians(degrees: f32) -> f32 {
+    degrees * std::f32::consts::PI / 180.0
+}

@@ -314,4 +314,13 @@ impl InputBot {
     pub fn click_esc(&mut self) {
         self.click_key(Key::Esc);
     }
+
+    pub fn hold_shift(&mut self) {
+        self.keyboard.press(&Key::LeftShift).unwrap();
+        self.keyboard.synchronize().unwrap();
+    }
+    pub fn release_shift(&mut self) {
+        self.keyboard.release(&Key::LeftShift).unwrap();
+        self.keyboard.synchronize().unwrap();
+    }
 }

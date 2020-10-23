@@ -12,7 +12,7 @@ pub struct Pixel {
 
 /// Diecribes the type of pixel we expected, providing bounds on the colors it
 /// will match with. Both min and max are included in matching.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq)]
 pub struct FuzzyPixel {
     pub blue_min: u8,
     pub blue_max: u8,

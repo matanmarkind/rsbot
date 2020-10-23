@@ -1,60 +1,22 @@
 use bot::{
-    controller, AwaitFrame, ConsumeInventoryOptions, DescribeAction, DescribeActionForActionText,
-    DescribeActionForInventory, DescribeActionForOpenScreen, MousePress,
+    controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionForActionText,
+    DescribeActionForOpenScreen, MousePress, TravelToParams,
 };
 use screen::{
     action_letters, fuzzy_pixels,
-    fuzzy_pixels::{action_text_blue, action_text_white, action_text_yellow},
+    fuzzy_pixels::{action_text_white, action_text_yellow},
     inventory_slot_pixels,
 };
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
 
-fn open_bank_actions() -> Vec<Box<dyn DescribeAction>> {
-    vec![
-        Box::new(DescribeActionForOpenScreen {
-            expected_pixels: vec![
-                fuzzy_pixels::bank_brown1(),
-                fuzzy_pixels::bank_brown2(),
-                fuzzy_pixels::bank_brown3(),
-            ],
-            mouse_press: MousePress::None,
-            await_action: AwaitFrame::Time(Duration::from_secs(1)),
-        }),
-        Box::new(DescribeActionForActionText {
-            mouse_press: MousePress::Left,
-            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
-            action_text: vec![
-                (action_letters::start(), action_text_white()),
-                (action_letters::upper_b(), action_text_white()),
-                (action_letters::lower_a(), action_text_white()),
-                (action_letters::lower_n(), action_text_white()),
-                (action_letters::lower_k(), action_text_white()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::upper_b(), action_text_blue()),
-                (action_letters::lower_a(), action_text_blue()),
-                (action_letters::lower_n(), action_text_blue()),
-                (action_letters::lower_k(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::lower_b(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_t(), action_text_blue()),
-                (action_letters::lower_h(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::forward_slash(), action_text_white()),
-            ],
-        }),
-    ]
-}
-
-fn fish_small_net_activity() -> ConsumeInventoryOptions {
-    ConsumeInventoryOptions {
+fn fish_small_net_activity() -> ConsumeInventoryParams {
+    ConsumeInventoryParams {
         multi_slot_action: true,
-        timeout: Duration::from_secs(20),
-        reset_period: Some(Duration::from_secs(300)),
-        inventory_consumption_pixels: vec![inventory_slot_pixels::empty()],
+        slot_consumption_waittime: Duration::from_secs(20),
+        item_to_consume: inventory_slot_pixels::empty(),
+        activity_timeout: Duration::from_secs(10 * 60),
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![fuzzy_pixels::small_net_fishing_spot()],
@@ -96,24 +58,6 @@ fn fish_small_net_activity() -> ConsumeInventoryOptions {
     }
 }
 
-fn deposit_in_bank() -> ConsumeInventoryOptions {
-    let inventory_pixels = vec![
-        inventory_slot_pixels::raw_shrimp_bank(),
-        inventory_slot_pixels::raw_anchovies_bank(),
-    ];
-    ConsumeInventoryOptions {
-        multi_slot_action: false,
-        timeout: Duration::from_secs(3),
-        reset_period: None,
-        inventory_consumption_pixels: inventory_pixels.clone(),
-        actions: vec![Box::new(DescribeActionForInventory {
-            expected_pixels: inventory_pixels.clone(),
-            mouse_press: MousePress::Left,
-            await_action: AwaitFrame::Time(Duration::from_secs(1)),
-        })],
-    }
-}
-
 /// 1. Catch fish until inventory is full. If full of cooked shrim drop logs
 ///    until there's only 1 left.
 /// 2. Make a fire.
@@ -130,40 +74,58 @@ fn main() -> Result<(), Box<dyn Error>> {
     let time = std::time::Instant::now();
     player.reset();
     while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
-        player.travel_to(
-            /*expected_pixels=*/
-            &vec![
+        player.travel_to(&TravelToParams {
+            destination_pixels: vec![
                 fuzzy_pixels::map_icon_fish_light_blue(),
                 fuzzy_pixels::map_icon_fish_medium_blue(),
                 fuzzy_pixels::map_icon_fish_dark_blue(),
             ],
-            /*check_pixels=*/
-            &vec![
+            confirmation_pixels: vec![
                 fuzzy_pixels::map_icon_light_gray(),
                 fuzzy_pixels::map_icon_fish_light_blue(),
                 fuzzy_pixels::map_icon_fish_medium_blue(),
                 fuzzy_pixels::map_icon_fish_dark_blue(),
                 fuzzy_pixels::black(),
             ],
-        );
+
+            starting_direction: None,
+        });
         println!("We are at the fishies");
 
         player.reset();
         player.consume_inventory(&fish_small_net_activity());
         println!("Done filling inventory");
 
-        player.travel_to(
-            /*expected_pixels=*/ &vec![fuzzy_pixels::map_icon_bank_yellow()],
-            /*check_pixels=*/
-            &vec![fuzzy_pixels::map_icon_light_gray()],
-        );
+        player.travel_to(&TravelToParams {
+            destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
+            confirmation_pixels: vec![
+                fuzzy_pixels::map_icon_dark_gray(),
+                fuzzy_pixels::map_icon_light_gray(),
+            ],
+
+            starting_direction: None,
+        });
         println!("We're at the bank (I hope).");
 
-        while !player.do_actions(&open_bank_actions()) {
-            // Repeat until we we find the bank successfully since minimap
-            // action can quit before we stop walking.
-        }
-        player.consume_inventory(&deposit_in_bank());
+        player.deposit_in_bank(
+            /*bank_colors=*/
+            &vec![
+                fuzzy_pixels::bank_brown1(),
+                fuzzy_pixels::bank_brown2(),
+                fuzzy_pixels::bank_brown3(),
+            ],
+            /*items=*/
+            &vec![
+                inventory_slot_pixels::raw_shrimp_bank(),
+                inventory_slot_pixels::raw_anchovies_bank(),
+            ],
+        );
+
+        // while !player.do_actions(&open_bank_actions()) {
+        //     // Repeat until we we find the bank successfully since minimap
+        //     // action can quit before we stop walking.
+        // }
+        // player.consume_inventory(&deposit_in_bank());
         println!("Done depositing.");
     }
 

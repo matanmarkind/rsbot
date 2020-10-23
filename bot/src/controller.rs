@@ -1,7 +1,9 @@
 use rand::{thread_rng, Rng};
 use screen::{
-    action_letters::Letter, inventory_slot_pixels, Capturer, Frame, FrameHandler, FuzzyPixel,
-    Locations,
+    action_letters,
+    action_letters::Letter,
+    fuzzy_pixels::{action_text_blue, action_text_white},
+    Capturer, Frame, FrameHandler, FuzzyPixel, InventorySlotPixels, Locations,
 };
 use std::thread::sleep;
 use std::time::Duration;
@@ -57,13 +59,6 @@ fn check_map_pixels(
     None
 }
 
-#[derive(Clone, Copy)]
-pub enum MousePress {
-    None,
-    Left,
-    Right,
-}
-
 /// Enum to define what conditions we are waiting to be fulfilled before an
 /// action is deemed complete. There are 2 parts generally.
 /// - The enum variant, which describes the condition checked for. Time only
@@ -86,8 +81,9 @@ pub enum AwaitFrame {
     IsInventoryOpen(Duration),
     IsWorldMapOpen(Duration),
     IsWorldMapClosed(Duration),
-    IsCloseOnMinimap(Duration, Vec<FuzzyPixel>, Vec<FuzzyPixel>),
+    IsChatboxOpen(Duration),
 
+    IsCloseOnMinimap(Duration, Vec<FuzzyPixel>, Vec<FuzzyPixel>),
     // Only to be used with DescribeActionForMinimap which converts this to
     // IsCloseOnMinimap. Otherwise this is the equivalent of Time.
     IsCloseOnMinimapIncomplete(Duration),
@@ -112,6 +108,7 @@ fn await_result(
         AwaitFrame::IsInventoryOpen(_) => framehandler.is_inventory_open(frame),
         AwaitFrame::IsWorldMapOpen(_) => framehandler.is_worldmap_open(frame),
         AwaitFrame::IsWorldMapClosed(_) => !framehandler.is_worldmap_open(frame),
+        AwaitFrame::IsChatboxOpen(_) => framehandler.is_chatbox_open(frame),
         AwaitFrame::IsCloseOnMinimap(_, expected_pixels, check_pixels) => check_map_pixels(
             frame,
             framehandler.locations.minimap_middle(),
@@ -131,13 +128,28 @@ fn await_result_timeout(await_config: &AwaitFrame) -> Duration {
         AwaitFrame::IsInventoryOpen(duration) => *duration,
         AwaitFrame::IsWorldMapOpen(duration) => *duration,
         AwaitFrame::IsWorldMapClosed(duration) => *duration,
+        AwaitFrame::IsChatboxOpen(duration) => *duration,
         AwaitFrame::IsCloseOnMinimap(duration, _, _) => *duration,
     }
 }
 
-type ActionDescription = Option<(Option<Position>, MousePress)>;
-const SUCCESS_DO_NOTHING: ActionDescription = Some((None, MousePress::None));
-const FAILURE: ActionDescription = None;
+#[derive(Clone, Copy)]
+pub enum MousePress {
+    None,
+    Left,
+    Right,
+}
+
+#[derive(Clone, Copy)]
+pub enum MouseMove {
+    None,
+    ToDst(Position),
+    FromCurrent(DeltaPosition),
+}
+
+type ActionDescription = Option<(MouseMove, MousePress)>;
+const DO_NOTHING_ACTION_DESCRIPTION: ActionDescription = Some((MouseMove::None, MousePress::None));
+const FAILURE_ACTION_DESCRIPTION: ActionDescription = None;
 
 /// This is the interface used to describe discreet actions that Player should
 /// take, moving the mouse and pressing button. Actions are stitched together to
@@ -259,22 +271,63 @@ pub struct DescribeActionPressMinimapMiddle {
     pub await_action: AwaitFrame,
 }
 
+pub struct DescribeActionBankQuantityAll {
+    pub await_action: AwaitFrame,
+}
+
+pub struct DescribeActionBankQuantityOne {
+    pub await_action: AwaitFrame,
+}
+
+// Which item slot int he bank do we want to withdraw from.
+pub struct DescribeActionWithdrawFromBank {
+    pub bank_slot_index: i32,
+    pub await_action: AwaitFrame,
+}
+
+pub struct DescribeActionPressChatboxMiddle {
+    pub await_action: AwaitFrame,
+}
+
+pub struct DescribeActionExplicitAction {
+    pub action_description: ActionDescription,
+    pub await_action: AwaitFrame,
+}
+
+impl DescribeAction for DescribeActionExplicitAction {
+    fn describe_action(
+        &self,
+        _framehandler: &FrameHandler,
+        _frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionExplicitAction");
+        self.action_description
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
 impl DescribeAction for DescribeActionForOpenScreen {
     fn describe_action(
         &self,
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
-        dbg!("DescribeActionForOpenScreen");
+        println!("DescribeActionForOpenScreen");
         for (top_left, dimensions) in framehandler.locations.open_screen_search_boxes().iter() {
             for fuzzy_pixel in self.expected_pixels.iter() {
                 let position = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
                 if !position.is_none() {
-                    return Some((position, self.mouse_press));
+                    return Some((MouseMove::ToDst(position.unwrap()), self.mouse_press));
                 }
             }
         }
-        FAILURE
+        FAILURE_ACTION_DESCRIPTION
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -291,11 +344,11 @@ impl DescribeAction for DescribeActionForActionText {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
-        dbg!("DescribeActionForActionText");
+        println!("DescribeActionForActionText");
         if framehandler.check_action_letters(frame, &self.action_text[..]) {
-            return Some((None, self.mouse_press));
+            return Some((MouseMove::None, self.mouse_press));
         }
-        FAILURE
+        FAILURE_ACTION_DESCRIPTION
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -312,7 +365,7 @@ impl DescribeAction for DescribeActionForInventory {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
-        dbg!("DescribeActionForInventory");
+        println!("DescribeActionForInventory");
         for fuzzy_pixel in self.expected_pixels.iter() {
             // dbg!(fuzzy_pixel);
             match framehandler.first_matching_inventory_slot(frame, &fuzzy_pixel) {
@@ -320,13 +373,13 @@ impl DescribeAction for DescribeActionForInventory {
                 Some(slot_index) => {
                     dbg!(slot_index);
                     return Some((
-                        Some(framehandler.locations.inventory_slot_middle(slot_index)),
+                        MouseMove::ToDst(framehandler.locations.inventory_slot_middle(slot_index)),
                         self.mouse_press,
                     ));
                 }
             }
         }
-        FAILURE
+        FAILURE_ACTION_DESCRIPTION
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -343,7 +396,7 @@ impl DescribeAction for DescribeActionForWorldmap {
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
-        dbg!("DescribeActionForWorldmap");
+        println!("DescribeActionForWorldmap");
         if !framehandler.is_worldmap_open(frame) {
             println!("Expected worldmap to be open");
             frame.save("/tmp/DescribeActionForWorldmap_WorldmapClosed.jpg");
@@ -390,12 +443,12 @@ impl DescribeAction for DescribeActionForWorldmap {
                             Locations::MINIMAP_RADIUS,
                             angle_rads,
                         );
-                        return Some((Some(minimap_pos), self.mouse_press));
+                        return Some((MouseMove::ToDst(minimap_pos), self.mouse_press));
                     }
                 }
             }
         }
-        FAILURE
+        FAILURE_ACTION_DESCRIPTION
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -411,8 +464,8 @@ impl DescribeAction for DescribeActionForMinimap {
         &self,
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        dbg!("DescribeActionForMinimap");
+    ) -> ActionDescription {
+        println!("DescribeActionForMinimap");
         let time = std::time::Instant::now();
         while time.elapsed() < self.search_time {
             match check_map_pixels(
@@ -423,10 +476,10 @@ impl DescribeAction for DescribeActionForMinimap {
                 &self.check_pixels,
             ) {
                 None => (),
-                Some(pos) => return Some((Some(pos), self.mouse_press)),
+                Some(pos) => return Some((MouseMove::ToDst(pos), self.mouse_press)),
             }
         }
-        FAILURE
+        FAILURE_ACTION_DESCRIPTION
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -464,17 +517,17 @@ impl DescribeAction for DescribeActionCloseWorldmap {
         &self,
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        dbg!("DescribeActionCloseWorldmap");
+    ) -> ActionDescription {
+        println!("DescribeActionCloseWorldmap");
         if !framehandler.is_worldmap_open(frame) {
             // dbg!("worldmap already open");
-            return SUCCESS_DO_NOTHING;
+            return DO_NOTHING_ACTION_DESCRIPTION;
         }
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = shift_position(framehandler.locations.worldmap_icon());
-        Some((Some(pos), MousePress::Left))
+        Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -500,17 +553,17 @@ impl DescribeAction for DescribeActionOpenWorldmap {
         &self,
         framehandler: &FrameHandler,
         frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        dbg!("DescribeActionOpenWorldmap");
+    ) -> ActionDescription {
+        println!("DescribeActionOpenWorldmap");
         if framehandler.is_worldmap_open(frame) {
             // dbg!("worldmap already open");
-            return SUCCESS_DO_NOTHING;
+            return DO_NOTHING_ACTION_DESCRIPTION;
         }
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = shift_position(framehandler.locations.worldmap_icon());
-        Some((Some(pos), MousePress::Left))
+        Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -535,12 +588,12 @@ impl DescribeAction for DescribeActionPressCompass {
         &self,
         framehandler: &FrameHandler,
         _frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        dbg!("DescribeActionPressCompass");
+    ) -> ActionDescription {
+        println!("DescribeActionPressCompass");
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = shift_position(framehandler.locations.compass_icon());
-        Some((Some(pos), MousePress::Left))
+        Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -552,7 +605,7 @@ impl DescribeAction for DescribeActionPressCompass {
 }
 
 impl DescribeActionPressMinimapMiddle {
-    fn new() -> Box<Self> {
+    pub fn new() -> Box<Self> {
         // Wait 1s in case we moved a bit.
         Box::new(DescribeActionPressMinimapMiddle {
             await_action: AwaitFrame::Time(Duration::from_secs(1)),
@@ -565,12 +618,12 @@ impl DescribeAction for DescribeActionPressMinimapMiddle {
         &self,
         framehandler: &FrameHandler,
         _frame: &screen::DefaultFrame,
-    ) -> Option<(Option<Position>, MousePress)> {
-        dbg!("DescribeActionPressMinimapMiddle");
+    ) -> ActionDescription {
+        println!("DescribeActionPressMinimapMiddle");
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = shift_position(framehandler.locations.minimap_middle());
-        Some((Some(pos), MousePress::Left))
+        Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
     fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
@@ -581,34 +634,208 @@ impl DescribeAction for DescribeActionPressMinimapMiddle {
     }
 }
 
+impl DescribeActionBankQuantityAll {
+    pub fn new() -> Box<Self> {
+        // Wait 1s in case we moved a bit.
+        Box::new(DescribeActionBankQuantityAll {
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionBankQuantityAll {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionBankQuantityAll");
+        if framehandler.is_bank_quantity_all(frame) {
+            return DO_NOTHING_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(framehandler.locations.bank_quantity_all());
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeActionBankQuantityOne {
+    pub fn new() -> Box<Self> {
+        // Wait 1s in case we moved a bit.
+        Box::new(DescribeActionBankQuantityOne {
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionBankQuantityOne {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionBankQuantityOne");
+        if framehandler.is_bank_quantity_one(frame) {
+            return DO_NOTHING_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(framehandler.locations.bank_quantity_one());
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeActionWithdrawFromBank {
+    pub fn new(bank_slot_index: i32) -> Box<Self> {
+        // Wait 1s in case we moved a bit.
+        Box::new(DescribeActionWithdrawFromBank {
+            bank_slot_index,
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionWithdrawFromBank {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        _frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionWithdrawFromBank");
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(
+            framehandler
+                .locations
+                .bank_slot_center(self.bank_slot_index),
+        );
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeActionPressChatboxMiddle {
+    pub fn new() -> Box<Self> {
+        // Wait 1s in case we moved a bit.
+        Box::new(DescribeActionPressChatboxMiddle {
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionPressChatboxMiddle {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionPressChatboxMiddle");
+        if !framehandler.is_chatbox_open(frame) {
+            return FAILURE_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(framehandler.locations.chatbox_middle());
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+/// Use structs to pass complicated sets of params. The 2 main benefits are:
+/// 1. Calling site can use named params, which are required for structs, but
+///    not allowed for function calls.
+/// 2. Can create the description in a helper function and keep 'main' for each
+///    bot cleaner.
+
 /// Describes actions to be taken to consume items in the inventory. This action
 /// is complete when we can no longer find an item to be consumed in the
 /// inventory.
-///
-/// TODO: Turn this into a function of Player. I don't think we will need too
-/// many Activities.
-pub struct ConsumeInventoryOptions {
+pub struct ConsumeInventoryParams {
     /// Can taking this action result in us consuming multiple slots over time.
     /// If so, we will continue resetting the timer every time we receive an
     /// item. For example, a single click on an oak tree can result in us
     /// cutting many logs.
     pub multi_slot_action: bool,
 
-    /// Amount of time to wait between items disappearing from the inventory
+    /// Amount of time to wait between slots disappearing from the inventory
     /// before we begin actions again.
-    pub timeout: Duration,
+    pub slot_consumption_waittime: Duration,
 
-    /// Every so often we can rest just to make sure the screen is properly set
-    /// up. This is only useful for open screen actions. For things like banking
-    /// it can be a hindrance.
-    pub reset_period: Option<Duration>,
+    /// Max amount of time to attempt performing 'actions' for.
+    pub activity_timeout: Duration,
 
-    /// Items that we wish to consume from the inventory.
-    pub inventory_consumption_pixels: Vec<screen::InventorySlotPixels>,
+    /// The item that should be consumed from the inventory. We will continue
+    /// attempting to perform 'actions' until either we time out
+    /// (activity_timeout) or no slot can be found containing 'item_to_consume'.
+    ///
+    /// Note that using inventory_slot_pixels::empty is the equivalent of saying
+    /// to fill the inventory by performing 'actions'.
+    pub item_to_consume: screen::InventorySlotPixels,
 
     /// List of specific steps performed in order to fill the inventory with the
     /// desired good.
     pub actions: Vec<Box<dyn DescribeAction>>,
+}
+
+/// Describe where the player should travel to. Can also indicate a starting
+/// direction to walk in.
+///
+/// If you only want to travel a short distance in a direction you can give a
+/// small time for starting_direction and then immediately
+/// DescribeActionPressMinimapMiddle.
+pub struct TravelToParams {
+    /// Pixels that identify the destination well. Should not be extremely
+    /// common ones like 'map_floor_gray' which will likely not find a specific
+    /// enough point. These are the pixels that are searched for in the
+    /// mini/worldmap.
+    ///
+    /// If empty we will not search the map.
+    pub destination_pixels: Vec<FuzzyPixel>,
+    /// Once a 'destination_pixel' is found, we must confirm that it is a
+    /// reasonable target. This is done by checking that all of
+    /// 'confirmation_pixels' are found nearby.
+    pub confirmation_pixels: Vec<FuzzyPixel>,
+
+    /// If this is not None, the player will start by walking in the direction
+    /// given for the set amount of time.
+    ///
+    /// f32: this is the angle in degrees that the player should walk in. - 0 =
+    ///     East, right - 90 = South, down - 180 = West, left - 270 = North, up
+    ///     Duration: How long to walk for.
+    ///
+    /// TODO: If running click every 5s, if walking every 10s. Include some
+    /// control for walking/running?
+    pub starting_direction: Option<(f32, Duration)>,
 }
 
 // This is the player class that will tie together the userinput and screen
@@ -639,6 +866,7 @@ impl Player {
             .move_near(&self.framehandler.locations.minimap_middle());
         self.inputbot.left_click();
 
+        sleep(util::REDRAW_TIME);
         self.open_inventory();
         self.close_worldmap();
         self.press_compass();
@@ -649,7 +877,10 @@ impl Player {
         sleep(util::REDRAW_TIME);
     }
 
-    // Assumes runelight is the active screen.
+    /// Assumes runelight is the active screen.
+    ///
+    /// TODO: Move this to Action? In order to do that I'd have to switch from
+    /// esc hotkey to pressing the icon.
     pub fn open_inventory(&mut self) {
         let frame = self.capturer.frame().unwrap();
         if self.framehandler.is_inventory_open(&frame) {
@@ -743,68 +974,239 @@ impl Player {
     /// them.
     pub fn do_actions(&mut self, actions: &[Box<dyn DescribeAction>]) -> bool {
         for act in actions {
-            match act.describe_action(&self.framehandler, &self.capturer.frame().unwrap()) {
-                None => return false,
-                Some((maybe_pos, mouse_press)) => {
-                    if !maybe_pos.is_none() {
-                        self.inputbot.move_to(&maybe_pos.unwrap());
-                    }
+            let action_description =
+                act.describe_action(&self.framehandler, &self.capturer.frame().unwrap());
+            if action_description.is_none() {
+                return false;
+            }
 
-                    match mouse_press {
-                        MousePress::None => (),
-                        MousePress::Left => self.inputbot.left_click(),
-                        MousePress::Right => self.inputbot.right_click(),
-                    }
+            let (mouse_move, mouse_press) = action_description.unwrap();
 
-                    let time = std::time::Instant::now();
-                    while !act.await_result(&self.framehandler, &self.capturer.frame().unwrap()) {
-                        if time.elapsed() > act.await_result_timeout() {
-                            return false;
-                        }
-                        sleep(Duration::from_secs(1));
-                    }
+            match mouse_move {
+                MouseMove::None => (),
+                MouseMove::ToDst(pos) => self.inputbot.move_to(&pos),
+                MouseMove::FromCurrent(delta) => {
+                    let dst = self.inputbot.mouse_position() + delta;
+                    self.inputbot.move_to(&dst);
                 }
             }
+
+            match mouse_press {
+                MousePress::None => (),
+                MousePress::Left => self.inputbot.left_click(),
+                MousePress::Right => self.inputbot.right_click(),
+            }
+
+            let time = std::time::Instant::now();
+            while !act.await_result(&self.framehandler, &self.capturer.frame().unwrap()) {
+                if time.elapsed() > act.await_result_timeout() {
+                    return false;
+                }
+                sleep(util::REDRAW_TIME);
+            }
         }
+
         true
     }
 
-    pub fn consume_inventory(&mut self, options: &ConsumeInventoryOptions) {
+    pub fn drop_items(&mut self, items: &Vec<screen::InventorySlotPixels>) {
+        self.open_inventory();
+
+        self.inputbot.hold_shift();
+
+        let mut actions = Vec::<Box<dyn DescribeAction>>::new();
+        actions.push(Box::new(DescribeActionForInventory {
+            expected_pixels: items.clone(),
+            mouse_press: MousePress::Left,
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        }));
+        while self.do_actions(&actions) {
+            // Just in case we accidentally close it.
+            self.open_inventory();
+        }
+
+        self.inputbot.release_shift();
+    }
+
+    /// Opens the bank and deposits all of the listed items.
+    ///
+    /// Assumes action text for opening the bank is always the same.
+    ///
+    /// Requires us to be near the bank, since we don't handle travel here.
+    pub fn deposit_in_bank(
+        &mut self,
+        bank_colors: &Vec<FuzzyPixel>,
+        items: &Vec<InventorySlotPixels>,
+    ) {
+        let mut open_bank_actions = Vec::<Box<dyn DescribeAction>>::new();
+        open_bank_actions.push(Box::new(DescribeActionForOpenScreen {
+            expected_pixels: bank_colors.clone(),
+            mouse_press: MousePress::None,
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        }));
+        open_bank_actions.push(Box::new(DescribeActionForActionText {
+            mouse_press: MousePress::Left,
+            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
+            action_text: vec![
+                (action_letters::start(), action_text_white()),
+                (action_letters::upper_b(), action_text_white()),
+                (action_letters::lower_a(), action_text_white()),
+                (action_letters::lower_n(), action_text_white()),
+                (action_letters::lower_k(), action_text_white()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::upper_b(), action_text_blue()),
+                (action_letters::lower_a(), action_text_blue()),
+                (action_letters::lower_n(), action_text_blue()),
+                (action_letters::lower_k(), action_text_blue()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::lower_b(), action_text_blue()),
+                (action_letters::lower_o(), action_text_blue()),
+                (action_letters::lower_o(), action_text_blue()),
+                (action_letters::lower_t(), action_text_blue()),
+                (action_letters::lower_h(), action_text_blue()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::forward_slash(), action_text_white()),
+            ],
+        }));
+        open_bank_actions.push(DescribeActionBankQuantityAll::new());
+
+        while !self
+            .framehandler
+            .is_bank_open(&self.capturer.frame().unwrap())
+        {
+            self.do_actions(&open_bank_actions);
+            // TODO: Add a timeout?
+        }
+
+        let mut deposit_actions = Vec::<Box<dyn DescribeAction>>::new();
+        deposit_actions.push(Box::new(DescribeActionForInventory {
+            expected_pixels: items.clone(),
+            mouse_press: MousePress::Left,
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        }));
+
+        while self.do_actions(&deposit_actions) {
+            // TODO: Add a timeout?
+        }
+    }
+
+    /// Opens the bank and deposits all of the listed items.
+    ///
+    /// Assumes action text for opening the bank is always the same.
+    ///
+    /// Requires us to be near the bank, since we don't handle travel in this
+    /// function. We do not support stackable items, such as coins.
+    ///
+    /// We don't analyze the bank pixels, so you have to give the slot_index of
+    /// the item to be withdrawn.
+    ///
+    /// If the last item in 'bank_slot_and_quantity' has quantity 0, we will
+    /// withdraw All (aka all remaining inventory slots).
+    pub fn withdraw_from_bank(
+        &mut self,
+        bank_colors: &Vec<FuzzyPixel>,
+        bank_slot_and_quantity: &Vec<(i32, u32)>,
+    ) {
+        let mut open_bank_actions = Vec::<Box<dyn DescribeAction>>::new();
+        open_bank_actions.push(Box::new(DescribeActionForOpenScreen {
+            expected_pixels: bank_colors.clone(),
+            mouse_press: MousePress::None,
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        }));
+        open_bank_actions.push(Box::new(DescribeActionForActionText {
+            mouse_press: MousePress::Left,
+            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
+            action_text: vec![
+                (action_letters::start(), action_text_white()),
+                (action_letters::upper_b(), action_text_white()),
+                (action_letters::lower_a(), action_text_white()),
+                (action_letters::lower_n(), action_text_white()),
+                (action_letters::lower_k(), action_text_white()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::upper_b(), action_text_blue()),
+                (action_letters::lower_a(), action_text_blue()),
+                (action_letters::lower_n(), action_text_blue()),
+                (action_letters::lower_k(), action_text_blue()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::lower_b(), action_text_blue()),
+                (action_letters::lower_o(), action_text_blue()),
+                (action_letters::lower_o(), action_text_blue()),
+                (action_letters::lower_t(), action_text_blue()),
+                (action_letters::lower_h(), action_text_blue()),
+                (action_letters::space(), action_text_white()),
+                (action_letters::forward_slash(), action_text_white()),
+            ],
+        }));
+
+        let mut total_withdrawals = 0;
+        let mut withdrawal_actions = Vec::<Box<dyn DescribeAction>>::new();
+        if bank_slot_and_quantity.len() > 1 || bank_slot_and_quantity[0].1 != 0 {
+            // Only the last item uses QuantityAll, and only if it is marked
+            // with quantity 0.
+            withdrawal_actions.push(DescribeActionBankQuantityOne::new());
+        }
+
+        for (i, (slot_index, quantity)) in bank_slot_and_quantity.iter().enumerate() {
+            if i + 1 == bank_slot_and_quantity.len() && *quantity == 0 {
+                withdrawal_actions.push(DescribeActionBankQuantityAll::new());
+                withdrawal_actions.push(DescribeActionWithdrawFromBank::new(*slot_index));
+                break;
+            }
+
+            for _ in 0..*quantity {
+                total_withdrawals += 1;
+                withdrawal_actions.push(DescribeActionWithdrawFromBank::new(*slot_index));
+            }
+        }
+        // TODO: Remove if we support stackable items (aka coins). For that we
+        // will also need custom Quantity.
+        assert!(total_withdrawals <= Locations::NUM_BANK_SLOTS);
+
+        while !self
+            .framehandler
+            .is_bank_open(&self.capturer.frame().unwrap())
+        {
+            self.do_actions(&open_bank_actions);
+            // TODO: Add a timeout?
+        }
+
+        // Shouldn't be able to fail since withdrawal doesn't depend on any
+        // conditions within the screen.
+        assert!(self.do_actions(&withdrawal_actions))
+    }
+
+    // Main way of filling inventory.
+    pub fn gather_resources() {}
+
+    pub fn consume_inventory(&mut self, params: &ConsumeInventoryParams) -> bool {
         println!("player.consume_inventory");
 
-        let mut time = std::time::Instant::now();
+        let timer = std::time::Instant::now();
+        let mut reset_timer = std::time::Instant::now();
         let mut num_consecutive_failures = 0;
         loop {
-            match options.reset_period {
-                Some(_) => {
-                    if time.elapsed() > Duration::from_secs(300) {
-                        time = std::time::Instant::now();
-                        self.reset();
-                    }
-                }
-                _ => (),
+            if timer.elapsed() > params.activity_timeout {
+                return false;
+            }
+
+            if reset_timer.elapsed() > Duration::from_secs(300) {
+                reset_timer = std::time::Instant::now();
+                self.reset();
             }
 
             let mut frame = self.capturer.frame().unwrap();
-            let mut first_matching_inventory_slot = None;
-            let mut inventory_slot_pixels = inventory_slot_pixels::empty();
-            for pixels in options.inventory_consumption_pixels.iter() {
-                first_matching_inventory_slot = self
-                    .framehandler
-                    .first_matching_inventory_slot(&frame, pixels);
-                if !first_matching_inventory_slot.is_none() {
-                    inventory_slot_pixels = *pixels;
-                    break;
-                }
-            }
-
+            let mut first_matching_inventory_slot = self
+                .framehandler
+                .first_matching_inventory_slot(&frame, &params.item_to_consume);
             if first_matching_inventory_slot.is_none() {
-                println!("Inventory is consumed.");
+                // If any of the comsumption items is missing we
+                // have finished consuming the inventory.
+                println!("Inventory has been consumed");
                 // frame.save("/tmp/screenshot_inventory_full.jpg");
-                return;
+                return true;
             }
 
-            let actions_succeeded = self.do_actions(&options.actions[..]);
+            let actions_succeeded = self.do_actions(&params.actions[..]);
 
             if !actions_succeeded {
                 dbg!(actions_succeeded);
@@ -818,12 +1220,12 @@ impl Player {
             num_consecutive_failures = 0;
 
             let mut waiting_time = std::time::Instant::now();
-            while waiting_time.elapsed() < options.timeout {
+            while waiting_time.elapsed() < params.slot_consumption_waittime {
                 sleep(Duration::from_secs(1));
                 frame = self.capturer.frame().unwrap();
                 let matching_slot = self
                     .framehandler
-                    .first_matching_inventory_slot(&frame, &inventory_slot_pixels);
+                    .first_matching_inventory_slot(&frame, &params.item_to_consume);
                 if matching_slot == first_matching_inventory_slot {
                     // Nothing new in the inventory, just keep waiting.
                     continue;
@@ -831,7 +1233,7 @@ impl Player {
 
                 first_matching_inventory_slot = matching_slot;
 
-                if !options.multi_slot_action || matching_slot.is_none() {
+                if !params.multi_slot_action || matching_slot.is_none() {
                     // We just received the item we were after, and we can't
                     // continue to receive, so stop waiting for the action to
                     // complete. Or the inventory is full.
@@ -851,12 +1253,17 @@ impl Player {
     /// Assumes colors are the same on worldmap and minimap.
     ///
     /// TODO: Consider zooming the worldmap out if we can't find anything.
-    pub fn travel_to(&mut self, expected_pixels: &Vec<FuzzyPixel>, check_pixels: &Vec<FuzzyPixel>) {
+    ///
+    /// TODO: Allow starting direction. User puts in (angle, time) and we walk
+    /// in that direction for that amount of time.
+    ///
+    /// TODO: Add walk/run control.
+    pub fn travel_to(&mut self, params: &TravelToParams) {
         let worldmap_action: Vec<Box<dyn DescribeAction>> = vec![
             DescribeActionOpenWorldmap::new(),
             Box::new(DescribeActionForWorldmap {
-                expected_pixels: expected_pixels.clone(),
-                check_pixels: check_pixels.clone(),
+                expected_pixels: params.destination_pixels.clone(),
+                check_pixels: params.confirmation_pixels.clone(),
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_secs(10)),
                 search_time: util::REDRAW_TIME,
@@ -864,8 +1271,8 @@ impl Player {
         ];
         let minimap_action: Vec<Box<dyn DescribeAction>> =
             vec![Box::new(DescribeActionForMinimap {
-                expected_pixels: expected_pixels.clone(),
-                check_pixels: check_pixels.clone(),
+                expected_pixels: params.destination_pixels.clone(),
+                check_pixels: params.confirmation_pixels.clone(),
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::IsCloseOnMinimapIncomplete(Duration::from_secs(30)),
                 search_time: util::REDRAW_TIME,
@@ -874,6 +1281,38 @@ impl Player {
         let orient: Vec<Box<dyn DescribeAction>> = vec![DescribeActionPressCompass::new()];
         if !self.do_actions(&orient) {
             dbg!("failed to perform traveling setup");
+        }
+
+        if params.starting_direction.is_some() {
+            let (degrees, duration) = params.starting_direction.unwrap();
+            // Don't go to the edge of the minimap since the worldmap
+            // juts in so we wouldn't move.
+            let minimap_pos = polar_to_cartesian(
+                self.framehandler.locations.minimap_middle(),
+                Locations::MINIMAP_RADIUS - 6.0,
+                util::degrees_to_radians(degrees),
+            );
+
+            let time = std::time::Instant::now();
+            while time.elapsed() < duration {
+                let wait_time = std::cmp::min(
+                    duration
+                        .checked_sub(time.elapsed())
+                        .unwrap_or(Duration::from_nanos(1)),
+                    Duration::from_secs(5),
+                );
+
+                let actions: Vec<Box<dyn DescribeAction>> =
+                    vec![Box::new(DescribeActionExplicitAction {
+                        action_description: Some((MouseMove::ToDst(minimap_pos), MousePress::Left)),
+                        await_action: AwaitFrame::Time(wait_time),
+                    })];
+                self.do_actions(&actions);
+            }
+        }
+
+        if params.destination_pixels.is_empty() {
+            return;
         }
 
         while !self.do_actions(&minimap_action) {

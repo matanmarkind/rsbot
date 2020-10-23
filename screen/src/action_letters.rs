@@ -54,15 +54,15 @@ pub fn upper_b() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
-            DeltaPosition { dx: 1, dy: 2 },
-            DeltaPosition { dx: 1, dy: 5 },
-            DeltaPosition { dx: 1, dy: 8 },
-            DeltaPosition { dx: 1, dy: 11 },
-            DeltaPosition { dx: 3, dy: 2 },
-            DeltaPosition { dx: 3, dy: 6 },
-            DeltaPosition { dx: 3, dy: 11 },
-            DeltaPosition { dx: 5, dy: 4 },
-            DeltaPosition { dx: 5, dy: 9 },
+            DeltaPosition { dx: 0, dy: 2 },
+            DeltaPosition { dx: 0, dy: 5 },
+            DeltaPosition { dx: 0, dy: 8 },
+            DeltaPosition { dx: 0, dy: 11 },
+            DeltaPosition { dx: 2, dy: 2 },
+            DeltaPosition { dx: 2, dy: 6 },
+            DeltaPosition { dx: 2, dy: 11 },
+            DeltaPosition { dx: 4, dy: 4 },
+            DeltaPosition { dx: 4, dy: 9 },
         ],
 
         display: "B",
@@ -75,7 +75,9 @@ pub fn upper_c() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
-            DeltaPosition { dx: 0, dy: 6 },
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 1, dy: 3 },
+            DeltaPosition { dx: 1, dy: 10 },
             DeltaPosition { dx: 3, dy: 2 },
             DeltaPosition { dx: 3, dy: 11 },
             DeltaPosition { dx: 4, dy: 3 },
@@ -144,6 +146,26 @@ pub fn upper_o() -> Letter {
     }
 }
 
+pub fn upper_r() -> Letter {
+    Letter {
+        width: 8,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 2 },
+            DeltaPosition { dx: 0, dy: 5 },
+            DeltaPosition { dx: 0, dy: 8 },
+            DeltaPosition { dx: 0, dy: 11 },
+            DeltaPosition { dx: 2, dy: 2 },
+            DeltaPosition { dx: 2, dy: 7 },
+            DeltaPosition { dx: 4, dy: 4 },
+            DeltaPosition { dx: 5, dy: 10 },
+        ],
+
+        display: "R",
+    }
+}
+
 pub fn upper_s() -> Letter {
     Letter {
         width: 8,
@@ -165,9 +187,12 @@ pub fn upper_s() -> Letter {
 
 pub fn upper_t() -> Letter {
     Letter {
-        width: 7,
+        width: 8,
 
-        // Delta from the top left corner of the letters box.
+        // Delta from the top left corner of the letters box. T seems to be the
+        // only letter that starts at screen_left+4 instead of 5. Currently I'm
+        // not going to change everything to have the letters start at +4
+        // instead of +5.
         checkpoints: vec![
             DeltaPosition { dx: 0, dy: 2 },
             DeltaPosition { dx: 2, dy: 2 },
@@ -180,9 +205,29 @@ pub fn upper_t() -> Letter {
     }
 }
 
-pub fn lower_a() -> Letter {
+pub fn upper_u() -> Letter {
     Letter {
         width: 9,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 2 },
+            DeltaPosition { dx: 0, dy: 5 },
+            DeltaPosition { dx: 0, dy: 8 },
+            DeltaPosition { dx: 2, dy: 11 },
+            DeltaPosition { dx: 5, dy: 2 },
+            DeltaPosition { dx: 5, dy: 5 },
+            DeltaPosition { dx: 5, dy: 8 },
+            DeltaPosition { dx: 5, dy: 11 },
+        ],
+
+        display: "U",
+    }
+}
+
+pub fn lower_a() -> Letter {
+    Letter {
+        width: 8,
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
@@ -240,11 +285,11 @@ pub fn lower_e() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
-            DeltaPosition { dx: 1, dy: 6 },
-            DeltaPosition { dx: 1, dy: 11 },
-            DeltaPosition { dx: 3, dy: 6 },
-            DeltaPosition { dx: 3, dy: 9 },
-            DeltaPosition { dx: 3, dy: 11 },
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 0, dy: 10 },
+            DeltaPosition { dx: 2, dy: 6 },
+            DeltaPosition { dx: 2, dy: 9 },
+            DeltaPosition { dx: 2, dy: 11 },
             DeltaPosition { dx: 4, dy: 7 },
         ],
 
@@ -308,11 +353,11 @@ pub fn lower_k() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
-            DeltaPosition { dx: 1, dy: 3 },
-            DeltaPosition { dx: 1, dy: 7 },
-            DeltaPosition { dx: 1, dy: 11 },
-            DeltaPosition { dx: 4, dy: 6 },
-            DeltaPosition { dx: 5, dy: 11 },
+            DeltaPosition { dx: 0, dy: 3 },
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 0, dy: 11 },
+            DeltaPosition { dx: 3, dy: 6 },
+            DeltaPosition { dx: 4, dy: 11 },
         ],
 
         display: "k",
@@ -421,7 +466,7 @@ pub fn lower_r() -> Letter {
 
 pub fn lower_s() -> Letter {
     Letter {
-        width: 9,
+        width: 8,
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
@@ -509,6 +554,41 @@ pub fn forward_slash() -> Letter {
         ],
 
         display: "/",
+    }
+}
+
+pub fn hyphen() -> Letter {
+    Letter {
+        width: 7,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 1, dy: 7 },
+            DeltaPosition { dx: 2, dy: 7 },
+            DeltaPosition { dx: 3, dy: 7 },
+            DeltaPosition { dx: 4, dy: 7 },
+            DeltaPosition { dx: 5, dy: 7 },
+        ],
+
+        display: "-",
+    }
+}
+
+pub fn greater_than() -> Letter {
+    Letter {
+        width: 8,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 3 },
+            DeltaPosition { dx: 0, dy: 9 },
+            DeltaPosition { dx: 2, dy: 4 },
+            DeltaPosition { dx: 2, dy: 8 },
+            DeltaPosition { dx: 5, dy: 6 },
+        ],
+
+        display: ">",
     }
 }
 
