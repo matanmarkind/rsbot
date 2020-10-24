@@ -894,4 +894,67 @@ pub mod inventory_slot_pixels {
     pub fn oak_logs_bank() -> InventorySlotPixels {
         oak_logs()
     }
+    pub fn tin_ore() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 93,
+                blue_max: 97,
+                green_min: 93,
+                green_max: 97,
+                red_min: 103,
+                red_max: 107,
+            },
+            black(),
+            FuzzyPixel {
+                blue_min: 24,
+                blue_max: 28,
+                green_min: 41,
+                green_max: 45,
+                red_min: 55,
+                red_max: 59,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            FuzzyPixel {
+                blue_min: 87,
+                blue_max: 91,
+                green_min: 87,
+                green_max: 91,
+                red_min: 96,
+                red_max: 100,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 37,
+                blue_max: 41,
+                green_min: 62,
+                green_max: 66,
+                red_min: 84,
+                red_max: 88,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn tin_ore_bank() -> InventorySlotPixels {
+        let mut pixels = tin_ore();
+        pixels[5] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
 }

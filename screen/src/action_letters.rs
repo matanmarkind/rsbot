@@ -102,7 +102,26 @@ pub fn upper_f() -> Letter {
             DeltaPosition { dx: 5, dy: 2 },
         ],
 
-        display: "D",
+        display: "F",
+    }
+}
+
+pub fn upper_m() -> Letter {
+    Letter {
+        width: 10,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 3 },
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 0, dy: 11 },
+            DeltaPosition { dx: 3, dy: 6 },
+            DeltaPosition { dx: 6, dy: 3 },
+            DeltaPosition { dx: 6, dy: 7 },
+            DeltaPosition { dx: 6, dy: 11 },
+        ],
+
+        display: "M",
     }
 }
 
@@ -259,6 +278,23 @@ pub fn lower_b() -> Letter {
         ],
 
         display: "b",
+    }
+}
+
+pub fn lower_c() -> Letter {
+    Letter {
+        width: 8,
+
+        // Delta from the top left corner of the letters box.
+        checkpoints: vec![
+            DeltaPosition { dx: 0, dy: 8 },
+            DeltaPosition { dx: 1, dy: 7 },
+            DeltaPosition { dx: 1, dy: 10 },
+            DeltaPosition { dx: 3, dy: 6 },
+            DeltaPosition { dx: 3, dy: 11 },
+        ],
+
+        display: "c",
     }
 }
 

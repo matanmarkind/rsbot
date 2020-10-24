@@ -14,14 +14,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let framehandler = FrameHandler::new(config.clone());
     let frame = capturer.frame().unwrap();
 
+    // To print out an inventory slot, call check_inventory_slot and uncomment
+    // the print statement in the function.
     println!(
         "{}",
-        framehandler.check_inventory_slot(&frame, 1, &inventory_slot_pixels::oak_logs())
+        framehandler.check_inventory_slot(&frame, 1, &inventory_slot_pixels::tin_ore_bank())
     );
     return Ok(());
 
-    // To print out an inventory slot, call check_inventory_slot and uncomment
-    // the print statement in the function.
     // framehandler.is_inventory_slot_open(&frame, 2);
 
     // let empty_slot = framehandler.first_open_inventory_slot(&frame);

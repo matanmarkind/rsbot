@@ -637,7 +637,7 @@ impl DescribeAction for DescribeActionOpenWorldmap {
 }
 
 impl DescribeActionEnableRun {
-    fn new() -> Box<Self> {
+    pub fn new() -> Box<Self> {
         Box::new(DescribeActionEnableRun {
             await_action: AwaitFrame::Time(Duration::from_secs(1)),
         })
@@ -672,7 +672,7 @@ impl DescribeAction for DescribeActionEnableRun {
 }
 
 impl DescribeActionEnableWalk {
-    fn new() -> Box<Self> {
+    pub fn new() -> Box<Self> {
         Box::new(DescribeActionEnableWalk {
             await_action: AwaitFrame::Time(Duration::from_secs(1)),
         })
@@ -1382,7 +1382,7 @@ impl Player {
                     // We just received the item we were after, and we can't
                     // continue to receive, so stop waiting for the action to
                     // complete. Or the inventory is full.
-                    dbg!(matching_slot);
+                    // dbg!(matching_slot);
                     break;
                 }
 

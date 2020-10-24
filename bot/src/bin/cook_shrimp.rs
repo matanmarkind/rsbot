@@ -91,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut player = controller::Player::new(config);
     let time = std::time::Instant::now();
-    while time.elapsed() < Duration::from_secs(3 * 60 * 60) {
+    while time.elapsed() < Duration::from_secs(1 * 60 * 60) {
         player.reset();
         player.travel_to(&TravelToParams {
             destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
