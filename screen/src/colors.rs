@@ -148,6 +148,27 @@ pub mod fuzzy_pixels {
             red_max: 89,
         }
     }
+    pub fn varrock_bank_window1() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 89,
+            blue_max: 94,
+            green_min: 109,
+            green_max: 116,
+            red_min: 117,
+            red_max: 129,
+        }
+    }
+
+    pub fn run_icon_on() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 100,
+            blue_max: 106,
+            green_min: 215,
+            green_max: 221,
+            red_min: 233,
+            red_max: 239,
+        }
+    }
 
     /// Pixels used to identify things on the maps (minimap or worldmap).
     pub fn map_icon_bank_yellow() -> FuzzyPixel {
@@ -160,9 +181,6 @@ pub mod fuzzy_pixels {
             red_max: 234,
         }
     }
-    // 253, 133, 41
-    // 248, 103, 37
-    // 220, 58, 7
     pub fn map_icon_fish_dark_blue() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 218,
@@ -191,6 +209,46 @@ pub mod fuzzy_pixels {
             green_max: 135,
             red_min: 39,
             red_max: 43,
+        }
+    }
+    pub fn map_icon_pickaxe_light_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 105,
+            blue_max: 120,
+            green_min: 106,
+            green_max: 120,
+            red_min: 104,
+            red_max: 120,
+        }
+    }
+    pub fn map_icon_pickaxe_handle_light_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 61,
+            blue_max: 65,
+            green_min: 98,
+            green_max: 102,
+            red_min: 146,
+            red_max: 150,
+        }
+    }
+    pub fn map_icon_pickaxe_handle_medium_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 31,
+            blue_max: 35,
+            green_min: 79,
+            green_max: 83,
+            red_min: 119,
+            red_max: 123,
+        }
+    }
+    pub fn map_icon_pickaxe_handle_dark_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 9,
+            blue_max: 14,
+            green_min: 38,
+            green_max: 58,
+            red_min: 79,
+            red_max: 92,
         }
     }
     pub fn map_icon_dark_gray() -> FuzzyPixel {
@@ -241,6 +299,18 @@ pub mod fuzzy_pixels {
             green_max: 83,
             red_min: 88,
             red_max: 82,
+        }
+    }
+    pub fn map_floor_brown() -> FuzzyPixel {
+        // Minimap and worldmap are slightly different
+        // Minimap seems to change colors...
+        FuzzyPixel {
+            blue_min: 20,
+            blue_max: 45,
+            green_min: 40,
+            green_max: 70,
+            red_min: 55,
+            red_max: 90,
         }
     }
 
@@ -404,6 +474,30 @@ pub mod fuzzy_pixels {
             green_max: 190,
             red_min: 220,
             red_max: 255,
+        }
+    }
+    pub fn tin_ore() -> FuzzyPixel {
+        // Max BGR could be 130, 131, 144.
+        // This overlaps with silver though so shrunk it down.
+        FuzzyPixel {
+            blue_min: 81,
+            blue_max: 100,
+            green_min: 81,
+            green_max: 105,
+            red_min: 80,
+            red_max: 104,
+        }
+    }
+    pub fn silver_ore() -> FuzzyPixel {
+        // Min BGR could be 102, 103, 113.
+        // This overlaps with tin though so shrunk it up.
+        FuzzyPixel {
+            blue_min: 112,
+            blue_max: 160,
+            green_min: 113,
+            green_max: 160,
+            red_min: 123,
+            red_max: 172,
         }
     }
 }

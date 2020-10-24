@@ -1,14 +1,17 @@
-/// Used to develop new actions.
+/// This is a bot for cooking raw shrimp on oak fire by the Draynor bank.
 use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionForActionText,
     DescribeActionForInventory, DescribeActionForOpenScreen, DescribeActionPressChatboxMiddle,
-    DescribeActionPressMinimapMiddle, MousePress, TravelToParams,
+    MousePress, TravelToParams,
 };
 use screen::fuzzy_pixels::{action_text_blue, action_text_orange, action_text_white};
-use screen::{action_letters, fuzzy_pixels, inventory_slot_pixels};
+use screen::{action_letters, fuzzy_pixels, inventory_slot_pixels, FuzzyPixel};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
+
+/// Either Draynor or Varrock west bank.
+const DRAYNOR: bool = false;
 
 fn cook_shrimp_consume_options() -> ConsumeInventoryParams {
     ConsumeInventoryParams {
@@ -62,87 +65,106 @@ fn cook_shrimp_consume_options() -> ConsumeInventoryParams {
     }
 }
 
+fn get_bank_booth_pixels() -> Vec<FuzzyPixel> {
+    if DRAYNOR {
+        vec![
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
+        ]
+    } else {
+        vec![fuzzy_pixels::varrock_bank_window1()]
+    }
+}
+
+fn explicit_walk_time() -> Option<(f32, Duration)> {
+    if DRAYNOR {
+        Some((85.0, Duration::from_secs(11)))
+    } else {
+        Some((95.0, Duration::from_secs(6)))
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut player = controller::Player::new(config);
-    player.reset();
-
-    player.travel_to(&TravelToParams {
-        destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
-        confirmation_pixels: vec![
-            fuzzy_pixels::map_icon_dark_gray(),
-            fuzzy_pixels::map_icon_light_gray(),
-            fuzzy_pixels::black(),
-        ],
-        starting_direction: None,
-    });
-    println!("--- We're at the bank ---");
-
-    player.deposit_in_bank(
-        &vec![
-            fuzzy_pixels::bank_brown1(),
-            fuzzy_pixels::bank_brown2(),
-            fuzzy_pixels::bank_brown3(),
-        ],
-        /*items=*/
-        &vec![
-            inventory_slot_pixels::oak_logs(),
-            inventory_slot_pixels::raw_shrimp_bank(),
-            inventory_slot_pixels::cooked_shrimp_bank(),
-            inventory_slot_pixels::burned_shrimp_bank(),
-        ],
-    );
-    println!("--- Made the deposit ---");
-
-    player.withdraw_from_bank(
-        /*bank_colors=*/
-        &vec![
-            fuzzy_pixels::bank_brown1(),
-            fuzzy_pixels::bank_brown2(),
-            fuzzy_pixels::bank_brown3(),
-        ], /*bank_slot_and_quantity:=*/
-        // Withdraw 1 log and the rest shrimp.
-        &vec![(5, 2), (1, 0)],
-    );
-    println!("--- We got the wood and shrimp ---");
-
-    let fire_start_time = std::time::Instant::now();
-    while fire_start_time.elapsed() < Duration::from_secs(3 * 60) {
+    let time = std::time::Instant::now();
+    while time.elapsed() < Duration::from_secs(3 * 60 * 60) {
+        player.reset();
         player.travel_to(&TravelToParams {
-            destination_pixels: vec![],
-            confirmation_pixels: vec![],
-            starting_direction: Some((90.0, Duration::from_secs(10))),
-        });
-        // Press minimap middle to stop us walking.
-        // let mut press_minimap_middle_actions = Vec::<Box<dyn DescribeAction>>::new();
-        // press_minimap_middle_actions.push(DescribeActionPressMinimapMiddle::new());
-        // player.do_actions(&press_minimap_middle_actions);
-        println!("--- Get a fire going! ---");
+            destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
+            confirmation_pixels: vec![
+                fuzzy_pixels::map_icon_dark_gray(),
+                fuzzy_pixels::map_icon_light_gray(),
+                fuzzy_pixels::black(),
+            ],
 
-        // In a loop light fire then comsume_inventory(cook_shrim).
-        let mut start_fire_actions = Vec::<Box<dyn DescribeAction>>::new();
-        start_fire_actions.push(Box::new(DescribeActionForInventory {
-            expected_pixels: vec![inventory_slot_pixels::oak_logs()],
-            mouse_press: MousePress::Left,
-            await_action: AwaitFrame::Time(util::REDRAW_TIME),
-        }));
-        start_fire_actions.push(Box::new(DescribeActionForInventory {
-            expected_pixels: vec![inventory_slot_pixels::tinderbox()],
-            mouse_press: MousePress::Left,
-            await_action: AwaitFrame::Time(Duration::from_secs(5)),
-        }));
-        if player.do_actions(&start_fire_actions) {
-            println!("--- FIRE! ---");
-            if player.consume_inventory(&cook_shrimp_consume_options()) {
-                // Unfortunately every other time that we click on the shrimp we
-                // unselect it...
-                println!("--- Ick Shrimp! ---");
-                break;
+            try_to_run: false,
+            arc_of_interest: None,
+            starting_direction: None,
+        });
+        println!("--- We're at the bank ---");
+
+        player.deposit_in_bank(
+            &get_bank_booth_pixels(),
+            /*items=*/
+            &vec![
+                inventory_slot_pixels::oak_logs(),
+                inventory_slot_pixels::raw_shrimp_bank(),
+                inventory_slot_pixels::cooked_shrimp_bank(),
+                inventory_slot_pixels::burned_shrimp_bank(),
+            ],
+        );
+        println!("--- Made the deposit ---");
+
+        player.withdraw_from_bank(
+            /*bank_colors=*/
+            &vec![
+                fuzzy_pixels::bank_brown1(),
+                fuzzy_pixels::bank_brown2(),
+                fuzzy_pixels::bank_brown3(),
+            ], /*bank_slot_and_quantity:=*/
+            // Withdraw 1 log and the rest shrimp.
+            &vec![(5, 2), (1, 0)],
+        );
+        println!("--- We got the wood and shrimp ---");
+
+        let fire_start_time = std::time::Instant::now();
+        while fire_start_time.elapsed() < Duration::from_secs(3 * 60) {
+            player.travel_to(&TravelToParams {
+                try_to_run: false,
+                arc_of_interest: None,
+                destination_pixels: vec![],
+                confirmation_pixels: vec![],
+                starting_direction: explicit_walk_time(),
+            });
+            println!("--- Get a fire going! ---");
+
+            // In a loop light fire then comsume_inventory(cook_shrim).
+            let mut start_fire_actions = Vec::<Box<dyn DescribeAction>>::new();
+            start_fire_actions.push(Box::new(DescribeActionForInventory {
+                expected_pixels: vec![inventory_slot_pixels::oak_logs()],
+                mouse_press: MousePress::Left,
+                await_action: AwaitFrame::Time(util::REDRAW_TIME),
+            }));
+            start_fire_actions.push(Box::new(DescribeActionForInventory {
+                expected_pixels: vec![inventory_slot_pixels::tinderbox()],
+                mouse_press: MousePress::Left,
+                await_action: AwaitFrame::Time(Duration::from_secs(5)),
+            }));
+            if player.do_actions(&start_fire_actions) {
+                println!("--- FIRE! ---");
+                if player.consume_inventory(&cook_shrimp_consume_options()) {
+                    // Unfortunately every other time that we click on the shrimp we
+                    // unselect it...
+                    println!("--- Ick Shrimp! ---");
+                    break;
+                }
             }
+            println!("--- We were unable to cook all the food :( ---");
         }
-        println!("--- We were unable to cook all the food :( ---");
     }
 
     Ok(())

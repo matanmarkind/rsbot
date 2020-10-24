@@ -112,7 +112,7 @@ pub trait Frame {
         &self,
         fuzzy_pixel: FuzzyPixel,
         middle: Position,
-        radius: f32,
+        radius: i32,
     ) -> Option<Position> {
         let batch_size = 1000;
         let time = std::time::Instant::now();

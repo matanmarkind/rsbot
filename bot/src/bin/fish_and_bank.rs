@@ -1,5 +1,8 @@
+/// This is a bot for fishing anchovies & shrimp by the Draynor bank.
+///
+/// Be certain that the bank slots are aligned properly for withdrawal.
 use bot::{
-    controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionForActionText,
+    controller, AwaitFrame, ConsumeInventoryParams, DescribeActionForActionText,
     DescribeActionForOpenScreen, MousePress, TravelToParams,
 };
 use screen::{
@@ -58,38 +61,37 @@ fn fish_small_net_activity() -> ConsumeInventoryParams {
     }
 }
 
-/// 1. Catch fish until inventory is full. If full of cooked shrim drop logs
-///    until there's only 1 left.
-/// 2. Make a fire.
-/// 3. Cook all fish in inventory. May take multiple attempts even when
-///    selecting all.
-/// 4. Drop burned fish
-///
+fn travel_to_fishing_icon() -> TravelToParams {
+    TravelToParams {
+        arc_of_interest: None,
+        destination_pixels: vec![
+            fuzzy_pixels::map_icon_fish_light_blue(),
+            fuzzy_pixels::map_icon_fish_medium_blue(),
+            fuzzy_pixels::map_icon_fish_dark_blue(),
+        ],
+        confirmation_pixels: vec![
+            fuzzy_pixels::map_icon_light_gray(),
+            fuzzy_pixels::map_icon_fish_light_blue(),
+            fuzzy_pixels::map_icon_fish_medium_blue(),
+            fuzzy_pixels::map_icon_fish_dark_blue(),
+            fuzzy_pixels::black(),
+        ],
+
+        try_to_run: true,
+        starting_direction: None,
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
     dbg!(&config);
 
     let mut player = controller::Player::new(config);
+    player.reset();
 
     let time = std::time::Instant::now();
-    player.reset();
     while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
-        player.travel_to(&TravelToParams {
-            destination_pixels: vec![
-                fuzzy_pixels::map_icon_fish_light_blue(),
-                fuzzy_pixels::map_icon_fish_medium_blue(),
-                fuzzy_pixels::map_icon_fish_dark_blue(),
-            ],
-            confirmation_pixels: vec![
-                fuzzy_pixels::map_icon_light_gray(),
-                fuzzy_pixels::map_icon_fish_light_blue(),
-                fuzzy_pixels::map_icon_fish_medium_blue(),
-                fuzzy_pixels::map_icon_fish_dark_blue(),
-                fuzzy_pixels::black(),
-            ],
-
-            starting_direction: None,
-        });
+        player.travel_to(&travel_to_fishing_icon());
         println!("We are at the fishies");
 
         player.reset();
@@ -97,6 +99,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Done filling inventory");
 
         player.travel_to(&TravelToParams {
+            try_to_run: true,
+            arc_of_interest: None,
             destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
             confirmation_pixels: vec![
                 fuzzy_pixels::map_icon_dark_gray(),

@@ -2,6 +2,7 @@ use rand::{thread_rng, Rng};
 use screen::{
     action_letters,
     action_letters::Letter,
+    fuzzy_pixels,
     fuzzy_pixels::{action_text_blue, action_text_white},
     Capturer, Frame, FrameHandler, FuzzyPixel, InventorySlotPixels, Locations,
 };
@@ -26,7 +27,7 @@ fn shift_position(pos: Position) -> Position {
 fn check_map_pixels(
     frame: &screen::DefaultFrame,
     middle: Position,
-    radius: f32,
+    radius: i32,
     expected_pixels: &[FuzzyPixel],
     check_pixels: &[FuzzyPixel],
 ) -> Option<Position> {
@@ -43,7 +44,7 @@ fn check_map_pixels(
                 .find_pixel_random_polar(
                     *check,
                     pos.unwrap(),
-                    Locations::CHECK_ADJACENT_MINIMAP_PIXELS_RADIUS,
+                    Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
                 )
                 .is_none()
             {
@@ -226,8 +227,10 @@ pub struct DescribeActionForWorldmap {
     /// Nearby pixels which all must be found.
     pub check_pixels: Vec<FuzzyPixel>,
 
-    /// Max amount of time to spend searching 1 frame.
-    pub search_time: Duration,
+    /// Arc of the worldmap to search. If None will search the entire worldmap.
+    ///
+    /// (min_angle_degrees, arc_angle_degrees).
+    pub arc_of_interest: Option<(f32, f32)>,
 
     pub mouse_press: MousePress,
     pub await_action: AwaitFrame,
@@ -255,6 +258,16 @@ pub struct DescribeActionCloseWorldmap {
 
 // Opens the worldmap. If it's already open will do nothing.
 pub struct DescribeActionOpenWorldmap {
+    pub await_action: AwaitFrame,
+}
+
+// Attempts to turn on running.
+pub struct DescribeActionEnableRun {
+    pub await_action: AwaitFrame,
+}
+
+// Turns off running if on.
+pub struct DescribeActionEnableWalk {
     pub await_action: AwaitFrame,
 }
 
@@ -371,7 +384,6 @@ impl DescribeAction for DescribeActionForInventory {
             match framehandler.first_matching_inventory_slot(frame, &fuzzy_pixel) {
                 None => (),
                 Some(slot_index) => {
-                    dbg!(slot_index);
                     return Some((
                         MouseMove::ToDst(framehandler.locations.inventory_slot_middle(slot_index)),
                         self.mouse_press,
@@ -403,51 +415,66 @@ impl DescribeAction for DescribeActionForWorldmap {
             assert!(false);
         }
 
-        let time = std::time::Instant::now();
-        while time.elapsed() < self.search_time {
-            // Loop through concentric search boxes starting closer to the
-            // player and moving further.
-            for (top_left, dimensions) in framehandler.locations.worldmap_map_search_boxes().iter()
-            {
-                for fuzzy_pixel in self.expected_pixels.iter() {
-                    let pos = frame.find_pixel_random(&fuzzy_pixel, top_left, &dimensions);
-                    if pos.is_none() {
-                        continue;
-                    }
+        let DeltaPosition { dx, dy } = framehandler.locations.worldmap_map_dimensions();
+        let min_radius = 30;
+        let arc_of_interest = self.arc_of_interest.unwrap_or((0.0, 360.0));
+        let worldmap_arc_iter = PositionIteratorCircularSpiral::new(
+            framehandler.locations.worldmap_map_middle(),
+            min_radius,
+            /*d_radius=*/ std::cmp::min(dx, dy) / 2 - min_radius - 1,
+            /*min_angle_degrees=*/ arc_of_interest.0,
+            /*d_angle_degrees=*/ arc_of_interest.1,
+            /*spacing=*/ 2,
+        );
 
-                    // Check that the found pixel is in the correct situation.
-                    let mut failed_check = false;
-                    for check in self.check_pixels.iter() {
-                        if frame
-                            .find_pixel_random_polar(
-                                *check,
-                                pos.unwrap(),
-                                Locations::CHECK_ADJACENT_MINIMAP_PIXELS_RADIUS,
-                            )
-                            .is_none()
-                        {
-                            failed_check = true;
+        for pos in worldmap_arc_iter {
+            for fuzzy_pixel in self.expected_pixels.iter() {
+                if !fuzzy_pixel.matches(&frame.get_pixel(&pos)) {
+                    continue;
+                }
+
+                // Check that the found pixel is in the correct situation.
+                let mut all_check_pixels_match = true;
+                for check_pixel in self.check_pixels.iter() {
+                    let adjacent_iter = PositionIteratorCircularSpiral::new(
+                        pos,
+                        /*min_radius=*/ 1,
+                        /*d_radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+                        /*min_angle_degrees=*/ 0.0,
+                        /*d_angle_degrees=*/ 360.0,
+                        /*spacing=*/ 1,
+                    );
+
+                    let mut found_match = false;
+                    for adjacent_pos in adjacent_iter {
+                        if check_pixel.matches(&frame.get_pixel(&adjacent_pos)) {
+                            found_match = true;
                             break;
                         }
                     }
-
-                    if !failed_check {
-                        // Get the angle from our character to the goal. We will
-                        // then map this to a location on the minimap to click
-                        // in order to move us in that direction.
-                        let angle_rads = (pos.unwrap()
-                            - framehandler.locations.worldmap_map_middle())
-                        .angle_rads();
-                        let minimap_pos = polar_to_cartesian(
-                            framehandler.locations.minimap_middle(),
-                            Locations::MINIMAP_RADIUS,
-                            angle_rads,
-                        );
-                        return Some((MouseMove::ToDst(minimap_pos), self.mouse_press));
+                    if !found_match {
+                        all_check_pixels_match = false;
+                        break;
                     }
+                }
+
+                // If all of the check pixels matched, we're good to go.
+                if all_check_pixels_match {
+                    // Get the angle from our character to the goal. We will
+                    // then map this to a location on the minimap to click
+                    // in order to move us in that direction.
+                    let angle_rads =
+                        (pos - framehandler.locations.worldmap_map_middle()).angle_rads();
+                    let minimap_pos = polar_to_cartesian(
+                        framehandler.locations.minimap_middle(),
+                        Locations::MINIMAP_RADIUS - 6,
+                        angle_rads,
+                    );
+                    return Some((MouseMove::ToDst(minimap_pos), self.mouse_press));
                 }
             }
         }
+
         FAILURE_ACTION_DESCRIPTION
     }
 
@@ -466,19 +493,54 @@ impl DescribeAction for DescribeActionForMinimap {
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
         println!("DescribeActionForMinimap");
-        let time = std::time::Instant::now();
-        while time.elapsed() < self.search_time {
-            match check_map_pixels(
-                frame,
-                framehandler.locations.minimap_middle(),
-                Locations::MINIMAP_RADIUS,
-                &self.expected_pixels,
-                &self.check_pixels,
-            ) {
-                None => (),
-                Some(pos) => return Some((MouseMove::ToDst(pos), self.mouse_press)),
+
+        let minimap_iter = PositionIteratorCircularSpiral::new(
+            /*middle=*/ framehandler.locations.minimap_middle(),
+            /*min_radius=*/ 1,
+            /*d_radius=*/ Locations::MINIMAP_RADIUS,
+            /*min_angle_degrees=*/ 0.0,
+            /*d_angle_degrees=*/ 360.0,
+            /*spacing=*/ 1,
+        );
+
+        for pos in minimap_iter {
+            for fuzzy_pixel in self.expected_pixels.iter() {
+                if !fuzzy_pixel.matches(&frame.get_pixel(&pos)) {
+                    continue;
+                }
+
+                // Check that the found pixel is in the correct situation.
+                let mut all_check_pixels_match = true;
+                for check_pixel in self.check_pixels.iter() {
+                    let adjacent_iter = PositionIteratorCircularSpiral::new(
+                        /*middle=*/ pos,
+                        /*min_radius=*/ 1,
+                        /*d_radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+                        /*min_angle_degrees=*/ 0.0,
+                        /*d_angle_degrees=*/ 360.0,
+                        /*spacing=*/ 1,
+                    );
+
+                    let mut found_match = false;
+                    for adjacent_pos in adjacent_iter {
+                        if check_pixel.matches(&frame.get_pixel(&adjacent_pos)) {
+                            found_match = true;
+                            break;
+                        }
+                    }
+                    if !found_match {
+                        all_check_pixels_match = false;
+                        break;
+                    }
+                }
+
+                // If all of the check pixels matched, we're good to go.
+                if all_check_pixels_match {
+                    return Some((MouseMove::ToDst(pos), self.mouse_press));
+                }
             }
         }
+
         FAILURE_ACTION_DESCRIPTION
     }
 
@@ -563,6 +625,76 @@ impl DescribeAction for DescribeActionOpenWorldmap {
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = shift_position(framehandler.locations.worldmap_icon());
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeActionEnableRun {
+    fn new() -> Box<Self> {
+        Box::new(DescribeActionEnableRun {
+            await_action: AwaitFrame::Time(Duration::from_secs(1)),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionEnableRun {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionEnableRun");
+        let pos = framehandler.locations.run_icon();
+        if frame.check_loose_pixel(&pos, &fuzzy_pixels::run_icon_on()) {
+            // dbg!("worldmap already open");
+            return DO_NOTHING_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(pos);
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
+impl DescribeActionEnableWalk {
+    fn new() -> Box<Self> {
+        Box::new(DescribeActionEnableWalk {
+            await_action: AwaitFrame::Time(Duration::from_secs(1)),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionEnableWalk {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionEnableWalk");
+        let pos = framehandler.locations.run_icon();
+        if !frame.check_loose_pixel(&pos, &fuzzy_pixels::run_icon_on()) {
+            // dbg!("worldmap already open");
+            return DO_NOTHING_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = shift_position(pos);
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -813,6 +945,10 @@ pub struct ConsumeInventoryParams {
 /// If you only want to travel a short distance in a direction you can give a
 /// small time for starting_direction and then immediately
 /// DescribeActionPressMinimapMiddle.
+///
+/// Be aware that using starting_direction and arc_of_interest make this less
+/// general, since this implies specific assumptions about where starting point
+/// and destination are in reference to each other.
 pub struct TravelToParams {
     /// Pixels that identify the destination well. Should not be extremely
     /// common ones like 'map_floor_gray' which will likely not find a specific
@@ -825,6 +961,14 @@ pub struct TravelToParams {
     /// reasonable target. This is done by checking that all of
     /// 'confirmation_pixels' are found nearby.
     pub confirmation_pixels: Vec<FuzzyPixel>,
+
+    /// Arc of the worldmap to search. If None will search the entire worldmap.
+    ///
+    /// (min_angle_degrees, arc_angle_degrees).
+    pub arc_of_interest: Option<(f32, f32)>,
+
+    /// If true will attempt to set the player to run.
+    pub try_to_run: bool,
 
     /// If this is not None, the player will start by walking in the direction
     /// given for the set amount of time.
@@ -1046,7 +1190,8 @@ impl Player {
         }));
         open_bank_actions.push(Box::new(DescribeActionForActionText {
             mouse_press: MousePress::Left,
-            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
+            // It can take up to 10 seconds since we may need to walk.
+            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(10)),
             action_text: vec![
                 (action_letters::start(), action_text_white()),
                 (action_letters::upper_b(), action_text_white()),
@@ -1115,7 +1260,8 @@ impl Player {
         }));
         open_bank_actions.push(Box::new(DescribeActionForActionText {
             mouse_press: MousePress::Left,
-            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(5)),
+            // It can take up to 10 seconds since we may need to walk.
+            await_action: AwaitFrame::IsBankOpen(Duration::from_secs(10)),
             action_text: vec![
                 (action_letters::start(), action_text_white()),
                 (action_letters::upper_b(), action_text_white()),
@@ -1209,7 +1355,6 @@ impl Player {
             let actions_succeeded = self.do_actions(&params.actions[..]);
 
             if !actions_succeeded {
-                dbg!(actions_succeeded);
                 num_consecutive_failures += 1;
                 if num_consecutive_failures > 3 {
                     self.inputbot.pan_left(37.0);
@@ -1264,9 +1409,9 @@ impl Player {
             Box::new(DescribeActionForWorldmap {
                 expected_pixels: params.destination_pixels.clone(),
                 check_pixels: params.confirmation_pixels.clone(),
+                arc_of_interest: params.arc_of_interest,
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_secs(10)),
-                search_time: util::REDRAW_TIME,
             }),
         ];
         let minimap_action: Vec<Box<dyn DescribeAction>> =
@@ -1278,8 +1423,15 @@ impl Player {
                 search_time: util::REDRAW_TIME,
             })];
 
-        let orient: Vec<Box<dyn DescribeAction>> = vec![DescribeActionPressCompass::new()];
-        if !self.do_actions(&orient) {
+        let setup: Vec<Box<dyn DescribeAction>> = vec![
+            DescribeActionPressCompass::new(),
+            if params.try_to_run {
+                DescribeActionEnableRun::new()
+            } else {
+                DescribeActionEnableWalk::new()
+            },
+        ];
+        if !self.do_actions(&setup) {
             dbg!("failed to perform traveling setup");
         }
 
@@ -1289,7 +1441,7 @@ impl Player {
             // juts in so we wouldn't move.
             let minimap_pos = polar_to_cartesian(
                 self.framehandler.locations.minimap_middle(),
-                Locations::MINIMAP_RADIUS - 6.0,
+                Locations::MINIMAP_RADIUS - 6,
                 util::degrees_to_radians(degrees),
             );
 

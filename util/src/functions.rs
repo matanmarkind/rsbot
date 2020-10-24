@@ -17,20 +17,27 @@ pub fn random_position(top_left: &Position, dimensions: &DeltaPosition) -> Posit
     }
 }
 
-pub fn random_position_polar(middle: Position, radius: f32) -> Position {
+pub fn random_position_polar(middle: Position, radius: i32) -> Position {
     let mut rng = thread_rng();
-    let r = rng.gen_range(0.0, radius);
+    let r = rng.gen_range(0, radius);
     let angle = rng.gen_range(0.0, 2.0 * std::f32::consts::PI);
     polar_to_cartesian(middle, r, angle)
 }
 
-pub fn polar_to_cartesian(middle: Position, radius: f32, angle_rad: f32) -> Position {
+pub fn polar_to_cartesian(middle: Position, radius: i32, angle_rad: f32) -> Position {
     Position {
-        x: (middle.x as f32 + radius * angle_rad.cos()).round() as i32,
-        y: (middle.y as f32 + radius * angle_rad.sin()).round() as i32,
+        x: middle.x + (radius as f32 * angle_rad.cos()).round() as i32,
+        y: middle.y + (radius as f32 * angle_rad.sin()).round() as i32,
     }
 }
 
 pub fn degrees_to_radians(degrees: f32) -> f32 {
     degrees * std::f32::consts::PI / 180.0
+}
+
+// Given an arc of length arclen. If we know it is centered around a circle of
+// radius 'radius', what angle must there be to create an arc of len arclen.
+pub fn radius_and_arclen_to_radians(radius: i32, arclen: i32) -> f32 {
+    // c = 2 * pi * r
+    arclen as f32 / radius as f32
 }

@@ -1,3 +1,4 @@
+use crate::{degrees_to_radians, polar_to_cartesian, radius_and_arclen_to_radians};
 use serde::{Deserialize, Serialize};
 use std::num::ParseIntError;
 use std::ops::{Add, Mul, Sub};
@@ -219,5 +220,84 @@ impl FromStr for DeltaPosition {
     }
 }
 
-/// Bounding box made of top_left (included), past_bottom_right (excluded).
-pub struct BoundingBox(pub Position, pub Position);
+/// This struct defines an iterator which will move over a series of positions,
+/// spiraling out from 'middle'. While it is a circular spiral, we can define a
+/// radial range, so we only search a donut, and also an angular range so we
+/// only search an arc.
+#[derive(Debug, PartialEq)]
+pub struct PositionIteratorCircularSpiral {
+    // Constant State.
+
+    // Center of the circle around which we will spiral out.
+    middle: Position,
+    // 1 + Max radius we will go to.
+    end_radius: i32,
+    // Minimum angle each circumference will start from.
+    min_angle_rads: f32,
+    // 1 + Maximum angle each circumference will travel to.
+    end_angle_rads: f32,
+    // Spacing between positions on this circumference. This is used so that as
+    // we move away from middle the density of checks remains constant.
+    spacing: i32,
+
+    // Mutable State.
+
+    // Current radius
+    radius: i32,
+    // Angle we are currently at.
+    angle_rads: f32,
+}
+
+impl PositionIteratorCircularSpiral {
+    pub fn new(
+        middle: Position,
+        min_radius: i32,
+        d_radius: i32,
+        min_angle_degrees: f32,
+        d_angle_degrees: f32,
+        spacing: i32,
+    ) -> PositionIteratorCircularSpiral {
+        assert!(min_radius > 0);
+        assert!(d_radius >= 0);
+        assert!(min_angle_degrees >= 0.0 && min_angle_degrees <= 360.0);
+        assert!(d_angle_degrees >= 0.0 && d_angle_degrees + min_angle_degrees <= 360.0);
+        assert!(spacing > 0);
+        assert!((middle.x - (min_radius + d_radius - 1)) >= 0);
+        assert!((middle.y - (min_radius + d_radius - 1)) >= 0);
+
+        PositionIteratorCircularSpiral {
+            // Constants.
+            middle,
+            end_radius: min_radius + d_radius,
+            min_angle_rads: degrees_to_radians(min_angle_degrees),
+            end_angle_rads: degrees_to_radians(min_angle_degrees + d_angle_degrees),
+            spacing,
+
+            // Mutable.
+            radius: min_radius,
+            angle_rads: degrees_to_radians(min_angle_degrees),
+        }
+    }
+}
+
+impl Iterator for PositionIteratorCircularSpiral {
+    type Item = Position;
+
+    fn next(&mut self) -> Option<Position> {
+        if self.radius >= self.end_radius {
+            return None;
+        }
+
+        let pos = polar_to_cartesian(self.middle, self.radius, self.angle_rads);
+
+        let angle_delta_rads = radius_and_arclen_to_radians(self.radius, self.spacing);
+        self.angle_rads += angle_delta_rads;
+        if self.angle_rads >= self.end_angle_rads {
+            // We have completed this arc, expand out to the next one.
+            self.angle_rads = self.min_angle_rads;
+            self.radius += self.spacing;
+        }
+
+        Some(pos)
+    }
+}

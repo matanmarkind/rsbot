@@ -1,5 +1,5 @@
 // From scrap github repo. Here for my convenience.
-use screen::{pixels, Capturer, Frame, FrameHandler, Locations, OwnedFrame};
+use screen::{pixels, Capturer, Frame, FrameHandler, Locations, OwnedFrame, Pixel};
 use structopt::StructOpt;
 use util::*;
 
@@ -91,30 +91,73 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
     for (pos, dim) in screenhandler.locations.worldmap_map_search_boxes() {
         frame.draw_red_box(&pos, &dim);
     }
-
-    // The minimap is a circle so the outer border is defined in polar
-    // coordinates.
-    let mut angle = 0.0;
-    while angle < 2.0 * std::f32::consts::PI {
-        frame.recolor_pixel(
-            &polar_to_cartesian(
-                screenhandler.locations.minimap_middle(),
-                Locations::MINIMAP_RADIUS,
-                angle,
-            ),
-            &pixels::red(),
+    // Draw an example of searching within a radial slice of the worldmap.
+    {
+        let DeltaPosition { dx, dy } = screenhandler.locations.worldmap_map_dimensions();
+        let min_radius = 30;
+        let worldmap_arc_iter = PositionIteratorCircularSpiral::new(
+            screenhandler.locations.worldmap_map_middle(),
+            min_radius,
+            /*d_radius=*/ std::cmp::min(dx, dy) / 2 - min_radius - 1,
+            /*min_angle_degrees=*/ 270.0,
+            /*d_angle_degrees=*/ 45.0,
+            /*spacing=*/ 2,
         );
-        // Shows the radius for the close search used in bot::AwaitResult::IsCloseOnMinimap.
-        frame.recolor_pixel(
-            &polar_to_cartesian(
-                screenhandler.locations.minimap_middle(),
-                Locations::MINIMAP_SMALL_RADIUS,
-                angle,
-            ),
-            &pixels::red(),
-        );
-        angle += 0.1;
+        for (i, pos) in worldmap_arc_iter.enumerate() {
+            // Have the color change to show the order of the iterator.
+            frame.recolor_pixel(
+                &pos,
+                &Pixel {
+                    blue: 0,
+                    green: 0,
+                    red: std::cmp::min(255, i) as u8,
+                },
+            );
+        }
     }
+    {
+        let minimap_iter = PositionIteratorCircularSpiral::new(
+            /*middle=*/ screenhandler.locations.minimap_middle(),
+            /*min_radius=*/ Locations::MINIMAP_RADIUS,
+            /*d_radius=*/ 1,
+            /*min_angle_degrees=*/ 0.0,
+            /*d_angle_degrees=*/ 360.0,
+            /*spacing=*/ 2,
+        );
+        for (i, pos) in minimap_iter.enumerate() {
+            // Have the color change to show the order of the iterator.
+            frame.recolor_pixel(
+                &pos,
+                &Pixel {
+                    blue: 0,
+                    green: 0,
+                    red: std::cmp::min(255, i) as u8,
+                },
+            );
+        }
+    }
+    {
+        let adjacent_iter = PositionIteratorCircularSpiral::new(
+            /*middle=*/ screenhandler.locations.minimap_middle(),
+            /*min_radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+            /*d_radius=*/ 1,
+            /*min_angle_degrees=*/ 0.0,
+            /*d_angle_degrees=*/ 360.0,
+            /*spacing=*/ 1,
+        );
+        for (i, pos) in adjacent_iter.enumerate() {
+            // Have the color change to show the order of the iterator.
+            frame.recolor_pixel(
+                &pos,
+                &Pixel {
+                    blue: 0,
+                    green: 0,
+                    red: std::cmp::min(255, i) as u8,
+                },
+            );
+        }
+    }
+
     frame.draw_red_box(
         &screenhandler.locations.chatbox_outer_top_left(),
         &screenhandler.locations.chatbox_outer_dimensions(),
