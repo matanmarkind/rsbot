@@ -23,7 +23,7 @@ fn travel_to_bank_params() -> TravelToParams {
         ],
         starting_direction: Some((255.0, Duration::from_secs(15))),
         // starting_direction: None,
-        try_to_run: true,
+        try_to_run: false,
         arc_of_interest: Some((270.0, 90.0)),
     }
 }
@@ -93,39 +93,41 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut player = controller::Player::new(config);
     player.reset();
 
-    player.travel_to(&travel_to_bank_params());
-    println!("--- We're at the bank ---");
+    println!("--- Remember to start at the bank with an empty inventory ---");
 
-    player.deposit_in_bank(
-        /*bank_colors=*/
-        &vec![fuzzy_pixels::varrock_bank_window1()],
-        /*items=*/
-        &vec![
-            inventory_slot_pixels::tin_ore_bank(),
-            inventory_slot_pixels::raw_anchovies_bank(),
-        ],
-    );
-    println!("--- Deposited the ore ---");
+    let time = std::time::Instant::now();
+    while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
+        player.travel_to(&travel_to_mine_params());
+        // Get closer to the tin at the north of this mine.
+        player.travel_to(&TravelToParams {
+            destination_pixels: vec![],
+            confirmation_pixels: vec![],
+            starting_direction: Some((285.0, Duration::from_secs(5))),
+            // starting_direction: None,
+            try_to_run: false,
+            arc_of_interest: None,
+        });
+        println!("--- Ready to mine ---");
 
-    player.travel_to(&travel_to_mine_params());
-    // Get closer to the tin at the north of this mine.
-    player.travel_to(&TravelToParams {
-        destination_pixels: vec![],
-        confirmation_pixels: vec![],
-        starting_direction: Some((285.0, Duration::from_secs(3))),
-        // starting_direction: None,
-        try_to_run: false,
-        arc_of_interest: None,
-    });
-    println!("--- Ready to mine ---");
+        // Walk while mining to recover stamina.
+        let walk: Vec<Box<dyn DescribeAction>> = vec![DescribeActionEnableWalk::new()];
+        player.do_actions(&walk);
 
-    // Walk while mining to recover stamina.
-    let walk: Vec<Box<dyn DescribeAction>> = vec![DescribeActionEnableWalk::new()];
-    player.do_actions(&walk);
+        player.reset();
+        player.consume_inventory(&mine_tin_params());
+        println!("Done filling inventory");
 
-    player.reset();
-    player.consume_inventory(&mine_tin_params());
-    println!("Done filling inventory");
+        player.travel_to(&travel_to_bank_params());
+        println!("--- We're at the bank ---");
+
+        player.deposit_in_bank(
+            /*bank_colors=*/
+            &vec![fuzzy_pixels::varrock_bank_window1()],
+            /*items=*/
+            &vec![inventory_slot_pixels::tin_ore_bank()],
+        );
+        println!("--- Deposited the ore ---");
+    }
 
     Ok(())
 }

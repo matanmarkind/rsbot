@@ -1,4 +1,7 @@
 /// This is a bot for cooking raw shrimp on oak fire by the Draynor bank.
+///
+/// Make sure you already have the tinderbox in your inventory, the bank is
+/// scrolled up, and the shrimp and wood are in the right slots.
 use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionForActionText,
     DescribeActionForInventory, DescribeActionForOpenScreen, DescribeActionPressChatboxMiddle,
