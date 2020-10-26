@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             ],
 
             try_to_run: false,
-        arc_of_interest: (0.0, 360.0),
+            arc_of_interest: (0.0, 360.0),
             starting_direction: None,
         });
         println!("--- We're at the bank ---");
@@ -138,7 +138,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         while fire_start_time.elapsed() < Duration::from_secs(3 * 60) {
             player.travel_to(&TravelToParams {
                 try_to_run: false,
-        arc_of_interest: (0.0, 360.0),
+                arc_of_interest: (0.0, 360.0),
                 destination_pixels: vec![],
                 confirmation_pixels: vec![],
                 starting_direction: explicit_walk_time(),

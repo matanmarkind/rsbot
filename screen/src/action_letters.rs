@@ -48,6 +48,11 @@ impl fmt::Display for Word {
     }
 }
 
+/// Letters should all be biased in the same way. For example best to set all
+/// letters to the default is to be on the left side of a column. If the letter
+/// spans both the leftmost and rightmost pixel when there is perfect placement
+/// it is harder to handle the shifting.
+
 pub fn upper_b() -> Letter {
     Letter {
         width: 8,
@@ -287,9 +292,8 @@ pub fn lower_c() -> Letter {
 
         // Delta from the top left corner of the letters box.
         checkpoints: vec![
-            DeltaPosition { dx: 0, dy: 8 },
-            DeltaPosition { dx: 1, dy: 7 },
-            DeltaPosition { dx: 1, dy: 10 },
+            DeltaPosition { dx: 0, dy: 7 },
+            DeltaPosition { dx: 0, dy: 10 },
             DeltaPosition { dx: 3, dy: 6 },
             DeltaPosition { dx: 3, dy: 11 },
         ],
@@ -511,8 +515,8 @@ pub fn lower_s() -> Letter {
             DeltaPosition { dx: 2, dy: 6 },
             DeltaPosition { dx: 2, dy: 8 },
             DeltaPosition { dx: 2, dy: 11 },
-            DeltaPosition { dx: 5, dy: 6 },
-            DeltaPosition { dx: 5, dy: 9 },
+            DeltaPosition { dx: 4, dy: 6 },
+            DeltaPosition { dx: 4, dy: 9 },
         ],
 
         display: "s",

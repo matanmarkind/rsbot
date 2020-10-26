@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         player.travel_to(&TravelToParams {
             try_to_run: true,
-        arc_of_interest: (0.0, 360.0),
+            arc_of_interest: (0.0, 360.0),
             destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
             confirmation_pixels: vec![
                 fuzzy_pixels::map_icon_dark_gray(),

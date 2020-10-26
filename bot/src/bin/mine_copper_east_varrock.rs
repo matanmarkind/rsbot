@@ -54,9 +54,9 @@ fn travel_to_mine_params() -> TravelToParams {
 fn mine_copper_params() -> ConsumeInventoryParams {
     ConsumeInventoryParams {
         multi_slot_action: false,
-        slot_consumption_waittime: Duration::from_secs(20),
+        slot_consumption_waittime: Duration::from_secs(10),
         item_to_consume: inventory_slot_pixels::empty(),
-        activity_timeout: Duration::from_secs(10 * 60),
+        activity_timeout: Duration::from_secs(6 * 60),
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
                 expected_pixels: vec![fuzzy_pixels::copper_ore()],
@@ -98,6 +98,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
         player.travel_to(&travel_to_mine_params());
+        // Go north west a bit to go to usually less crowded rocks.
+        player.travel_to(&TravelToParams {
+            destination_pixels: vec![],
+            confirmation_pixels: vec![],
+            starting_direction: Some((200.0, Duration::from_secs(3))),
+            try_to_run: false,
+            arc_of_interest: (0.0, 360.0),
+        });
         println!("--- Ready to mine ---");
 
         // Walk while mining to recover stamina.

@@ -978,15 +978,14 @@ pub struct TravelToParams {
     /// If true will attempt to set the player to run.
     pub try_to_run: bool,
 
-    /// If this is not None, the player will start by walking in the direction
+    /// Player will travel in a straight line folloing these instructions. If
+    /// this is not None, the player will start by walking in the direction
     /// given for the set amount of time.
     ///
     /// f32: this is the angle in degrees that the player should walk in. - 0 =
     ///     East, right - 90 = South, down - 180 = West, left - 270 = North, up
     ///     Duration: How long to walk for.
     ///
-    /// TODO: If running click every 5s, if walking every 10s. Include some
-    /// control for walking/running?
     pub starting_direction: Option<(f32, Duration)>,
 }
 
@@ -1412,6 +1411,7 @@ impl Player {
     ///
     /// TODO: Add walk/run control.
     pub fn travel_to(&mut self, params: &TravelToParams) {
+        let wait_time = Duration::from_secs(if params.try_to_run { 4 } else { 8 });
         let worldmap_action: Vec<Box<dyn DescribeAction>> = vec![
             DescribeActionOpenWorldmap::new(),
             Box::new(DescribeActionForWorldmap {
@@ -1419,11 +1419,7 @@ impl Player {
                 check_pixels: params.confirmation_pixels.clone(),
                 arc_of_interest: params.arc_of_interest,
                 mouse_press: MousePress::Left,
-                await_action: AwaitFrame::Time(Duration::from_secs(if params.try_to_run {
-                    5
-                } else {
-                    10
-                })),
+                await_action: AwaitFrame::Time(wait_time),
             }),
         ];
         let minimap_action: Vec<Box<dyn DescribeAction>> =
@@ -1451,10 +1447,13 @@ impl Player {
             let (degrees, duration) = params.starting_direction.unwrap();
             // Don't go to the edge of the minimap since the worldmap
             // juts in so we wouldn't move.
-            let minimap_pos = polar_to_cartesian(
-                self.framehandler.locations.minimap_middle(),
-                Locations::MINIMAP_RADIUS - 6,
-                util::degrees_to_radians(degrees),
+            let minimap_pos = util::random_position(
+                &polar_to_cartesian(
+                    self.framehandler.locations.minimap_middle(),
+                    Locations::MINIMAP_RADIUS - 7,
+                    util::degrees_to_radians(degrees),
+                ),
+                &DeltaPosition { dx: 3, dy: 3 },
             );
 
             let time = std::time::Instant::now();
@@ -1463,7 +1462,7 @@ impl Player {
                     duration
                         .checked_sub(time.elapsed())
                         .unwrap_or(Duration::from_nanos(1)),
-                    Duration::from_secs(if params.try_to_run { 5 } else { 10 }),
+                    wait_time,
                 );
 
                 let actions: Vec<Box<dyn DescribeAction>> =
