@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // the print statement in the function.
     println!(
         "{}",
-        framehandler.check_inventory_slot(&frame, 1, &inventory_slot_pixels::tin_ore_bank())
+        framehandler.check_inventory_slot(&frame, 0, &inventory_slot_pixels::copper_ore())
     );
     return Ok(());
 

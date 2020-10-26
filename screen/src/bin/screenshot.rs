@@ -60,6 +60,7 @@ fn marked_open_screen(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
     surrounding_box(&mut frame, &screenhandler.locations.mid_screen());
     surrounding_box(&mut frame, &screenhandler.locations.all_chat_button());
     surrounding_box(&mut frame, &screenhandler.locations.worldmap_icon());
+    surrounding_box(&mut frame, &screenhandler.locations.run_icon());
     surrounding_box(&mut frame, &screenhandler.locations.compass_icon());
     surrounding_box(
         &mut frame,
@@ -100,7 +101,7 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
             min_radius,
             /*d_radius=*/ std::cmp::min(dx, dy) / 2 - min_radius - 1,
             /*min_angle_degrees=*/ 270.0,
-            /*d_angle_degrees=*/ 45.0,
+            /*d_angle_degrees=*/ 180.0,
             /*spacing=*/ 2,
         );
         for (i, pos) in worldmap_arc_iter.enumerate() {

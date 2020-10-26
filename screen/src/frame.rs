@@ -528,6 +528,7 @@ impl FrameHandler {
         let mut i = 0;
         while pos.y < past_bottom_right.y {
             while pos.x < past_bottom_right.x {
+                // Used to add new items to the inventory_slot_pixels list.
                 {
                     // let pixel = frame.get_pixel(&pos);
                     // let dbgstr = format!(

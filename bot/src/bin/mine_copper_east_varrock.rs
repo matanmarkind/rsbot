@@ -19,12 +19,12 @@ fn travel_to_bank_params() -> TravelToParams {
         confirmation_pixels: vec![
             fuzzy_pixels::map_icon_dark_gray(),
             fuzzy_pixels::map_icon_light_gray(),
-            fuzzy_pixels::map_floor_brown(),
+            fuzzy_pixels::map_floor_gray(),
         ],
-        starting_direction: Some((255.0, Duration::from_secs(20))),
+        starting_direction: Some((285.0, Duration::from_secs(10))),
         // starting_direction: None,
         try_to_run: false,
-        arc_of_interest: (270.0, 180.0),
+        arc_of_interest: (0.0, 360.0),
     }
 }
 
@@ -44,14 +44,14 @@ fn travel_to_mine_params() -> TravelToParams {
             fuzzy_pixels::map_icon_dark_gray(),
             fuzzy_pixels::map_icon_light_gray(),
         ],
-        starting_direction: Some((120.0, Duration::from_secs(15))),
+        starting_direction: Some((0.0, Duration::from_secs(15))),
         // starting_direction: None,
         try_to_run: true,
-        arc_of_interest: (0.0, 360.0),
+        arc_of_interest: (10.0, 160.0),
     }
 }
 
-fn mine_tin_params() -> ConsumeInventoryParams {
+fn mine_copper_params() -> ConsumeInventoryParams {
     ConsumeInventoryParams {
         multi_slot_action: false,
         slot_consumption_waittime: Duration::from_secs(20),
@@ -59,7 +59,7 @@ fn mine_tin_params() -> ConsumeInventoryParams {
         activity_timeout: Duration::from_secs(10 * 60),
         actions: vec![
             Box::new(DescribeActionForOpenScreen {
-                expected_pixels: vec![fuzzy_pixels::tin_ore()],
+                expected_pixels: vec![fuzzy_pixels::copper_ore()],
                 mouse_press: MousePress::None,
                 await_action: AwaitFrame::Time(util::REDRAW_TIME),
             }),
@@ -98,15 +98,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
         player.travel_to(&travel_to_mine_params());
-        // Get closer to the tin at the north of this mine.
-        player.travel_to(&TravelToParams {
-            destination_pixels: vec![],
-            confirmation_pixels: vec![],
-            starting_direction: Some((285.0, Duration::from_secs(5))),
-            // starting_direction: None,
-            try_to_run: false,
-            arc_of_interest: (0.0, 360.0),
-        });
         println!("--- Ready to mine ---");
 
         // Walk while mining to recover stamina.
@@ -114,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         player.do_actions(&walk);
 
         player.reset();
-        player.consume_inventory(&mine_tin_params());
+        player.consume_inventory(&mine_copper_params());
         println!("Done filling inventory");
 
         player.travel_to(&travel_to_bank_params());
@@ -125,6 +116,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             &vec![fuzzy_pixels::varrock_bank_window1()],
             /*items=*/
             &vec![
+                inventory_slot_pixels::copper_ore_bank(),
                 inventory_slot_pixels::tin_ore_bank(),
                 inventory_slot_pixels::silver_ore_bank(),
                 inventory_slot_pixels::iron_ore_bank(),

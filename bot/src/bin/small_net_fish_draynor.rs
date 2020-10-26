@@ -63,7 +63,7 @@ fn fish_small_net_activity() -> ConsumeInventoryParams {
 
 fn travel_to_fishing_icon() -> TravelToParams {
     TravelToParams {
-        arc_of_interest: None,
+        arc_of_interest: (0.0, 360.0),
         destination_pixels: vec![
             fuzzy_pixels::map_icon_fish_light_blue(),
             fuzzy_pixels::map_icon_fish_medium_blue(),
@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         player.travel_to(&TravelToParams {
             try_to_run: true,
-            arc_of_interest: None,
+        arc_of_interest: (0.0, 360.0),
             destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
             confirmation_pixels: vec![
                 fuzzy_pixels::map_icon_dark_gray(),

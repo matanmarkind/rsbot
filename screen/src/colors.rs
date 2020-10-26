@@ -293,12 +293,12 @@ pub mod fuzzy_pixels {
     }
     pub fn map_floor_gray() -> FuzzyPixel {
         FuzzyPixel {
-            blue_min: 80,
-            blue_max: 84,
+            blue_min: 75,
+            blue_max: 110,
             green_min: 79,
-            green_max: 83,
-            red_min: 88,
-            red_max: 82,
+            green_max: 120,
+            red_min: 80,
+            red_max: 120,
         }
     }
     pub fn map_floor_brown() -> FuzzyPixel {
@@ -306,11 +306,11 @@ pub mod fuzzy_pixels {
         // Minimap seems to change colors...
         FuzzyPixel {
             blue_min: 20,
-            blue_max: 45,
+            blue_max: 55,
             green_min: 40,
-            green_max: 70,
+            green_max: 90,
             red_min: 55,
-            red_max: 90,
+            red_max: 110,
         }
     }
 
@@ -498,6 +498,18 @@ pub mod fuzzy_pixels {
             green_max: 160,
             red_min: 123,
             red_max: 172,
+        }
+    }
+    pub fn copper_ore() -> FuzzyPixel {
+        // 52, 94, 147
+        // 29, 53, 82
+        FuzzyPixel {
+            blue_min: 30,
+            blue_max: 50,
+            green_min: 60,
+            green_max: 90,
+            red_min: 85,
+            red_max: 140,
         }
     }
 }
@@ -956,5 +968,328 @@ pub mod inventory_slot_pixels {
             red_max: 53,
         };
         pixels
+    }
+    pub fn iron_ore() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 15,
+                blue_max: 19,
+                green_min: 24,
+                green_max: 28,
+                red_min: 48,
+                red_max: 52,
+            },
+            black(),
+            FuzzyPixel {
+                blue_min: 24,
+                blue_max: 28,
+                green_min: 41,
+                green_max: 45,
+                red_min: 55,
+                red_max: 59,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            FuzzyPixel {
+                blue_min: 12,
+                blue_max: 16,
+                green_min: 20,
+                green_max: 24,
+                red_min: 41,
+                red_max: 45,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 37,
+                blue_max: 41,
+                green_min: 62,
+                green_max: 66,
+                red_min: 84,
+                red_max: 88,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn iron_ore_bank() -> InventorySlotPixels {
+        let mut pixels = iron_ore();
+        pixels[5] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn silver_ore() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 147,
+                blue_max: 151,
+                green_min: 133,
+                green_max: 137,
+                red_min: 133,
+                red_max: 137,
+            },
+            black(),
+            FuzzyPixel {
+                blue_min: 24,
+                blue_max: 28,
+                green_min: 41,
+                green_max: 45,
+                red_min: 55,
+                red_max: 59,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            FuzzyPixel {
+                blue_min: 138,
+                blue_max: 142,
+                green_min: 125,
+                green_max: 129,
+                red_min: 124,
+                red_max: 128,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 37,
+                blue_max: 41,
+                green_min: 62,
+                green_max: 66,
+                red_min: 84,
+                red_max: 88,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn copper_ore() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 28,
+                blue_max: 32,
+                green_min: 90,
+                green_max: 94,
+                red_min: 191,
+                red_max: 195,
+            },
+            black(),
+            FuzzyPixel {
+                blue_min: 24,
+                blue_max: 28,
+                green_min: 41,
+                green_max: 45,
+                red_min: 55,
+                red_max: 59,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            FuzzyPixel {
+                blue_min: 27,
+                blue_max: 31,
+                green_min: 84,
+                green_max: 88,
+                red_min: 179,
+                red_max: 183,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 37,
+                blue_max: 41,
+                green_min: 62,
+                green_max: 66,
+                red_min: 84,
+                red_max: 88,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn copper_ore_bank() -> InventorySlotPixels {
+        let mut pixels = copper_ore();
+        pixels[5] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn silver_ore_bank() -> InventorySlotPixels {
+        let mut pixels = silver_ore();
+        pixels[5] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn uncut_sapphire() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 91,
+                blue_max: 95,
+                green_min: 4,
+                green_max: 8,
+                red_min: 3,
+                red_max: 7,
+            },
+            black(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 105,
+                blue_max: 109,
+                green_min: 5,
+                green_max: 9,
+                red_min: 4,
+                red_max: 8,
+            },
+            FuzzyPixel {
+                blue_min: 73,
+                blue_max: 77,
+                green_min: 3,
+                green_max: 7,
+                red_min: 1,
+                red_max: 5,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 99,
+                blue_max: 103,
+                green_min: 5,
+                green_max: 9,
+                red_min: 3,
+                red_max: 7,
+            },
+            FuzzyPixel {
+                blue_min: 70,
+                blue_max: 74,
+                green_min: 3,
+                green_max: 7,
+                red_min: 1,
+                red_max: 5,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn uncut_sapphire_bank() -> InventorySlotPixels {
+        uncut_sapphire()
+    }
+    pub fn uncut_ruby() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 1,
+                blue_max: 5,
+                green_min: 7,
+                green_max: 11,
+                red_min: 70,
+                red_max: 74,
+            },
+            black(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 3,
+                blue_max: 7,
+                green_min: 8,
+                green_max: 12,
+                red_min: 82,
+                red_max: 86,
+            },
+            FuzzyPixel {
+                blue_min: 0,
+                blue_max: 4,
+                green_min: 4,
+                green_max: 8,
+                red_min: 56,
+                red_max: 60,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 1,
+                blue_max: 5,
+                green_min: 7,
+                green_max: 11,
+                red_min: 76,
+                red_max: 80,
+            },
+            FuzzyPixel {
+                blue_min: 0,
+                blue_max: 4,
+                green_min: 4,
+                green_max: 8,
+                red_min: 56,
+                red_max: 60,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn uncut_ruby_bank() -> InventorySlotPixels {
+        uncut_ruby()
+    }
+    pub fn clay() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 58,
+                blue_max: 62,
+                green_min: 101,
+                green_max: 105,
+                red_min: 127,
+                red_max: 131,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn clay_bank() -> InventorySlotPixels {
+        clay()
     }
 }

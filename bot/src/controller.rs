@@ -1,4 +1,3 @@
-use rand::{thread_rng, Rng};
 use screen::{
     action_letters,
     action_letters::Letter,
@@ -10,16 +9,6 @@ use std::thread::sleep;
 use std::time::Duration;
 use userinput::InputBot;
 use util::*;
-
-/// Return a position within 1 of each dimension.
-fn shift_position(pos: Position) -> Position {
-    use std::cmp::max;
-    let mut rng = thread_rng();
-    Position {
-        x: max(0, pos.x + rng.gen_range(-1, 2)),
-        y: max(0, pos.y + rng.gen_range(-1, 2)),
-    }
-}
 
 /// Looks for a pixel matching 'expected_pixels' in the circle defined by
 /// middle, radius. If a matching pixel is found, we check in the immediate
@@ -230,7 +219,7 @@ pub struct DescribeActionForWorldmap {
     /// Arc of the worldmap to search. If None will search the entire worldmap.
     ///
     /// (min_angle_degrees, arc_angle_degrees).
-    pub arc_of_interest: Option<(f32, f32)>,
+    pub arc_of_interest: (f32, f32),
 
     pub mouse_press: MousePress,
     pub await_action: AwaitFrame,
@@ -417,13 +406,12 @@ impl DescribeAction for DescribeActionForWorldmap {
 
         let DeltaPosition { dx, dy } = framehandler.locations.worldmap_map_dimensions();
         let min_radius = 30;
-        let arc_of_interest = self.arc_of_interest.unwrap_or((0.0, 360.0));
         let worldmap_arc_iter = PositionIteratorCircularSpiral::new(
             framehandler.locations.worldmap_map_middle(),
             min_radius,
             /*d_radius=*/ std::cmp::min(dx, dy) / 2 - min_radius - 1,
-            /*min_angle_degrees=*/ arc_of_interest.0,
-            /*d_angle_degrees=*/ arc_of_interest.1,
+            /*min_angle_degrees=*/ self.arc_of_interest.0,
+            /*d_angle_degrees=*/ self.arc_of_interest.1,
             /*spacing=*/ 2,
         );
 
@@ -588,7 +576,8 @@ impl DescribeAction for DescribeActionCloseWorldmap {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.worldmap_icon(), /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos =
+            util::random_position_polar(framehandler.locations.worldmap_icon(), /*radius=*/ 6);
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -624,7 +613,8 @@ impl DescribeAction for DescribeActionOpenWorldmap {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.worldmap_icon(), /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos =
+            util::random_position_polar(framehandler.locations.worldmap_icon(), /*radius=*/ 6);
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -659,7 +649,7 @@ impl DescribeAction for DescribeActionEnableRun {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(pos, /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos = util::random_position_polar(pos, /*radius=*/ 6);
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -694,7 +684,7 @@ impl DescribeAction for DescribeActionEnableWalk {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(pos, /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos = util::random_position_polar(pos, /*radius=*/ 6);
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -724,7 +714,10 @@ impl DescribeAction for DescribeActionPressCompass {
         println!("DescribeActionPressCompass");
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.compass_icon(), /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos = util::random_position_polar(
+            framehandler.locations.compass_icon(),
+            /*radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -754,7 +747,10 @@ impl DescribeAction for DescribeActionPressMinimapMiddle {
         println!("DescribeActionPressMinimapMiddle");
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.minimap_middle(), /*radius=*/2);
+        let pos = util::random_position_polar(
+            framehandler.locations.minimap_middle(),
+            /*radius=*/ 2,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -788,7 +784,10 @@ impl DescribeAction for DescribeActionBankQuantityAll {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.bank_quantity_all(), /*radius=*/4);
+        let pos = util::random_position_polar(
+            framehandler.locations.bank_quantity_all(),
+            /*radius=*/ 4,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -822,7 +821,10 @@ impl DescribeAction for DescribeActionBankQuantityOne {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.bank_quantity_one(), /*radius=*/4);
+        let pos = util::random_position_polar(
+            framehandler.locations.bank_quantity_one(),
+            /*radius=*/ 4,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -854,9 +856,12 @@ impl DescribeAction for DescribeActionWithdrawFromBank {
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
         let pos = framehandler
-                .locations
-                .bank_slot_center(self.bank_slot_index);
-        let pos = util::random_position_polar(pos, /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+            .locations
+            .bank_slot_center(self.bank_slot_index);
+        let pos = util::random_position_polar(
+            pos,
+            /*radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -890,7 +895,10 @@ impl DescribeAction for DescribeActionPressChatboxMiddle {
 
         // Randomly shift the coordinates by 1 to avoid always pressing the same
         // pixel.
-        let pos = util::random_position_polar(framehandler.locations.chatbox_middle(), /*radius=*/Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS);
+        let pos = util::random_position_polar(
+            framehandler.locations.chatbox_middle(),
+            /*radius=*/ Locations::CHECK_ADJACENT_MAP_PIXELS_RADIUS,
+        );
         Some((MouseMove::ToDst(pos), MousePress::Left))
     }
 
@@ -964,7 +972,8 @@ pub struct TravelToParams {
     /// Arc of the worldmap to search. If None will search the entire worldmap.
     ///
     /// (min_angle_degrees, arc_angle_degrees).
-    pub arc_of_interest: Option<(f32, f32)>,
+    /// Recommended to use (0.0, 360.0) unless you have strong reason not to.
+    pub arc_of_interest: (f32, f32),
 
     /// If true will attempt to set the player to run.
     pub try_to_run: bool,

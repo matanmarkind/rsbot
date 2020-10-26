@@ -260,7 +260,7 @@ impl PositionIteratorCircularSpiral {
         assert!(min_radius > 0);
         assert!(d_radius >= 0);
         assert!(min_angle_degrees >= 0.0 && min_angle_degrees <= 360.0);
-        assert!(d_angle_degrees >= 0.0 && d_angle_degrees + min_angle_degrees <= 360.0);
+        assert!(d_angle_degrees >= 0.0 && d_angle_degrees <= 360.0);
         assert!(spacing > 0);
         assert!((middle.x - (min_radius + d_radius - 1)) >= 0);
         assert!((middle.y - (min_radius + d_radius - 1)) >= 0);
