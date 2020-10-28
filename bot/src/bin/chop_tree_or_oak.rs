@@ -9,11 +9,7 @@ use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeActionForActionText,
     DescribeActionForOpenScreen, MousePress,
 };
-use screen::{
-    action_letters, fuzzy_pixels,
-    fuzzy_pixels::{action_text_blue, action_text_white},
-    inventory_slot_pixels,
-};
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -33,24 +29,7 @@ fn chop_down_tree_activity() -> ConsumeInventoryParams {
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_secs(1)),
-                action_text: vec![
-                    (action_letters::upper_c(), action_text_white()),
-                    (action_letters::lower_h(), action_text_white()),
-                    (action_letters::lower_o(), action_text_white()),
-                    (action_letters::lower_p(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::lower_d(), action_text_white()),
-                    (action_letters::lower_o(), action_text_white()),
-                    (action_letters::lower_w(), action_text_white()),
-                    (action_letters::lower_n(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::upper_t(), action_text_blue()),
-                    (action_letters::lower_r(), action_text_blue()),
-                    (action_letters::lower_e(), action_text_blue()),
-                    (action_letters::lower_e(), action_text_blue()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::forward_slash(), action_text_white()),
-                ],
+                action_text: action_text::chop_down_tree(),
             }),
         ],
     }
@@ -71,23 +50,7 @@ fn chop_down_oak_activity() -> ConsumeInventoryParams {
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_secs(3)),
-                action_text: vec![
-                    (action_letters::upper_c(), action_text_white()),
-                    (action_letters::lower_h(), action_text_white()),
-                    (action_letters::lower_o(), action_text_white()),
-                    (action_letters::lower_p(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::lower_d(), action_text_white()),
-                    (action_letters::lower_o(), action_text_white()),
-                    (action_letters::lower_w(), action_text_white()),
-                    (action_letters::lower_n(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::upper_o(), action_text_blue()),
-                    (action_letters::lower_a(), action_text_blue()),
-                    (action_letters::lower_k(), action_text_blue()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::forward_slash(), action_text_white()),
-                ],
+                action_text: action_text::chop_down_oak(),
             }),
         ],
     }

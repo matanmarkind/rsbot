@@ -1,9 +1,10 @@
-pub mod action_letters;
+pub mod action_text;
 pub mod colors;
 pub mod frame;
 pub mod locations;
 pub mod types;
 
+pub use action_text::Text as ActionText;
 pub use colors::*;
 pub use frame::*;
 pub use locations::Locations;

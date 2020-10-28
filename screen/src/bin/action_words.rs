@@ -1,9 +1,6 @@
 /// Take a screenshot of the game and draw on the spots that are checked for
 /// these letters. Used to add new action_letters.
-use screen::{
-    action_letters,
-    fuzzy_pixels::{action_text_blue, action_text_orange, action_text_white},
-};
+use screen::action_text;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -25,31 +22,17 @@ fn main() {
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
-    let letter_and_matchers = vec![
-        (action_letters::start(), action_text_white()),
-        (action_letters::upper_m(), action_text_white()),
-        (action_letters::lower_i(), action_text_white()),
-        (action_letters::lower_n(), action_text_white()),
-        (action_letters::lower_e(), action_text_white()),
-        (action_letters::space(), action_text_white()),
-        (action_letters::upper_r(), action_text_blue()),
-        (action_letters::lower_o(), action_text_blue()),
-        (action_letters::lower_c(), action_text_blue()),
-        (action_letters::lower_k(), action_text_blue()),
-        (action_letters::lower_s(), action_text_blue()),
-        (action_letters::space(), action_text_white()),
-        (action_letters::forward_slash(), action_text_white()),
-    ];
+    let text = &action_text::use_raw_anchovies_rightarrow_fire();
 
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();
-    dbg!(screenhandler.check_action_letters(&frame, &letter_and_matchers));
+    dbg!(screenhandler.check_action_text(&frame, &text));
 
     let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_action_words.png");
     println!("Saving {} ...", ofpath);
     screenhandler
-        .mark_letters_and_save(&frame, ofpath.as_str(), &letter_and_matchers)
+        .mark_letters_and_save(&frame, ofpath.as_str(), &text)
         .join()
         .expect("Error waiting for image to save");
 }

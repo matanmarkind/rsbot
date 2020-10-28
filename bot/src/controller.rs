@@ -1,9 +1,6 @@
 use screen::{
-    action_letters,
-    action_letters::Letter,
-    fuzzy_pixels,
-    fuzzy_pixels::{action_text_blue, action_text_white},
-    Capturer, Frame, FrameHandler, FuzzyPixel, InventorySlotPixels, Locations,
+    action_text, fuzzy_pixels, Capturer, Frame, FrameHandler,ActionText,
+    FuzzyPixel, InventorySlotPixels, Locations,
 };
 use std::thread::sleep;
 use std::time::Duration;
@@ -194,7 +191,7 @@ pub struct DescribeActionForOpenScreen {
 
 /// Used to confirm that an action we are about to take is the correct one.
 pub struct DescribeActionForActionText {
-    pub action_text: Vec<(Letter, FuzzyPixel)>,
+    pub action_text: ActionText,
     pub mouse_press: MousePress,
     pub await_action: AwaitFrame,
 }
@@ -347,7 +344,7 @@ impl DescribeAction for DescribeActionForActionText {
         frame: &screen::DefaultFrame,
     ) -> ActionDescription {
         println!("DescribeActionForActionText");
-        if framehandler.check_action_letters(frame, &self.action_text[..]) {
+        if framehandler.check_action_text(frame, &self.action_text) {
             return Some((MouseMove::None, self.mouse_press));
         }
         FAILURE_ACTION_DESCRIPTION
@@ -1197,28 +1194,18 @@ impl Player {
         }));
         open_bank_actions.push(Box::new(DescribeActionForActionText {
             mouse_press: MousePress::Left,
+            await_action: AwaitFrame::Time(Duration::from_nanos(1)),
+            action_text: action_text::bank_bank_booth(),
+        }));
+        // Move so that hover text doesn't interfere.
+        let minimap_middle_pos = util::random_position_polar(
+            self.framehandler.locations.minimap_middle(),
+            /*radius=*/ 10,
+        );
+        open_bank_actions.push(Box::new(DescribeActionExplicitAction {
+            action_description: Some((MouseMove::ToDst(minimap_middle_pos), MousePress::None)),
             // It can take up to 10 seconds since we may need to walk.
             await_action: AwaitFrame::IsBankOpen(Duration::from_secs(10)),
-            action_text: vec![
-                (action_letters::start(), action_text_white()),
-                (action_letters::upper_b(), action_text_white()),
-                (action_letters::lower_a(), action_text_white()),
-                (action_letters::lower_n(), action_text_white()),
-                (action_letters::lower_k(), action_text_white()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::upper_b(), action_text_blue()),
-                (action_letters::lower_a(), action_text_blue()),
-                (action_letters::lower_n(), action_text_blue()),
-                (action_letters::lower_k(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::lower_b(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_t(), action_text_blue()),
-                (action_letters::lower_h(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::forward_slash(), action_text_white()),
-            ],
         }));
         open_bank_actions.push(DescribeActionBankQuantityAll::new());
 
@@ -1267,28 +1254,18 @@ impl Player {
         }));
         open_bank_actions.push(Box::new(DescribeActionForActionText {
             mouse_press: MousePress::Left,
+            await_action: AwaitFrame::Time(Duration::from_nanos(1)),
+            action_text: action_text::bank_bank_booth(),
+        }));
+        // Move so that hover text doesn't interfere.
+        let minimap_middle_pos = util::random_position_polar(
+            self.framehandler.locations.minimap_middle(),
+            /*radius=*/ 10,
+        );
+        open_bank_actions.push(Box::new(DescribeActionExplicitAction {
+            action_description: Some((MouseMove::ToDst(minimap_middle_pos), MousePress::None)),
             // It can take up to 10 seconds since we may need to walk.
             await_action: AwaitFrame::IsBankOpen(Duration::from_secs(10)),
-            action_text: vec![
-                (action_letters::start(), action_text_white()),
-                (action_letters::upper_b(), action_text_white()),
-                (action_letters::lower_a(), action_text_white()),
-                (action_letters::lower_n(), action_text_white()),
-                (action_letters::lower_k(), action_text_white()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::upper_b(), action_text_blue()),
-                (action_letters::lower_a(), action_text_blue()),
-                (action_letters::lower_n(), action_text_blue()),
-                (action_letters::lower_k(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::lower_b(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_o(), action_text_blue()),
-                (action_letters::lower_t(), action_text_blue()),
-                (action_letters::lower_h(), action_text_blue()),
-                (action_letters::space(), action_text_white()),
-                (action_letters::forward_slash(), action_text_white()),
-            ],
         }));
 
         let mut total_withdrawals = 0;

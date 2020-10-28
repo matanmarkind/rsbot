@@ -4,11 +4,7 @@ use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionEnableWalk,
     DescribeActionForActionText, DescribeActionForOpenScreen, MousePress, TravelToParams,
 };
-use screen::{
-    action_letters, fuzzy_pixels,
-    fuzzy_pixels::{action_text_blue, action_text_white},
-    inventory_slot_pixels,
-};
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -66,21 +62,7 @@ fn mine_tin_params() -> ConsumeInventoryParams {
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_nanos(1)),
-                action_text: vec![
-                    (action_letters::start(), action_text_white()),
-                    (action_letters::upper_m(), action_text_white()),
-                    (action_letters::lower_i(), action_text_white()),
-                    (action_letters::lower_n(), action_text_white()),
-                    (action_letters::lower_e(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::upper_r(), action_text_blue()),
-                    (action_letters::lower_o(), action_text_blue()),
-                    (action_letters::lower_c(), action_text_blue()),
-                    (action_letters::lower_k(), action_text_blue()),
-                    (action_letters::lower_s(), action_text_blue()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::forward_slash(), action_text_white()),
-                ],
+                action_text: action_text::mine_rocks(),
             }),
         ],
     }

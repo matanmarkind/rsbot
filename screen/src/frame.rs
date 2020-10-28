@@ -1,3 +1,4 @@
+use crate::types::*;
 /// This file holds frames, which are t base a list of u8's describing an image.
 ///
 /// The two types of frames are owned and unowned. This is due to scrap, which
@@ -5,8 +6,7 @@
 /// want to keep this, is that when the bot is running we don't need to do any
 /// owning activities. For the sake of feedback it can be useful to mark up and
 /// save the image, which requires ownership.
-use crate::action_letters;
-use crate::types::*;
+use crate::ActionText;
 use crate::Locations;
 use crate::{fuzzy_pixels, inventory_slot_pixels};
 use std::cmp::{max, min};
@@ -463,14 +463,10 @@ impl FrameHandler {
         }
     }
 
-    pub fn check_action_letters(
-        &self,
-        frame: &impl Frame,
-        letter_and_pixels: &[(action_letters::Letter, FuzzyPixel)],
-    ) -> bool {
-        action_letters::check_action_letters(
+    pub fn check_action_text(&self, frame: &impl Frame, action_text: &ActionText) -> bool {
+        crate::action_text::check_action_letters(
             frame,
-            letter_and_pixels,
+            &action_text,
             self.locations.action_text_top_left(),
         )
     }
@@ -478,12 +474,12 @@ impl FrameHandler {
         &self,
         frame: &impl Frame,
         fpath: &str,
-        letter_and_pixels: &[(action_letters::Letter, crate::FuzzyPixel)],
+        action_text: &ActionText,
     ) -> std::thread::JoinHandle<()> {
-        action_letters::mark_letters_and_save(
+        crate::action_text::mark_letters_and_save(
             frame,
             fpath,
-            &letter_and_pixels,
+            &action_text.letters,
             self.locations.action_text_top_left(),
         )
     }

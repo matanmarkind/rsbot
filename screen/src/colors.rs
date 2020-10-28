@@ -86,9 +86,9 @@ pub mod fuzzy_pixels {
     pub fn action_text_orange() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 45,
-            blue_max: 65,
+            blue_max: 75,
             green_min: 106,
-            green_max: 138,
+            green_max: 140,
             red_min: 190,
             red_max: 235,
         }
@@ -756,6 +756,62 @@ pub mod inventory_slot_pixels {
     }
     pub fn raw_anchovies_bank() -> InventorySlotPixels {
         let mut pixels = raw_anchovies();
+        pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn cooked_anchovies() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 95,
+                blue_max: 99,
+                green_min: 50,
+                green_max: 54,
+                red_min: 44,
+                red_max: 48,
+            },
+            inventory_background(),
+            black(),
+            FuzzyPixel {
+                blue_min: 54,
+                blue_max: 58,
+                green_min: 33,
+                green_max: 37,
+                red_min: 31,
+                red_max: 35,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 92,
+                blue_max: 96,
+                green_min: 48,
+                green_max: 52,
+                red_min: 42,
+                red_max: 46,
+            },
+            FuzzyPixel {
+                blue_min: 30,
+                blue_max: 34,
+                green_min: 30,
+                green_max: 34,
+                red_min: 46,
+                red_max: 50,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn cooked_anchovies_bank() -> InventorySlotPixels {
+        let mut pixels = cooked_anchovies();
         pixels[10] = FuzzyPixel {
             blue_min: 49,
             blue_max: 53,

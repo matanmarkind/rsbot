@@ -5,11 +5,7 @@ use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeActionForActionText,
     DescribeActionForOpenScreen, MousePress, TravelToParams,
 };
-use screen::{
-    action_letters, fuzzy_pixels,
-    fuzzy_pixels::{action_text_white, action_text_yellow},
-    inventory_slot_pixels,
-};
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -29,33 +25,7 @@ fn fish_small_net_activity() -> ConsumeInventoryParams {
             Box::new(DescribeActionForActionText {
                 mouse_press: MousePress::Left,
                 await_action: AwaitFrame::Time(Duration::from_nanos(1)),
-                action_text: vec![
-                    (action_letters::start(), action_text_white()),
-                    (action_letters::upper_s(), action_text_white()),
-                    (action_letters::lower_m(), action_text_white()),
-                    (action_letters::lower_a(), action_text_white()),
-                    (action_letters::lower_l(), action_text_white()),
-                    (action_letters::lower_l(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::upper_n(), action_text_white()),
-                    (action_letters::lower_e(), action_text_white()),
-                    (action_letters::lower_t(), action_text_white()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::upper_f(), action_text_yellow()),
-                    (action_letters::lower_i(), action_text_yellow()),
-                    (action_letters::lower_s(), action_text_yellow()),
-                    (action_letters::lower_h(), action_text_yellow()),
-                    (action_letters::lower_i(), action_text_yellow()),
-                    (action_letters::lower_n(), action_text_yellow()),
-                    (action_letters::lower_g(), action_text_yellow()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::lower_s(), action_text_yellow()),
-                    (action_letters::lower_p(), action_text_yellow()),
-                    (action_letters::lower_o(), action_text_yellow()),
-                    (action_letters::lower_t(), action_text_yellow()),
-                    (action_letters::space(), action_text_white()),
-                    (action_letters::forward_slash(), action_text_white()),
-                ],
+                action_text: action_text::small_net_fishing_spot(),
             }),
         ],
     }
