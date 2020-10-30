@@ -444,9 +444,6 @@ impl Capturer {
 /// during play.
 pub struct FrameHandler {
     pub locations: crate::Locations,
-    // Tolerance when checking loose pixels in the inventory. Having the bank
-    // open seems to change things a bit.
-    pub inventory_tolerance: i32,
 }
 
 impl FrameHandler {
@@ -459,7 +456,6 @@ impl FrameHandler {
                     dy: config.screen_bottom_right.y - config.screen_top_left.y + 1,
                 },
             ),
-            inventory_tolerance: 1,
         }
     }
 
@@ -537,11 +533,7 @@ impl FrameHandler {
                     // );
                     // dbg!(dbgstr);
                 }
-                if !frame.check_loose_pixel_explicit(
-                    &pos,
-                    &expected_colors[i],
-                    self.inventory_tolerance,
-                ) {
+                if !frame.check_loose_pixel(&pos, &expected_colors[i]) {
                     return false;
                 }
                 pos = Position {
