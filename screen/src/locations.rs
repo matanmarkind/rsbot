@@ -301,6 +301,13 @@ impl Locations {
             y: y - 5,
         }
     }
+    pub fn bank_quantity_x(&self) -> Position {
+        let Position { x, y } = Self::to_bottom_right(self.bank_top_left(), self.bank_dimensions());
+        Position {
+            x: x - 191,
+            y: y - 10,
+        }
+    }
     pub fn bank_quantity_one(&self) -> Position {
         let Position { x, y } = Self::to_bottom_right(self.bank_top_left(), self.bank_dimensions());
         Position {

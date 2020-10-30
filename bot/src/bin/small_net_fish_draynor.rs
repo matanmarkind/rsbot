@@ -60,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     player.reset();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
         player.travel_to(&travel_to_fishing_icon());
         println!("We are at the fishies");
 

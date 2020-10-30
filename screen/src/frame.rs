@@ -493,6 +493,10 @@ impl FrameHandler {
         // significantly different color. If the image shifts, which it sometimes
         // does I don't want to be too brittle since I think the risk of a false
         // positive is relatively low.
+        {
+            // let pixel = frame.get_pixel(&self.locations.inventory_icon_background());
+            // dbg!(pixel);
+        }
         frame.check_loose_pixel(
             &self.locations.inventory_icon_background(),
             &fuzzy_pixels::inventory_icon_background_open(),
@@ -661,53 +665,23 @@ impl FrameHandler {
     /// Checks if the worldmap is open by chacking the corners. The coloring
     /// changes depending on whether or not runelite is the active window. We
     /// program on the assumption it is.
+    ///
+    /// Note that the mouse hovering over the worldmap messes this up since it
+    /// highlights the worldmap.
     pub fn is_worldmap_open(&self, frame: &impl Frame) -> bool {
-        // The worldmap dimensions are internal, which means the colors are
-        // variable (top left can be covered by action text, right size is on
-        // the map.) Creating an outer barier would put us outside the screen.
-        // Therefore we take the inner box and expand t a bit to rest on the
-        // worldmap border which we can use to identify the worldmap being open.
-        let expansion = DeltaPosition { dx: 3, dy: 3 };
-        let top_left = self.locations.worldmap_top_left() - expansion;
-        let dimensions = self.locations.worldmap_dimensions() + expansion * 2.0;
-        Self::check_corners(
-            frame,
-            top_left,
-            dimensions,
-            [
-                FuzzyPixel {
-                    blue_min: 51,
-                    blue_max: 62,
-                    green_min: 55,
-                    green_max: 66,
-                    red_min: 54,
-                    red_max: 65,
-                },
-                FuzzyPixel {
-                    blue_min: 51,
-                    blue_max: 62,
-                    green_min: 55,
-                    green_max: 66,
-                    red_min: 54,
-                    red_max: 65,
-                },
-                FuzzyPixel {
-                    blue_min: 58,
-                    blue_max: 62,
-                    green_min: 62,
-                    green_max: 66,
-                    red_min: 61,
-                    red_max: 65,
-                },
-                FuzzyPixel {
-                    blue_min: 249,
-                    blue_max: 255,
-                    green_min: 249,
-                    green_max: 255,
-                    red_min: 250,
-                    red_max: 255,
-                },
-            ],
+        // The worldmap icon gets grayed when the worldmap is open.
+        // Worldmap closed - 98, 101, 77
+        // Worldmap open - 80, 91, 80
+        frame.check_loose_pixel(
+            &self.locations.worldmap_icon(),
+            &FuzzyPixel {
+                blue_min: 75,
+                blue_max: 85,
+                green_min: 86,
+                green_max: 96,
+                red_min: 77,
+                red_max: 85,
+            },
         )
     }
 
@@ -767,6 +741,12 @@ impl FrameHandler {
     pub fn is_bank_quantity_all(&self, frame: &impl Frame) -> bool {
         frame.check_loose_pixel(
             &self.locations.bank_quantity_all(),
+            &fuzzy_pixels::bank_quantity_on(),
+        )
+    }
+    pub fn is_bank_quantity_x(&self, frame: &impl Frame) -> bool {
+        frame.check_loose_pixel(
+            &self.locations.bank_quantity_x(),
             &fuzzy_pixels::bank_quantity_on(),
         )
     }

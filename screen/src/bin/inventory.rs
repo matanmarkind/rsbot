@@ -18,11 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // the print statement in the function.
     println!(
         "{}",
-        framehandler.check_inventory_slot(
-            &frame,
-            0,
-            &inventory_slot_pixels::cooked_anchovies_bank()
-        )
+        framehandler.check_inventory_slot(&frame, 9, &inventory_slot_pixels::bronze_bar())
     );
     return Ok(());
 

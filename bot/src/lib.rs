@@ -1,5 +1,7 @@
+pub mod actions;
 pub mod controller;
 
+pub use actions::*;
 pub use controller::*;
 
 use structopt::StructOpt;

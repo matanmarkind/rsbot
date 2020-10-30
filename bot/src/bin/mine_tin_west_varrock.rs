@@ -1,5 +1,3 @@
-/// This mining bot was developed for the mines to the west of Port Sarim. The
-/// bank is to the northwest.
 use bot::{
     controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionEnableWalk,
     DescribeActionForActionText, DescribeActionForOpenScreen, MousePress, TravelToParams,

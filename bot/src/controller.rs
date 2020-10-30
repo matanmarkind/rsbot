@@ -1,6 +1,6 @@
 use screen::{
-    action_text, fuzzy_pixels, Capturer, Frame, FrameHandler,ActionText,
-    FuzzyPixel, InventorySlotPixels, Locations,
+    action_text, fuzzy_pixels, ActionText, Capturer, Frame, FrameHandler, FuzzyPixel,
+    InventorySlotPixels, Locations,
 };
 use std::thread::sleep;
 use std::time::Duration;
@@ -120,14 +120,14 @@ fn await_result_timeout(await_config: &AwaitFrame) -> Duration {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug, Copy)]
 pub enum MousePress {
     None,
     Left,
     Right,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Debug, Copy)]
 pub enum MouseMove {
     None,
     ToDst(Position),
@@ -271,6 +271,10 @@ pub struct DescribeActionPressMinimapMiddle {
 }
 
 pub struct DescribeActionBankQuantityAll {
+    pub await_action: AwaitFrame,
+}
+
+pub struct DescribeActionBankQuantityX {
     pub await_action: AwaitFrame,
 }
 
@@ -796,6 +800,43 @@ impl DescribeAction for DescribeActionBankQuantityAll {
     }
 }
 
+impl DescribeActionBankQuantityX {
+    pub fn new() -> Box<Self> {
+        // Wait 1s in case we moved a bit.
+        Box::new(DescribeActionBankQuantityX {
+            await_action: AwaitFrame::Time(util::REDRAW_TIME),
+        })
+    }
+}
+
+impl DescribeAction for DescribeActionBankQuantityX {
+    fn describe_action(
+        &self,
+        framehandler: &FrameHandler,
+        frame: &screen::DefaultFrame,
+    ) -> ActionDescription {
+        println!("DescribeActionBankQuantityX");
+        if framehandler.is_bank_quantity_x(frame) {
+            return DO_NOTHING_ACTION_DESCRIPTION;
+        }
+
+        // Randomly shift the coordinates by 1 to avoid always pressing the same
+        // pixel.
+        let pos = util::random_position_polar(
+            framehandler.locations.bank_quantity_x(),
+            /*radius=*/ 4,
+        );
+        Some((MouseMove::ToDst(pos), MousePress::Left))
+    }
+
+    fn await_result(&self, framehandler: &FrameHandler, frame: &screen::DefaultFrame) -> bool {
+        await_result(&self.await_action, framehandler, frame)
+    }
+    fn await_result_timeout(&self) -> Duration {
+        await_result_timeout(&self.await_action)
+    }
+}
+
 impl DescribeActionBankQuantityOne {
     pub fn new() -> Box<Self> {
         // Wait 1s in case we moved a bit.
@@ -1015,12 +1056,13 @@ impl Player {
         self.inputbot.left_click();
 
         sleep(util::REDRAW_TIME);
-        self.open_inventory();
-        self.close_worldmap();
         self.press_compass();
+        self.close_worldmap();
+
         // At the bottom in to give time for pressing in the middle of the map
         // to take effect.
         self.close_chatbox();
+        self.open_inventory();
 
         sleep(util::REDRAW_TIME);
     }
@@ -1125,10 +1167,12 @@ impl Player {
             let action_description =
                 act.describe_action(&self.framehandler, &self.capturer.frame().unwrap());
             if action_description.is_none() {
+                // dbg!("decribe_action is None");
                 return false;
             }
 
             let (mouse_move, mouse_press) = action_description.unwrap();
+            // dbg!(&mouse_move, &mouse_press);
 
             match mouse_move {
                 MouseMove::None => (),
@@ -1238,6 +1282,9 @@ impl Player {
     ///
     /// We don't analyze the bank pixels, so you have to give the slot_index of
     /// the item to be withdrawn.
+    ///
+    /// If a quantity is negative, we interpret this as X, which should be set
+    /// before running the bot.
     ///
     /// If the last item in 'bank_slot_and_quantity' has quantity 0, we will
     /// withdraw All (aka all remaining inventory slots).

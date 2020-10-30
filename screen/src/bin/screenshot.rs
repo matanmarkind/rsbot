@@ -211,6 +211,7 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         surrounding_box(&mut frame, &screenhandler.locations.bank_slot_center(i));
     }
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_all());
+    surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_x());
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_one());
     frame
 }

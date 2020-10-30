@@ -271,6 +271,46 @@ pub mod fuzzy_pixels {
             red_max: 193,
         }
     }
+    pub fn map_icon_furnace_yellow() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 8,
+            blue_max: 12,
+            green_min: 250,
+            green_max: 255,
+            red_min: 250,
+            red_max: 255,
+        }
+    }
+    pub fn map_icon_furnace_orange1() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 38,
+            blue_max: 42,
+            green_min: 170,
+            green_max: 174,
+            red_min: 237,
+            red_max: 241,
+        }
+    }
+    pub fn map_icon_furnace_orange2() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 28,
+            blue_max: 32,
+            green_min: 113,
+            green_max: 117,
+            red_min: 250,
+            red_max: 255,
+        }
+    }
+    pub fn map_icon_furnace_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 59,
+            blue_max: 63,
+            green_min: 61,
+            green_max: 65,
+            red_min: 61,
+            red_max: 65,
+        }
+    }
     pub fn map_holiday_item_trader_icon_red() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 38,
@@ -289,6 +329,16 @@ pub mod fuzzy_pixels {
             green_max: 247,
             red_min: 233,
             red_max: 237,
+        }
+    }
+    pub fn map_floor_beige() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 60,
+            blue_max: 90,
+            green_min: 100,
+            green_max: 130,
+            red_min: 105,
+            red_max: 135,
         }
     }
     pub fn map_floor_gray() -> FuzzyPixel {
@@ -410,6 +460,17 @@ pub mod fuzzy_pixels {
             red_max: 65,
         }
     }
+    pub fn inventory_background_dark() -> FuzzyPixel {
+        // Parts of the inventory have dark splotches.
+        FuzzyPixel {
+            blue_min: 30,
+            blue_max: 34,
+            green_min: 30,
+            green_max: 34,
+            red_min: 46,
+            red_max: 50,
+        }
+    }
 
     /// This is the red color that the inventory icon at the bottom of the
     /// screen turns when the inventory is open.
@@ -419,7 +480,7 @@ pub mod fuzzy_pixels {
             blue_max: 35,
             green_min: 35,
             green_max: 45,
-            red_min: 110,
+            red_min: 100,
             red_max: 130,
         }
     }
@@ -521,7 +582,7 @@ pub mod fuzzy_pixels {
 /// When the bank is open the shadows for the items disappears so some of the
 /// pixels must change.
 pub mod inventory_slot_pixels {
-    use super::fuzzy_pixels::{black, inventory_background};
+    use super::fuzzy_pixels::{black, inventory_background, inventory_background_dark};
     use crate::Locations;
     use crate::{FuzzyPixel, InventorySlotPixels};
 
@@ -568,14 +629,7 @@ pub mod inventory_slot_pixels {
                 red_min: 135,
                 red_max: 139,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
         ]
     }
@@ -624,14 +678,7 @@ pub mod inventory_slot_pixels {
                 red_min: 141,
                 red_max: 145,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
         ]
     }
@@ -680,14 +727,7 @@ pub mod inventory_slot_pixels {
                 red_min: 58,
                 red_max: 62,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
         ]
     }
@@ -743,14 +783,7 @@ pub mod inventory_slot_pixels {
                 red_min: 73,
                 red_max: 77,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
         ]
     }
@@ -799,14 +832,7 @@ pub mod inventory_slot_pixels {
                 red_min: 42,
                 red_max: 46,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
         ]
     }
@@ -866,14 +892,7 @@ pub mod inventory_slot_pixels {
                 red_min: 67,
                 red_max: 71,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             inventory_background(),
             FuzzyPixel {
                 blue_min: 121,
@@ -983,14 +1002,7 @@ pub mod inventory_slot_pixels {
                 red_min: 55,
                 red_max: 59,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             FuzzyPixel {
                 blue_min: 87,
                 blue_max: 91,
@@ -1046,14 +1058,7 @@ pub mod inventory_slot_pixels {
                 red_min: 55,
                 red_max: 59,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             FuzzyPixel {
                 blue_min: 12,
                 blue_max: 16,
@@ -1109,14 +1114,7 @@ pub mod inventory_slot_pixels {
                 red_min: 55,
                 red_max: 59,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             FuzzyPixel {
                 blue_min: 138,
                 blue_max: 142,
@@ -1160,14 +1158,7 @@ pub mod inventory_slot_pixels {
                 red_min: 55,
                 red_max: 59,
             },
-            FuzzyPixel {
-                blue_min: 30,
-                blue_max: 34,
-                green_min: 30,
-                green_max: 34,
-                red_min: 46,
-                red_max: 50,
-            },
+            inventory_background_dark(),
             FuzzyPixel {
                 blue_min: 27,
                 blue_max: 31,
@@ -1347,5 +1338,70 @@ pub mod inventory_slot_pixels {
     }
     pub fn clay_bank() -> InventorySlotPixels {
         clay()
+    }
+    pub fn bronze_bar() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 15,
+                blue_max: 19,
+                green_min: 33,
+                green_max: 37,
+                red_min: 48,
+                red_max: 52,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 7,
+                blue_max: 11,
+                green_min: 17,
+                green_max: 21,
+                red_min: 24,
+                red_max: 28,
+            },
+            FuzzyPixel {
+                blue_min: 21,
+                blue_max: 25,
+                green_min: 44,
+                green_max: 48,
+                red_min: 62,
+                red_max: 66,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            inventory_background_dark(),
+            inventory_background_dark(),
+            inventory_background(),
+        ]
+    }
+    pub fn bronze_bar_bank() -> InventorySlotPixels {
+        let mut pixels = bronze_bar();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels[9] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
     }
 }
