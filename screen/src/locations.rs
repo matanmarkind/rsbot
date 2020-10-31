@@ -345,6 +345,7 @@ impl Locations {
     /// about the same as the radius of an icon on the map.
     pub const CHECK_ADJACENT_MAP_PIXELS_RADIUS: i32 = 8;
 
+    pub const WROLDMAP_ICON_RADIUS: i32 = 12;
     pub fn worldmap_icon(&self) -> Position {
         let Position { x, y } = self.top_right();
         Position {
