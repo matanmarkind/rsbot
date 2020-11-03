@@ -694,13 +694,25 @@ impl FrameHandler {
             top_left,
             dimensions,
             [
+                // This is the actual value for the top left corner, but
+                // sometimes action text covers it, so changed this check to the
+                // other 3 corners.
+
+                // FuzzyPixel {
+                //     blue_min: 51,
+                //     blue_max: 62,
+                //     green_min: 55,
+                //     green_max: 66,
+                //     red_min: 54,
+                //     red_max: 65,
+                // },
                 FuzzyPixel {
-                    blue_min: 51,
-                    blue_max: 62,
-                    green_min: 55,
-                    green_max: 66,
-                    red_min: 54,
-                    red_max: 65,
+                    blue_min: 0,
+                    blue_max: 255,
+                    green_min: 0,
+                    green_max: 255,
+                    red_min: 0,
+                    red_max: 255,
                 },
                 FuzzyPixel {
                     blue_min: 51,

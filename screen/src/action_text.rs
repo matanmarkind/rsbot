@@ -100,6 +100,26 @@ mod letters {
         }
     }
 
+    pub fn upper_d() -> Character {
+        Character {
+            width: 8,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 2 },
+                DeltaPosition { dx: 0, dy: 5 },
+                DeltaPosition { dx: 0, dy: 8 },
+                DeltaPosition { dx: 0, dy: 11 },
+                DeltaPosition { dx: 2, dy: 2 },
+                DeltaPosition { dx: 2, dy: 11 },
+                DeltaPosition { dx: 4, dy: 6 },
+                DeltaPosition { dx: 4, dy: 10 },
+            ],
+
+            display: "D",
+        }
+    }
+
     pub fn upper_f() -> Character {
         Character {
             width: 8,
@@ -163,14 +183,14 @@ mod letters {
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
-                DeltaPosition { dx: 1, dy: 6 },
-                DeltaPosition { dx: 2, dy: 10 },
-                DeltaPosition { dx: 2, dy: 3 },
-                DeltaPosition { dx: 4, dy: 2 },
-                DeltaPosition { dx: 4, dy: 11 },
-                DeltaPosition { dx: 6, dy: 10 },
-                DeltaPosition { dx: 6, dy: 3 },
-                DeltaPosition { dx: 7, dy: 6 },
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 1, dy: 10 },
+                DeltaPosition { dx: 1, dy: 3 },
+                DeltaPosition { dx: 3, dy: 2 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 5, dy: 10 },
+                DeltaPosition { dx: 5, dy: 3 },
+                DeltaPosition { dx: 6, dy: 6 },
             ],
 
             display: "O",
@@ -761,6 +781,24 @@ pub fn mine_rocks() -> Text {
             (lower_c(), action_text_blue()),
             (lower_k(), action_text_blue()),
             (lower_s(), action_text_blue()),
+            (space(), action_text_white()),
+            (forward_slash(), action_text_white()),
+        ],
+    }
+}
+
+pub fn open_door() -> Text {
+    Text {
+        letters: vec![
+            (upper_o(), action_text_white()),
+            (lower_p(), action_text_white()),
+            (lower_e(), action_text_white()),
+            (lower_n(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_d(), action_text_blue()),
+            (lower_o(), action_text_blue()),
+            (lower_o(), action_text_blue()),
+            (lower_r(), action_text_blue()),
             (space(), action_text_white()),
             (forward_slash(), action_text_white()),
         ],

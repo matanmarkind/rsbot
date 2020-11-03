@@ -22,7 +22,7 @@ fn main() {
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
-    let text = &action_text::use_raw_anchovies_rightarrow_fire();
+    let text = &action_text::open_door();
 
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();

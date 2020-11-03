@@ -158,6 +158,27 @@ fn marked_worldmap(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFra
             );
         }
     }
+    {
+        let adjacent_iter = PositionIteratorCircularSpiral::new(
+            /*middle=*/ screenhandler.locations.minimap_middle(),
+            /*min_radius=*/ Locations::MINIMAP_SMALL_RADIUS,
+            /*d_radius=*/ 1,
+            /*min_angle_degrees=*/ 0.0,
+            /*d_angle_degrees=*/ 360.0,
+            /*spacing=*/ 1,
+        );
+        for (i, pos) in adjacent_iter.enumerate() {
+            // Have the color change to show the order of the iterator.
+            frame.recolor_pixel(
+                &pos,
+                &Pixel {
+                    blue: 0,
+                    green: 0,
+                    red: std::cmp::min(255, i) as u8,
+                },
+            );
+        }
+    }
 
     frame.draw_red_box(
         &screenhandler.locations.chatbox_outer_top_left(),

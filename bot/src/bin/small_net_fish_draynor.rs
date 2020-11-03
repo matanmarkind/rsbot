@@ -1,54 +1,70 @@
 /// This is a bot for fishing anchovies & shrimp by the Draynor bank.
 ///
 /// Be certain that the bank slots are aligned properly for withdrawal.
-use bot::{
-    controller, AwaitFrame, ConsumeInventoryParams, DescribeActionForActionText,
-    DescribeActionForOpenScreen, MousePress, TravelToParams,
-};
-use screen::{action_text, fuzzy_pixels, inventory_slot_pixels};
+use bot::actions::*;
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
+use userinput::InputBot;
 
-fn fish_small_net_activity() -> ConsumeInventoryParams {
-    ConsumeInventoryParams {
-        multi_slot_action: true,
-        slot_consumption_waittime: Duration::from_secs(20),
-        item_to_consume: inventory_slot_pixels::empty(),
-        activity_timeout: Duration::from_secs(10 * 60),
-        actions: vec![
-            Box::new(DescribeActionForOpenScreen {
-                expected_pixels: vec![fuzzy_pixels::small_net_fishing_spot()],
-                mouse_press: MousePress::None,
-                await_action: AwaitFrame::Time(util::REDRAW_TIME),
-            }),
-            Box::new(DescribeActionForActionText {
-                mouse_press: MousePress::Left,
-                await_action: AwaitFrame::Time(Duration::from_nanos(1)),
-                action_text: action_text::small_net_fishing_spot(),
-            }),
+fn travel_to_bank() -> TravelTo {
+    TravelTo::new(
+        /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
+        /*check_pixels=*/
+        vec![
+            fuzzy_pixels::map_icon_dark_gray(),
+            fuzzy_pixels::map_icon_light_gray(),
         ],
-    }
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+    )
 }
 
-fn travel_to_fishing_icon() -> TravelToParams {
-    TravelToParams {
-        arc_of_interest: (0.0, 360.0),
-        destination_pixels: vec![
-            fuzzy_pixels::map_icon_fish_light_blue(),
-            fuzzy_pixels::map_icon_fish_medium_blue(),
-            fuzzy_pixels::map_icon_fish_dark_blue(),
+fn deposit_in_bank() -> DepositInBank {
+    DepositInBank::new(
+        /*expected_pixels=*/
+        vec![
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
         ],
-        confirmation_pixels: vec![
+        /*items=*/
+        vec![
+            inventory_slot_pixels::raw_shrimp_bank(),
+            inventory_slot_pixels::raw_anchovies_bank(),
+        ],
+    )
+}
+
+fn travel_to_fishing_spot() -> TravelTo {
+    TravelTo::new(
+        /*primary_pixel=*/ fuzzy_pixels::map_icon_fish_dark_blue(),
+        /*check_pixels=*/
+        vec![
             fuzzy_pixels::map_icon_light_gray(),
             fuzzy_pixels::map_icon_fish_light_blue(),
             fuzzy_pixels::map_icon_fish_medium_blue(),
             fuzzy_pixels::map_icon_fish_dark_blue(),
             fuzzy_pixels::black(),
         ],
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+    )
+}
 
-        try_to_run: true,
-        starting_direction: None,
+fn small_net_fish() -> ConsumeInventory {
+    ConsumeInventory {
+        multi_slot_action: true,
+        slot_consumption_waittime: Duration::from_secs(15),
+        activity_timeout: Duration::from_secs(10 * 60),
+        item_to_consume: inventory_slot_pixels::empty(),
+        actions: vec![Box::new(OpenScreenAction::new(
+            /*expected_pixels=*/
+            vec![fuzzy_pixels::small_net_fishing_spot()],
+            /*action_text=*/ Some(action_text::small_net_fishing_spot()),
+            /*mouse_click=*/ MouseClick::Left,
+        ))],
     }
 }
 
@@ -56,51 +72,39 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
     dbg!(&config);
 
-    let mut player = controller::Player::new(config);
-    player.reset();
+    let mut capturer = Capturer::new();
+    let mut inputbot = InputBot::new(config.userinput_config);
+    let mut framehandler = FrameHandler::new(config.screen_config);
+
+    let reset_actions = ExplicitActions::default_reset();
+    let travel_to_bank_actions = travel_to_bank();
+    let deposit_in_bank_actions = deposit_in_bank();
+    let travel_to_fishing_spot_actions = travel_to_fishing_spot();
+    let catch_fish_actions = small_net_fish();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
-        player.travel_to(&travel_to_fishing_icon());
-        println!("We are at the fishies");
+    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+        let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        dbg!(reset);
 
-        player.reset();
-        player.consume_inventory(&fish_small_net_activity());
-        println!("Done filling inventory");
+        let arrived_at_bank =
+            travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        dbg!(arrived_at_bank);
 
-        player.travel_to(&TravelToParams {
-            try_to_run: true,
-            arc_of_interest: (0.0, 360.0),
-            destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
-            confirmation_pixels: vec![
-                fuzzy_pixels::map_icon_dark_gray(),
-                fuzzy_pixels::map_icon_light_gray(),
-            ],
+        let depositted =
+            deposit_in_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        dbg!(depositted);
 
-            starting_direction: None,
-        });
-        println!("We're at the bank (I hope).");
-
-        player.deposit_in_bank(
-            /*bank_colors=*/
-            &vec![
-                fuzzy_pixels::bank_brown1(),
-                fuzzy_pixels::bank_brown2(),
-                fuzzy_pixels::bank_brown3(),
-            ],
-            /*items=*/
-            &vec![
-                inventory_slot_pixels::raw_shrimp_bank(),
-                inventory_slot_pixels::raw_anchovies_bank(),
-            ],
+        let arrived_at_fish = travel_to_fishing_spot_actions.do_action(
+            &mut inputbot,
+            &mut framehandler,
+            &mut capturer,
         );
+        dbg!(arrived_at_fish);
 
-        // while !player.do_actions(&open_bank_actions()) {
-        //     // Repeat until we we find the bank successfully since minimap
-        //     // action can quit before we stop walking.
-        // }
-        // player.consume_inventory(&deposit_in_bank());
-        println!("Done depositing.");
+        let caught_fish =
+            catch_fish_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        dbg!(caught_fish);
     }
 
     Ok(())

@@ -1,44 +1,10 @@
-/// Used to develop new actions.
 use bot::actions::*;
-use screen::{
-    action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel,
-};
+use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
 use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
-
-// fn travel_to_cookrange() -> TravelTo {
-//     TravelTo::new(
-//         /*primary_pixel=*/ fuzzy_pixels::map_floor_beige(),
-//         /*check_pixels=*/
-//         vec![
-//             fuzzy_pixels::map_icon_cookrange_light_brown(),
-//             fuzzy_pixels::map_icon_cookrange_medium_brown(),
-//             fuzzy_pixels::map_icon_cookrange_dark_brown(),
-//             fuzzy_pixels::map_icon_light_gray(),
-//             fuzzy_pixels::black(),
-//         ],
-//         /*arc_of_interest=*/
-//         (0.0, 360.0),
-//         /*timeout=*/ Duration::from_secs(30),
-//     )
-// }
-
-// fn open_door_actions() -> OpenScreenAction {
-//     OpenScreenAction::new(
-//         /*expected_pixels=*/
-//         vec![
-//             fuzzy_pixels::al_kharid_door1(),
-//             fuzzy_pixels::al_kharid_door2(),
-//             fuzzy_pixels::al_kharid_door3(),
-//             fuzzy_pixels::al_kharid_door4(),
-//         ],
-//         /*action_text=*/ Some(action_text::open_door()),
-//         MouseClick::Left,
-//     )
-// }
 
 fn withdraw_pizza_base_and_tomato() -> ExplicitActions {
     ExplicitActions {

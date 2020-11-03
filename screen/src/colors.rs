@@ -211,6 +211,36 @@ pub mod fuzzy_pixels {
             red_max: 43,
         }
     }
+    pub fn map_icon_cookrange_light_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 36,
+            blue_max: 40,
+            green_min: 91,
+            green_max: 95,
+            red_min: 153,
+            red_max: 157,
+        }
+    }
+    pub fn map_icon_cookrange_medium_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 21,
+            blue_max: 25,
+            green_min: 58,
+            green_max: 62,
+            red_min: 99,
+            red_max: 103,
+        }
+    }
+    pub fn map_icon_cookrange_dark_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 10,
+            blue_max: 14,
+            green_min: 38,
+            green_max: 42,
+            red_min: 79,
+            red_max: 83,
+        }
+    }
     pub fn map_icon_pickaxe_light_gray() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 105,
@@ -571,6 +601,47 @@ pub mod fuzzy_pixels {
             green_max: 90,
             red_min: 85,
             red_max: 140,
+        }
+    }
+
+    pub fn al_kharid_door1() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 13,
+            blue_max: 17,
+            green_min: 71,
+            green_max: 75,
+            red_min: 101,
+            red_max: 105,
+        }
+    }
+    pub fn al_kharid_door2() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 12,
+            blue_max: 16,
+            green_min: 60,
+            green_max: 64,
+            red_min: 86,
+            red_max: 90,
+        }
+    }
+    pub fn al_kharid_door3() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 7,
+            blue_max: 11,
+            green_min: 44,
+            green_max: 48,
+            red_min: 63,
+            red_max: 67,
+        }
+    }
+    pub fn al_kharid_door4() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 5,
+            blue_max: 9,
+            green_min: 32,
+            green_max: 36,
+            red_min: 46,
+            red_max: 50,
         }
     }
 }
@@ -1395,6 +1466,348 @@ pub mod inventory_slot_pixels {
             red_max: 53,
         };
         pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+    pub fn pizza_base() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 76,
+                blue_max: 80,
+                green_min: 103,
+                green_max: 107,
+                red_min: 103,
+                red_max: 107,
+            },
+            FuzzyPixel {
+                blue_min: 40,
+                blue_max: 44,
+                green_min: 55,
+                green_max: 59,
+                red_min: 55,
+                red_max: 59,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 118,
+                blue_max: 122,
+                green_min: 161,
+                green_max: 165,
+                red_min: 162,
+                red_max: 166,
+            },
+            FuzzyPixel {
+                blue_min: 92,
+                blue_max: 96,
+                green_min: 126,
+                green_max: 130,
+                red_min: 127,
+                red_max: 131,
+            },
+            FuzzyPixel {
+                blue_min: 63,
+                blue_max: 67,
+                green_min: 86,
+                green_max: 90,
+                red_min: 86,
+                red_max: 90,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            black(),
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn pizza_base_bank() -> InventorySlotPixels {
+        let mut pixels = pizza_base();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn tomato() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            black(),
+            inventory_background_dark(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 15,
+                green_max: 19,
+                red_min: 133,
+                red_max: 137,
+            },
+            FuzzyPixel {
+                blue_min: 3,
+                blue_max: 7,
+                green_min: 10,
+                green_max: 14,
+                red_min: 103,
+                red_max: 107,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn tomato_bank() -> InventorySlotPixels {
+        let mut pixels = tomato();
+        pixels[2] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn cheese() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 8,
+                blue_max: 12,
+                green_min: 144,
+                green_max: 148,
+                red_min: 172,
+                red_max: 176,
+            },
+            FuzzyPixel {
+                blue_min: 7,
+                blue_max: 11,
+                green_min: 120,
+                green_max: 124,
+                red_min: 144,
+                red_max: 148,
+            },
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn cheese_bank() -> InventorySlotPixels {
+        let mut pixels = cheese();
+        pixels[2] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn incomplete_pizza() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 97,
+                blue_max: 101,
+                green_min: 120,
+                green_max: 124,
+                red_min: 133,
+                red_max: 137,
+            },
+            FuzzyPixel {
+                blue_min: 54,
+                blue_max: 58,
+                green_min: 66,
+                green_max: 70,
+                red_min: 74,
+                red_max: 78,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 170,
+                blue_max: 174,
+                green_min: 186,
+                green_max: 190,
+                red_min: 197,
+                red_max: 201,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            black(),
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn incomplete_pizza_bank() -> InventorySlotPixels {
+        let mut pixels = incomplete_pizza();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn uncooked_pizza() -> InventorySlotPixels {
+        // It's identical to uncooked_pizza...
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 97,
+                blue_max: 101,
+                green_min: 120,
+                green_max: 124,
+                red_min: 133,
+                red_max: 137,
+            },
+            FuzzyPixel {
+                blue_min: 54,
+                blue_max: 58,
+                green_min: 66,
+                green_max: 70,
+                red_min: 74,
+                red_max: 78,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 170,
+                blue_max: 174,
+                green_min: 186,
+                green_max: 190,
+                red_min: 197,
+                red_max: 201,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            black(),
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn uncooked_pizza_bank() -> InventorySlotPixels {
+        let mut pixels = uncooked_pizza();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn plain_pizza() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 60,
+                blue_max: 64,
+                green_min: 90,
+                green_max: 94,
+                red_min: 102,
+                red_max: 106,
+            },
+            FuzzyPixel {
+                blue_min: 31,
+                blue_max: 35,
+                green_min: 47,
+                green_max: 51,
+                red_min: 54,
+                red_max: 58,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 93,
+                blue_max: 97,
+                green_min: 140,
+                green_max: 144,
+                red_min: 159,
+                red_max: 163,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            black(),
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn plain_pizza_bank() -> InventorySlotPixels {
+        let mut pixels = plain_pizza();
+        pixels[7] = FuzzyPixel {
             blue_min: 49,
             blue_max: 53,
             green_min: 49,

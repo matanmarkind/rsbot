@@ -1,7 +1,7 @@
 use screen::{
-    action_text, fuzzy_pixels, ActionText, Capturer, Frame, FrameHandler, FuzzyPixel,
-    InventorySlotPixels, Locations,
+    action_text, fuzzy_pixels, ActionText, Capturer, Frame, FrameHandler, FuzzyPixel, Locations,
 };
+use std::collections::BTreeMap;
 use std::thread::sleep;
 use std::time::Duration;
 use userinput::InputBot;
@@ -63,6 +63,21 @@ fn check_map_pixels(
     None
 }
 
+#[derive(Clone, Debug, Copy)]
+pub enum MouseClick {
+    None,
+    Left,
+    Right,
+}
+
+fn click_mouse(inputbot: &mut InputBot, click: MouseClick) {
+    match click {
+        MouseClick::None => (),
+        MouseClick::Left => inputbot.left_click(),
+        MouseClick::Right => inputbot.right_click(),
+    }
+}
+
 /// This trait is used to define the interface that controls how the bot will
 /// behave. In it we pass all of the primitives needed for the bot to interact
 /// with and understand the game.
@@ -99,6 +114,19 @@ pub mod basic_action {
     /// These represent specific steps that the player will take without
     /// representing a meaningful activity.
     use super::*;
+
+    /// Useful reset. Will press near the center of the minimap.
+    pub struct PressMinimapMiddle {}
+
+    /// Pressing the compass resets our North South orientation and our up/down
+    /// orientation.
+    pub struct PressCompass {}
+
+    /// This assumes that the bank is closed.
+    pub struct OpenInventory {}
+
+    /// This is needed for open screen actions.
+    pub struct CloseChatbox {}
 
     /// Make sure the player is in walking or running mode.
     pub struct MaybeToggleRunning {
@@ -152,6 +180,164 @@ pub mod basic_action {
         pub check_pixels: Vec<FuzzyPixel>,
 
         pub arc_of_interest: (f32, f32),
+    }
+
+    /// Interact with an item in the inventory based on its appearance.
+    ///
+    /// We will move the mouse to hover over it, and click according to the config.
+    pub struct InventorySlotAction {
+        /// The item we want to click on.
+        pub item: screen::InventorySlotPixels,
+
+        /// If we successfully find and move to a slot holding 'item' how should
+        /// we click the mouse.
+        pub mouse_click: MouseClick,
+    }
+
+    /// Confirm that the text on the top left of the game screen describes the
+    /// action that we expect.
+    pub struct CheckActionText {
+        pub action_text: ActionText,
+
+        /// If the action text matches, we may press a mouse button.
+        pub mouse_click: MouseClick,
+    }
+
+    /// Set the desired quantity for bank deposit/withdrawal.
+    ///
+    /// Assumes the bank is open.
+    pub enum BankQuantity {
+        All,
+        X,
+        One,
+    }
+    pub struct SetBankQuantity {
+        pub quantity: BankQuantity,
+    }
+
+    pub struct ClickBankSlot {
+        pub slot_index: i32,
+        pub mouse_click: MouseClick,
+    }
+
+    /// Move to the middle of the chatbox, wait until chatbox is open, press.
+    pub struct ClickChatboxMiddle {}
+
+    /// Make sure the bank is closed. Don't need to use this if you know that
+    /// you will take a move that doesn't depend on the bank such as TravelTo
+    /// since the minimap is unoccluded and the worldmap will open over the
+    /// bank.
+    pub struct CloseBank {}
+
+    impl Action for PressMinimapMiddle {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            _capturer: &mut Capturer,
+        ) -> bool {
+            println!("PressMinimapMiddle");
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.minimap_middle(),
+                2,
+            ));
+            inputbot.left_click();
+            true
+        }
+    }
+
+    impl Action for PressCompass {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            _capturer: &mut Capturer,
+        ) -> bool {
+            println!("PressCompass");
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.compass_icon(),
+                8,
+            ));
+            inputbot.left_click();
+            true
+        }
+    }
+
+    impl Action for OpenInventory {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("OpenInventory");
+            // TODO: consider enforcing bank closed.
+            if framehandler.is_inventory_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+
+            inputbot.click_esc();
+            true
+        }
+    }
+
+    impl Action for CloseChatbox {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("CloseChatbox");
+            if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+
+            // Go click on the All tab
+            inputbot.move_near(&framehandler.locations.all_chat_button());
+            inputbot.left_click();
+
+            let time = std::time::Instant::now();
+            while time.elapsed() < Duration::from_secs(1) {
+                if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                    return true;
+                }
+                sleep(Duration::from_millis(50));
+            }
+
+            // If the chatbox is still open it's possible a different chat tab was
+            // selected and now the ALL tab is on.
+            if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+
+            // Go click on the All tab
+            inputbot.move_near(&framehandler.locations.all_chat_button());
+            inputbot.left_click();
+
+            let time = std::time::Instant::now();
+            while time.elapsed() < Duration::from_secs(1) {
+                if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                    return true;
+                }
+                sleep(Duration::from_millis(50));
+            }
+
+            // Click the center of the minimap since this will only move us a small
+            // amount. Safest/easiest way I could think of torandomly left click.
+            inputbot.move_near(&framehandler.locations.minimap_middle());
+            inputbot.left_click();
+
+            let time = std::time::Instant::now();
+            while time.elapsed() < Duration::from_secs(1) {
+                if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                    return true;
+                }
+                sleep(Duration::from_millis(50));
+            }
+
+            false
+        }
     }
 
     impl MaybeToggleRunning {
@@ -300,9 +486,11 @@ pub mod basic_action {
             inputbot.move_to(&pos);
             inputbot.left_click();
 
+            // TODO: Allow a second press on the minimap. Sometimes we are off if running.
+
             // Wait until we are nearby or timeout.
             let time = std::time::Instant::now();
-            while time.elapsed() < Duration::from_secs(30) {
+            while time.elapsed() < Duration::from_secs(20) {
                 match check_map_pixels(
                     &capturer.frame().unwrap(),
                     framehandler.locations.minimap_middle(),
@@ -370,6 +558,181 @@ pub mod basic_action {
             true
         }
     }
+
+    impl Action for InventorySlotAction {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("InventorySlotAction");
+            let slot_index =
+                framehandler.first_matching_inventory_slot(&capturer.frame().unwrap(), &self.item);
+            if slot_index.is_none() {
+                // 'item' wasn't found in the inventory.
+                return false;
+            }
+
+            let slot_index = slot_index.unwrap();
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.inventory_slot_middle(slot_index),
+                3,
+            ));
+            click_mouse(inputbot, self.mouse_click);
+
+            true
+        }
+    }
+
+    impl Action for CheckActionText {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("CheckActionText");
+            if !framehandler.check_action_text(&capturer.frame().unwrap(), &self.action_text) {
+                return false;
+            }
+
+            click_mouse(inputbot, self.mouse_click);
+            true
+        }
+    }
+
+    impl SetBankQuantity {
+        fn is_bank_quantity(
+            &self,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            let frame = capturer.frame().unwrap();
+            match self.quantity {
+                BankQuantity::All => framehandler.is_bank_quantity_all(&frame),
+                BankQuantity::X => framehandler.is_bank_quantity_x(&frame),
+                BankQuantity::One => framehandler.is_bank_quantity_one(&frame),
+            }
+        }
+
+        fn quantity_position(&self, framehandler: &mut FrameHandler) -> Position {
+            match self.quantity {
+                BankQuantity::All => framehandler.locations.bank_quantity_all(),
+                BankQuantity::X => framehandler.locations.bank_quantity_x(),
+                BankQuantity::One => framehandler.locations.bank_quantity_one(),
+            }
+        }
+    }
+
+    impl Action for SetBankQuantity {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("SetBankQuantity");
+            let top_left = framehandler.locations.bank_top_left();
+            let bottom_right = Locations::to_bottom_right(
+                framehandler.locations.bank_top_left(),
+                framehandler.locations.bank_dimensions(),
+            );
+            let mouse_pos = inputbot.mouse_position();
+            if (mouse_pos.x > top_left.x && mouse_pos.y > top_left.y)
+                && (mouse_pos.x < top_left.x && mouse_pos.y < top_left.y)
+            {
+                // The mouse is hovering over the bank. This can result in hover
+                // text appearing which would obscure the quantity buttons. We
+                // move to the bottom right corner as a compromise between being
+                // near the quantity buttons if we need to press them, near the
+                // bank slots for withdrawal, or near the inventory for deposit.
+                inputbot.move_to(&bottom_right);
+            }
+
+            if self.is_bank_quantity(framehandler, capturer) {
+                return true;
+            }
+
+            inputbot.move_to(&util::random_position_polar(
+                self.quantity_position(framehandler),
+                /*radius=*/ 4,
+            ));
+            inputbot.left_click();
+            true
+        }
+    }
+
+    impl Action for ClickBankSlot {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            _capturer: &mut Capturer,
+        ) -> bool {
+            println!("ClickBankSlot");
+
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.bank_slot_center(self.slot_index),
+                5,
+            ));
+            click_mouse(inputbot, self.mouse_click);
+
+            true
+        }
+    }
+
+    impl Action for ClickChatboxMiddle {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("ClickChatboxMiddle");
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.chatbox_middle(),
+                10,
+            ));
+            let time = std::time::Instant::now();
+            while time.elapsed() < Duration::from_secs(3) {
+                if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                    inputbot.left_click();
+                    return true;
+                }
+                sleep(Duration::from_millis(50));
+            }
+            false
+        }
+    }
+
+    impl Action for CloseBank {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("CloseBank");
+            // Don't start by checking if the bank is open since hover text
+            // could interfere.
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.minimap_middle(),
+                2,
+            ));
+            inputbot.left_click();
+
+            let await_time = std::time::Instant::now();
+            while await_time.elapsed() < Duration::from_secs(5) {
+                if !framehandler.is_bank_open(&capturer.frame().unwrap()) {
+                    return true;
+                }
+                sleep(Duration::from_millis(50));
+            }
+
+            false
+        }
+    }
 }
 pub use basic_action::*;
 
@@ -404,14 +767,45 @@ pub mod compound_action {
 
     /// Combines usage of the minimap and worldmap to make the player run/walk to a
     /// destination.
-    ///
-    /// TODO: Add arc_of_interest.
-    ///
-    /// TODO: Add opening worldmap.
     pub struct TravelTo {
         pub travel_minimap: TravelToOnMinimap,
         pub travel_worldmap: TravelTowardsOnWorldmap,
         pub timeout: Duration,
+    }
+
+    /// Used to find a matching pixel on the open screen and potentially click
+    /// on it.
+    ///
+    /// Assumes that the chatbox, bank, and worldmap are all closed. This
+    /// doens't look at the right column of the screen with the inventory and
+    /// minimap_plus.
+    pub struct OpenScreenAction {
+        /// These are the pixels of interest that we want to move the mouse to.
+        pub expected_pixels: Vec<FuzzyPixel>,
+
+        /// There may be an action that we want to confirm before taking it.
+        pub check_action_text: Option<CheckActionText>,
+
+        /// How to press the mouse.
+        pub mouse_click: MouseClick,
+    }
+
+    /// Assumes we are near the bank and there is nothing in the way like a
+    /// closed door.
+    pub struct OpenBank {
+        pub action: OpenScreenAction,
+
+        pub timeout: Duration,
+    }
+
+    /// Deposit all matching items into the bank.
+    ///
+    /// Assumes we are near the bank and there is nothing in the way like a
+    /// closed door.
+    pub struct DepositInBank {
+        pub open_bank_action: OpenBank,
+        pub quantity_all_action: SetBankQuantity,
+        pub deposit_actions: Vec<InventorySlotAction>,
     }
 
     impl TravelStraight {
@@ -513,6 +907,15 @@ pub mod compound_action {
                             framehandler,
                             capturer,
                         );
+                    } else {
+                        // Once we are nearby we often will still move for another few
+                        // seconds. This can cause us to click on an incorrect spot. So wait
+                        // to make sure we are done moving.
+                        let running = capturer.frame().unwrap().check_loose_pixel(
+                            &framehandler.locations.run_icon(),
+                            &fuzzy_pixels::run_icon_on(),
+                        );
+                        sleep(Duration::from_secs(if running { 2 } else { 4 }));
                     }
                     return true;
                 }
@@ -521,6 +924,10 @@ pub mod compound_action {
                 // and we failed to get to it.
 
                 if !is_worldmap_open {
+                    PressCompass {}.do_action(inputbot, framehandler, capturer);
+
+                    // After press compass so we are never over the worldmap at
+                    // this stage.
                     is_worldmap_open = MaybeToggleWorldmap::open_worldmap().do_action(
                         inputbot,
                         framehandler,
@@ -550,5 +957,558 @@ pub mod compound_action {
             false
         }
     }
+
+    impl OpenScreenAction {
+        pub fn new(
+            expected_pixels: Vec<FuzzyPixel>,
+            action_text: Option<ActionText>,
+            mouse_click: MouseClick,
+        ) -> OpenScreenAction {
+            let check_action_text = if action_text.is_none() {
+                None
+            } else {
+                Some(CheckActionText {
+                    action_text: action_text.unwrap(),
+                    mouse_click,
+                })
+            };
+
+            OpenScreenAction {
+                expected_pixels,
+                check_action_text,
+                mouse_click,
+            }
+        }
+    }
+
+    impl Action for OpenScreenAction {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("OpenScreenAction");
+            for (top_left, dimensions) in framehandler.locations.open_screen_search_boxes().iter() {
+                for fuzzy_pixel in self.expected_pixels.iter() {
+                    let pos = capturer.frame().unwrap().find_pixel_random(
+                        &fuzzy_pixel,
+                        top_left,
+                        &dimensions,
+                    );
+                    if pos.is_none() {
+                        continue;
+                    }
+
+                    inputbot.move_to(&pos.unwrap());
+
+                    if self.check_action_text.is_none() {
+                        click_mouse(inputbot, self.mouse_click);
+                        return true;
+                    }
+
+                    let action_text_time = std::time::Instant::now();
+                    while action_text_time.elapsed() < util::REDRAW_TIME {
+                        // Put the sleep first to lower the chance of us reading
+                        // an old action text.
+
+                        sleep(Duration::from_millis(50));
+                        if self.check_action_text.as_ref().unwrap().do_action(
+                            inputbot,
+                            framehandler,
+                            capturer,
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            false
+        }
+    }
+
+    impl OpenBank {
+        pub fn new(bank_pixels: Vec<FuzzyPixel>, timeout: Duration) -> OpenBank {
+            OpenBank {
+                action: OpenScreenAction::new(
+                    /*expected_pixels=*/ bank_pixels,
+                    /*action_text=*/ Some(action_text::bank_bank_booth()),
+                    /*mouse_click=*/ MouseClick::Left,
+                ),
+                timeout,
+            }
+        }
+    }
+
+    impl Action for OpenBank {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("OpenBank");
+            if framehandler.is_bank_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+
+            let time = std::time::Instant::now();
+            while time.elapsed() < self.timeout {
+                if !self.action.do_action(inputbot, framehandler, capturer) {
+                    // We were unabe to find a matching spot. Pan the screen in
+                    // case the angle is a problem.
+                    inputbot.pan_left(37.0);
+                }
+
+                // Make sure hover text isn't covering the bank corners.
+                let bottom_right = Locations::to_bottom_right(
+                    framehandler.locations.bank_top_left(),
+                    framehandler.locations.bank_dimensions(),
+                );
+                inputbot.move_to(&util::random_position(
+                    /*top_left=*/ &bottom_right,
+                    &DeltaPosition { dx: 30, dy: 30 },
+                ));
+
+                let await_time = std::time::Instant::now();
+                while await_time.elapsed() < Duration::from_secs(10) {
+                    if framehandler.is_bank_open(&capturer.frame().unwrap()) {
+                        return true;
+                    }
+                    sleep(Duration::from_millis(50));
+                }
+            }
+
+            // we were unable to open the bank.
+            false
+        }
+    }
+
+    impl DepositInBank {
+        pub fn new(
+            bank_pixels: Vec<FuzzyPixel>,
+            items: Vec<screen::InventorySlotPixels>,
+        ) -> DepositInBank {
+            let mut deposit_actions = Vec::<InventorySlotAction>::new();
+            for item in items {
+                deposit_actions.push(InventorySlotAction {
+                    item,
+                    mouse_click: MouseClick::Left,
+                });
+            }
+
+            DepositInBank {
+                open_bank_action: OpenBank::new(
+                    /*expected_pixels=*/ bank_pixels,
+                    /*timeout=*/ Duration::from_secs(60),
+                ),
+                quantity_all_action: SetBankQuantity {
+                    quantity: BankQuantity::All,
+                },
+                deposit_actions,
+            }
+        }
+    }
+
+    impl Action for DepositInBank {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("DepositInBank");
+            if !self
+                .open_bank_action
+                .do_action(inputbot, framehandler, capturer)
+            {
+                println!("--- Unable to open the bank ---");
+                return false;
+            }
+
+            // Add a slight delay since sometimes it takes a moment for the bank
+            // being open to allow us to interact with it.
+            sleep(Duration::from_millis(100));
+
+            if !self
+                .quantity_all_action
+                .do_action(inputbot, framehandler, capturer)
+            {
+                // This should be impossible.
+                println!("--- Unable to set the quantity ---");
+                return false;
+            }
+
+            for action in &self.deposit_actions {
+                // Don't check for success here since we pass in items which may
+                // not always appear in the inventory.
+                action.do_action(inputbot, framehandler, capturer);
+            }
+
+            sleep(Duration::from_millis(100));
+
+            // For safety do it again since sometimes the item is not removed
+            // even after pressing it. This will likely result in double
+            // clicking on an item if there is only 1 of it in the inventory.
+            for action in &self.deposit_actions {
+                // Don't check for success here since we pass in items which may
+                // not always appear in the inventory.
+                action.do_action(inputbot, framehandler, capturer);
+            }
+
+            true
+        }
+    }
 }
 pub use compound_action::*;
+
+pub mod abstract_action {
+    /// Here we implement abstract actions. They are only fully defined by each
+    /// instantiation. They can result in calling to any Action.
+    use super::*;
+
+    /// Perform actions which should cause the given item to be consumed. Will
+    /// retry if this doesn't happen.
+    pub struct ConsumeSingleInventoryItem {
+        /// The item that should be consumed from the inventory. We will continue
+        /// attempting to perform 'actions' until either we time out
+        /// (activity_timeout) or no slot can be found containing 'item_to_consume'.
+        ///
+        /// Note that using inventory_slot_pixels::empty is the equivalent of saying
+        /// to fill the inventory by performing 'actions'.
+        pub item_to_consume: screen::InventorySlotPixels,
+
+        /// List of specific steps performed in order to fill the inventory with the
+        /// desired good.
+        pub actions: Vec<Box<dyn Action>>,
+
+        pub timeout: Duration,
+    }
+
+    /// This is used as a general framework for interacting with the game in a way
+    /// that will change the inventory. A common usage is gathering resources, in
+    /// which case you want to consume the empty slots in the inventory. Another
+    /// option is making pizzas in which case you want to start with the inventory
+    /// and use pizza on a cooking range.
+    ///
+    /// The exact actions to take are defined by the user, which is why this is abstract.
+    pub struct ConsumeInventory {
+        /// Can taking this action result in us consuming multiple slots over time.
+        /// If so, we will continue resetting the timer every time we receive an
+        /// item. For example, a single click on an oak tree can result in us
+        /// cutting many logs.
+        pub multi_slot_action: bool,
+
+        /// Amount of time to wait between slots disappearing from the inventory
+        /// before we begin actions again.
+        pub slot_consumption_waittime: Duration,
+
+        /// Max amount of time to attempt performing 'actions' for.
+        pub activity_timeout: Duration,
+
+        /// The item that should be consumed from the inventory. We will continue
+        /// attempting to perform 'actions' until either we time out
+        /// (activity_timeout) or no slot can be found containing 'item_to_consume'.
+        ///
+        /// Note that using inventory_slot_pixels::empty is the equivalent of saying
+        /// to fill the inventory by performing 'actions'.
+        pub item_to_consume: screen::InventorySlotPixels,
+
+        /// List of specific steps performed in order to fill the inventory with the
+        /// desired good.
+        pub actions: Vec<Box<dyn Action>>,
+    }
+
+    pub struct ExplicitActions {
+        pub actions: Vec<Box<dyn Action>>,
+    }
+
+    /// Withdraw the given items from the bank. This works by being given the
+    /// slot index in the bank of the items.
+    ///
+    /// Assumes that the bank is scrolled all the way up so that the slot are in
+    /// their expected locations.
+    ///
+    /// Assumes we are near the bank and there is nothing in the way like a
+    /// closed door.
+    ///
+    /// TODO: Swap 0 to X and -1 to ALL in case both get used. All should always
+    /// be last.
+    pub struct WithdrawFromBank {
+        pub open_bank_action: OpenBank,
+
+        /// This is the set of actions to take once the bank is open. It should
+        /// be in the pattern of [set_quantity, press_slot_center, .*].
+        pub withdrawal_actions: Vec<Box<dyn Action>>,
+    }
+
+    impl Action for ConsumeSingleInventoryItem {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("ConsumeInventory");
+            let first_matching_inventory_slot = framehandler
+                .first_matching_inventory_slot(&capturer.frame().unwrap(), &self.item_to_consume);
+            if first_matching_inventory_slot.is_none() {
+                println!("Inventory has been consumed");
+                return false;
+            }
+
+            let timer = std::time::Instant::now();
+            while timer.elapsed() < self.timeout {
+                for action in &self.actions {
+                    if !action.do_action(inputbot, framehandler, capturer) {
+                        return false;
+                    }
+                }
+
+                let waittime = std::time::Instant::now();
+                while waittime.elapsed() < Duration::from_secs(5) {
+                    sleep(Duration::from_millis(50));
+                    let matching_slot = framehandler.first_matching_inventory_slot(
+                        &capturer.frame().unwrap(),
+                        &self.item_to_consume,
+                    );
+                    if first_matching_inventory_slot != matching_slot {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+    }
+
+    // TODO: consider adding reset.
+    impl Action for ConsumeInventory {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("ConsumeInventory");
+
+            let timer = std::time::Instant::now();
+            // Number of times in a row we have failed to perform the action.
+            let mut consecutive_action_failures = 0;
+            // Number of times in a row we succeeded in performing the action but
+            // failed to consume any inventory slots.
+            let mut consecutive_consumption_failures = 0;
+            while timer.elapsed() < self.activity_timeout {
+                let mut first_matching_inventory_slot = framehandler.first_matching_inventory_slot(
+                    &capturer.frame().unwrap(),
+                    &self.item_to_consume,
+                );
+                if first_matching_inventory_slot.is_none() {
+                    println!("Inventory has been consumed");
+                    return true;
+                }
+
+                let mut actions_succeeded = true;
+                for action in &self.actions {
+                    if !action.do_action(inputbot, framehandler, capturer) {
+                        actions_succeeded = false;
+                        break;
+                    }
+                }
+
+                if !actions_succeeded {
+                    consecutive_action_failures += 1;
+                    if consecutive_action_failures > 3 {
+                        inputbot.pan_left(37.0);
+                        consecutive_action_failures = 0;
+                    }
+                    continue;
+                }
+                consecutive_action_failures = 0;
+
+                let mut waittime = std::time::Instant::now();
+                let mut consumed_slot = false;
+                while waittime.elapsed() < self.slot_consumption_waittime {
+                    sleep(Duration::from_secs(1));
+                    let matching_slot = framehandler.first_matching_inventory_slot(
+                        &capturer.frame().unwrap(),
+                        &self.item_to_consume,
+                    );
+                    if matching_slot == first_matching_inventory_slot {
+                        // Nothing new in the inventory, just keep waiting.
+                        continue;
+                    }
+
+                    consumed_slot = true;
+                    first_matching_inventory_slot = matching_slot;
+
+                    if !self.multi_slot_action || matching_slot.is_none() {
+                        // We just received the item we were after, and we can't
+                        // continue to receive, so stop waiting for the action to
+                        // complete. Or the inventory is full.
+                        // dbg!(matching_slot);
+                        break;
+                    }
+
+                    // We have received an item so reset the timer to allow us to get more.
+                    waittime = std::time::Instant::now();
+                }
+
+                if !consumed_slot {
+                    // This could indicate crowding. Potentially world switch?
+                    consecutive_consumption_failures += 1;
+                    if consecutive_consumption_failures > 3 {
+                        // TODO: return false?
+                    }
+                } else {
+                    consecutive_consumption_failures = 0;
+                }
+            }
+
+            false
+        }
+    }
+
+    impl ExplicitActions {
+        /// Default set of actions useful for resetting the player.
+        pub fn default_reset() -> ExplicitActions {
+            let mut actions = Vec::<Box<dyn Action>>::new();
+            actions.push(Box::new(PressMinimapMiddle {}));
+            actions.push(Box::new(PressCompass {}));
+            actions.push(Box::new(CloseChatbox {}));
+            actions.push(Box::new(OpenInventory {}));
+
+            ExplicitActions { actions }
+        }
+    }
+
+    impl Action for ExplicitActions {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            for action in &self.actions {
+                if !action.do_action(inputbot, framehandler, capturer) {
+                    return false;
+                }
+            }
+
+            true
+        }
+    }
+
+    impl WithdrawFromBank {
+        /// 'bank_pixels' - pixels to look for on open screen action to open the
+        /// bank.
+        ///
+        /// 'bank_slot_and_quantity' - The bank_slot index and the quantity to
+        /// withdraw of each item.
+        ///
+        /// If quantity is 0, we will use All. Only 1 item can set this. If
+        /// quantity is -1, we will use X. Values outside of [-1, 28] are
+        /// invalid.
+        ///
+        /// Note that if using quantity X, this must be set before calling to
+        /// this action.
+        pub fn new(
+            bank_pixels: Vec<FuzzyPixel>,
+            bank_slot_and_quantity: Vec<(i32, i32)>,
+        ) -> WithdrawFromBank {
+            // Organize the withdrawals by quantity to optimize the number of
+            // times we reset. Use a BTreeMap since the special values are the
+            // lowest ones, so when we reach 1-28, we won't have to keep
+            // resetting quantity to One.
+            let mut quantity_to_slot_indices = BTreeMap::<i32, Vec<i32>>::new();
+            for (slot_index, quantity) in bank_slot_and_quantity.iter() {
+                assert!(*quantity >= -1 && *quantity <= 28);
+
+                quantity_to_slot_indices
+                    .entry(*quantity)
+                    .or_insert(Vec::<i32>::new())
+                    .push(*slot_index);
+            }
+
+            // Convert each item we need to withdraw into actions.
+            let mut withdrawal_actions = Vec::<Box<dyn Action>>::new();
+            let mut set_quantity_to_one = false;
+            for (quantity, slot_indices) in quantity_to_slot_indices.iter().rev() {
+                if *quantity == -1 {
+                    withdrawal_actions.push(Box::new(SetBankQuantity {
+                        quantity: BankQuantity::X,
+                    }));
+
+                    for slot_index in slot_indices.iter() {
+                        withdrawal_actions.push(Box::new(ClickBankSlot {
+                            slot_index: *slot_index,
+                            mouse_click: MouseClick::Left,
+                        }));
+                    }
+                } else if *quantity == 0 {
+                    assert_eq!(slot_indices.len(), 1);
+
+                    withdrawal_actions.push(Box::new(SetBankQuantity {
+                        quantity: BankQuantity::All,
+                    }));
+
+                    withdrawal_actions.push(Box::new(ClickBankSlot {
+                        slot_index: slot_indices[0],
+                        mouse_click: MouseClick::Left,
+                    }));
+                } else {
+                    if !set_quantity_to_one {
+                        // We rely on BTreeMap to guarantee we only need to call
+                        // this once.
+                        withdrawal_actions.push(Box::new(SetBankQuantity {
+                            quantity: BankQuantity::One,
+                        }));
+                        set_quantity_to_one = true;
+                    }
+
+                    for slot_index in slot_indices.iter() {
+                        for _ in 0..*quantity {
+                            withdrawal_actions.push(Box::new(ClickBankSlot {
+                                slot_index: *slot_index,
+                                mouse_click: MouseClick::Left,
+                            }));
+                        }
+                    }
+                }
+            }
+
+            WithdrawFromBank {
+                open_bank_action: OpenBank::new(
+                    /*expected_pixels=*/ bank_pixels,
+                    /*timeout=*/ Duration::from_secs(60),
+                ),
+                withdrawal_actions,
+            }
+        }
+    }
+
+    impl Action for WithdrawFromBank {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            if !self
+                .open_bank_action
+                .do_action(inputbot, framehandler, capturer)
+            {
+                return false;
+            }
+
+            let mut all_succeeded = true;
+            for action in &self.withdrawal_actions {
+                all_succeeded = all_succeeded && action.do_action(inputbot, framehandler, capturer);
+                sleep(Duration::from_millis(100));
+            }
+
+            all_succeeded
+        }
+    }
+}
+pub use abstract_action::*;
