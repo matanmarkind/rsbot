@@ -33,3 +33,7 @@ $ cargo run -p screen --bin find_pixel_fuzzy -- --top-left 960,40 --past-bottom-
 scrap
 
 I am dependent on runelight popping up icons such as shrimp on fishing spots. TBH if I was a regular player I'd really want this since seeing certain things is quite difficult.
+
+# Explain how to extend
+- Explain adding new letters/words with bin/action_words.rs
+- Explain adding new inventory pixels with bin/inventory.rs & uncommenting in frame.rs

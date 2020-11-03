@@ -1,4 +1,3 @@
-/// Used to develop new actions.
 use bot::actions::*;
 use screen::{
     action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel,

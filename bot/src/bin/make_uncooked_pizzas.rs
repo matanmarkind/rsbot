@@ -17,7 +17,7 @@ fn withdraw_pizza_base_and_tomato() -> ExplicitActions {
                     fuzzy_pixels::bank_brown3(),
                 ],
                 /*bank_slot_and_quantity=*/
-                vec![(9, -1), (10, -1)],
+                vec![(9, BankQuantity::X), (10, BankQuantity::X)],
             )),
             Box::new(CloseBank {}),
         ],
@@ -31,14 +31,8 @@ fn make_incomplete_pizza() -> ConsumeInventory {
         activity_timeout: Duration::from_secs(2 * 60),
         item_to_consume: inventory_slot_pixels::pizza_base(),
         actions: vec![
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::pizza_base(),
-                mouse_click: MouseClick::Left,
-            }),
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::tomato(),
-                mouse_click: MouseClick::Left,
-            }),
+            Box::new(InventorySlotAction::new(inventory_slot_pixels::pizza_base())),
+            Box::new(InventorySlotAction::new(inventory_slot_pixels::tomato())),
             Box::new(ClickChatboxMiddle {}),
         ],
     }
@@ -55,7 +49,7 @@ fn withdraw_cheese() -> ExplicitActions {
                     fuzzy_pixels::bank_brown3(),
                 ],
                 /*bank_slot_and_quantity=*/
-                vec![(8, -1)],
+                vec![(8, BankQuantity::X)],
             )),
             Box::new(CloseBank {}),
         ],
@@ -70,14 +64,10 @@ fn make_uncooked_pizza() -> ConsumeInventory {
         activity_timeout: Duration::from_secs(1 * 60),
         item_to_consume: inventory_slot_pixels::cheese(),
         actions: vec![
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::incomplete_pizza(),
-                mouse_click: MouseClick::Left,
-            }),
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::cheese(),
-                mouse_click: MouseClick::Left,
-            }),
+            Box::new(InventorySlotAction::new(
+                inventory_slot_pixels::incomplete_pizza(),
+            )),
+            Box::new(InventorySlotAction::new(inventory_slot_pixels::cheese())),
             Box::new(ClickChatboxMiddle {}),
         ],
     }

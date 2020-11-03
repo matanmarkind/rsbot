@@ -251,6 +251,16 @@ pub mod fuzzy_pixels {
             red_max: 120,
         }
     }
+    pub fn map_icon_pickaxe_dark_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 94,
+            blue_max: 98,
+            green_min: 94,
+            green_max: 98,
+            red_min: 96,
+            red_max: 100,
+        }
+    }
     pub fn map_icon_pickaxe_handle_light_brown() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 61,
@@ -545,6 +555,17 @@ pub mod fuzzy_pixels {
             red_max: 155,
         }
     }
+    pub fn cookrange_medium_red() -> FuzzyPixel {
+        // This is the color of the "fire" inside of the cook range.
+        FuzzyPixel {
+            blue_min: 7,
+            blue_max: 12,
+            green_min: 18,
+            green_max: 24,
+            red_min: 165,
+            red_max: 183,
+        }
+    }
     // Fires seem to be dominated by 2 shades. Since they are fairly distinct
     // they should be searched seperately.
     pub fn fire_dark() -> FuzzyPixel {
@@ -569,14 +590,15 @@ pub mod fuzzy_pixels {
     }
     pub fn tin_ore() -> FuzzyPixel {
         // Max BGR could be 130, 131, 144.
+        // Mi BGR could be 81, 81, 80.
         // This overlaps with silver though so shrunk it down.
         FuzzyPixel {
-            blue_min: 81,
-            blue_max: 100,
-            green_min: 81,
-            green_max: 105,
-            red_min: 80,
-            red_max: 104,
+            blue_min: 85,
+            blue_max: 95,
+            green_min: 85,
+            green_max: 100,
+            red_min: 85,
+            red_max: 100,
         }
     }
     pub fn silver_ore() -> FuzzyPixel {
@@ -1807,6 +1829,148 @@ pub mod inventory_slot_pixels {
     }
     pub fn plain_pizza_bank() -> InventorySlotPixels {
         let mut pixels = plain_pizza();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn burnt_pizza() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 36,
+                blue_max: 40,
+                green_min: 36,
+                green_max: 40,
+                red_min: 40,
+                red_max: 44,
+            },
+            FuzzyPixel {
+                blue_min: 18,
+                blue_max: 22,
+                green_min: 18,
+                green_max: 22,
+                red_min: 20,
+                red_max: 24,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 59,
+                blue_max: 63,
+                green_min: 59,
+                green_max: 63,
+                red_min: 65,
+                red_max: 69,
+            },
+            FuzzyPixel {
+                blue_min: 1,
+                blue_max: 7,
+                green_min: 3,
+                green_max: 7,
+                red_min: 48,
+                red_max: 52,
+            },
+            FuzzyPixel {
+                blue_min: 1,
+                blue_max: 7,
+                green_min: 3,
+                green_max: 7,
+                red_min: 48,
+                red_max: 52,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            black(),
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn burnt_pizza_bank() -> InventorySlotPixels {
+        let mut pixels = burnt_pizza();
+        pixels[7] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
+    pub fn anchovy_pizza() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 132,
+                blue_max: 136,
+                green_min: 132,
+                green_max: 136,
+                red_min: 145,
+                red_max: 149,
+            },
+            FuzzyPixel {
+                blue_min: 29,
+                blue_max: 33,
+                green_min: 45,
+                green_max: 49,
+                red_min: 51,
+                red_max: 55,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 93,
+                blue_max: 97,
+                green_min: 140,
+                green_max: 144,
+                red_min: 159,
+                red_max: 163,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 12,
+                green_max: 16,
+                red_min: 111,
+                red_max: 115,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 82,
+                blue_max: 86,
+                green_min: 123,
+                green_max: 127,
+                red_min: 140,
+                red_max: 144,
+            },
+            FuzzyPixel {
+                blue_min: 35,
+                blue_max: 39,
+                green_min: 53,
+                green_max: 57,
+                red_min: 60,
+                red_max: 64,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn anchovy_pizza_bank() -> InventorySlotPixels {
+        let mut pixels = anchovy_pizza();
         pixels[7] = FuzzyPixel {
             blue_min: 49,
             blue_max: 53,

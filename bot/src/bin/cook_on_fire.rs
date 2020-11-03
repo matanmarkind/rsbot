@@ -82,8 +82,8 @@ fn withdraw_from_bank() -> WithdrawFromBank {
         bank_pixels(),
         /*bank_slot_and_quantity=*/
         vec![
-            (VERSION.wood_bank_slot_index, 2),
-            (VERSION.food_bank_slot_index, 0),
+            (VERSION.wood_bank_slot_index, BankQuantity::Exact(2)),
+            (VERSION.food_bank_slot_index, BankQuantity::All),
         ],
     )
 }
@@ -111,14 +111,8 @@ fn light_fire() -> ConsumeSingleInventoryItem {
         item_to_consume: inventory_slot_pixels::oak_logs(),
         timeout: Duration::from_secs(10),
         actions: vec![
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::oak_logs(),
-                mouse_click: MouseClick::Left,
-            }),
-            Box::new(InventorySlotAction {
-                item: inventory_slot_pixels::tinderbox(),
-                mouse_click: MouseClick::Left,
-            }),
+            Box::new(InventorySlotAction::new(inventory_slot_pixels::oak_logs())),
+            Box::new(InventorySlotAction::new(inventory_slot_pixels::tinderbox())),
         ],
     }
 }
@@ -133,13 +127,10 @@ fn cook_fish() -> ConsumeInventory {
             Food::Anchovies => inventory_slot_pixels::raw_anchovies(),
         },
         actions: vec![
-            Box::new(InventorySlotAction {
-                item: match VERSION.food {
-                    Food::Shrimp => inventory_slot_pixels::raw_shrimp(),
-                    Food::Anchovies => inventory_slot_pixels::raw_anchovies(),
-                },
-                mouse_click: MouseClick::Left,
-            }),
+            Box::new(InventorySlotAction::new(match VERSION.food {
+                Food::Shrimp => inventory_slot_pixels::raw_shrimp(),
+                Food::Anchovies => inventory_slot_pixels::raw_anchovies(),
+            })),
             Box::new(OpenScreenAction::new(
                 /*expected_pixels=*/
                 vec![fuzzy_pixels::fire_dark(), fuzzy_pixels::fire_light()],

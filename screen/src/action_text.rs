@@ -335,11 +335,11 @@ mod letters {
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
-                DeltaPosition { dx: 1, dy: 9 },
-                DeltaPosition { dx: 3, dy: 7 },
-                DeltaPosition { dx: 3, dy: 11 },
-                DeltaPosition { dx: 5, dy: 2 },
-                DeltaPosition { dx: 5, dy: 10 },
+                DeltaPosition { dx: 0, dy: 9 },
+                DeltaPosition { dx: 2, dy: 7 },
+                DeltaPosition { dx: 2, dy: 11 },
+                DeltaPosition { dx: 4, dy: 2 },
+                DeltaPosition { dx: 4, dy: 10 },
             ],
 
             display: "d",
@@ -601,6 +601,25 @@ mod letters {
         }
     }
 
+    pub fn lower_z() -> Character {
+        Character {
+            width: 8,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 0, dy: 11 },
+                DeltaPosition { dx: 2, dy: 6 },
+                DeltaPosition { dx: 2, dy: 8 },
+                DeltaPosition { dx: 2, dy: 11 },
+                DeltaPosition { dx: 4, dy: 6 },
+                DeltaPosition { dx: 4, dy: 11 },
+            ],
+
+            display: "z",
+        }
+    }
+
     pub fn space() -> Character {
         Character {
             width: 5,
@@ -643,7 +662,7 @@ mod letters {
 
     pub fn hyphen() -> Character {
         Character {
-            width: 7,
+            width: 8,
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
@@ -737,6 +756,41 @@ pub fn use_raw_anchovies_rightarrow_fire() -> Text {
             (upper_f(), action_text_blue()),
             (lower_i(), action_text_blue()),
             (lower_r(), action_text_blue()),
+            (lower_e(), action_text_blue()),
+        ],
+    }
+}
+
+pub fn use_uncooked_pizza_rightarrow_range() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_u(), action_text_white()),
+            (lower_s(), action_text_white()),
+            (lower_e(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_u(), action_text_orange()),
+            (lower_n(), action_text_orange()),
+            (lower_c(), action_text_orange()),
+            (lower_o(), action_text_orange()),
+            (lower_o(), action_text_orange()),
+            (lower_k(), action_text_orange()),
+            (lower_e(), action_text_orange()),
+            (lower_d(), action_text_orange()),
+            (space(), action_text_white()),
+            (lower_p(), action_text_orange()),
+            (lower_i(), action_text_orange()),
+            (lower_z(), action_text_orange()),
+            (lower_z(), action_text_orange()),
+            (lower_a(), action_text_orange()),
+            (space(), action_text_white()),
+            (hyphen(), action_text_white()),
+            (greater_than(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_r(), action_text_blue()),
+            (lower_a(), action_text_blue()),
+            (lower_n(), action_text_blue()),
+            (lower_g(), action_text_blue()),
             (lower_e(), action_text_blue()),
         ],
     }

@@ -7,6 +7,13 @@ use std::time::Duration;
 use userinput::InputBot;
 use util::*;
 
+pub enum BankQuantity {
+    All,
+    X,
+    One,
+    Exact(i32),
+}
+
 fn check_map_pixels(
     frame: &screen::DefaultFrame,
     middle: Position,
@@ -22,7 +29,7 @@ fn check_map_pixels(
         d_radius,
         /*min_angle_degrees=*/ arc_of_interest.0,
         /*d_angle_degrees=*/ arc_of_interest.1,
-        /*spacing=*/ 2,
+        /*spacing=*/ 1,
     );
 
     for pos in map_iter {
@@ -192,6 +199,12 @@ pub mod basic_action {
         /// If we successfully find and move to a slot holding 'item' how should
         /// we click the mouse.
         pub mouse_click: MouseClick,
+
+        /// Whether or not to hold shift while clicking on the item. This allows
+        /// us to perform actions with items in the inventory other than the
+        /// osrs default.
+        /// (https://github.com/runelite/runelite/wiki/Menu-Entry-Swapper)
+        pub shift_click: bool,
     }
 
     /// Confirm that the text on the top left of the game screen describes the
@@ -206,11 +219,6 @@ pub mod basic_action {
     /// Set the desired quantity for bank deposit/withdrawal.
     ///
     /// Assumes the bank is open.
-    pub enum BankQuantity {
-        All,
-        X,
-        One,
-    }
     pub struct SetBankQuantity {
         pub quantity: BankQuantity,
     }
@@ -469,42 +477,45 @@ pub mod basic_action {
         ) -> bool {
             println!("TravelToOnMinimap");
 
-            // Find the destination on the minimap.
-            let pos = match check_map_pixels(
-                &capturer.frame().unwrap(),
-                framehandler.locations.minimap_middle(),
-                /*min_radius=*/ 1,
-                /*d_radius=*/ Locations::MINIMAP_RADIUS,
-                self.arc_of_interest,
-                self.primary_pixel,
-                &self.check_pixels,
-            ) {
-                None => return false, // Failed to find the dst.
-                Some(pos) => pos,
-            };
-
-            inputbot.move_to(&pos);
-            inputbot.left_click();
-
-            // TODO: Allow a second press on the minimap. Sometimes we are off if running.
-
-            // Wait until we are nearby or timeout.
-            let time = std::time::Instant::now();
-            while time.elapsed() < Duration::from_secs(20) {
-                match check_map_pixels(
+            // Try twice. We may find the destination but hit something in the way.
+            for i in 0..2 {
+                // Find the destination on the minimap.
+                let pos = match check_map_pixels(
                     &capturer.frame().unwrap(),
                     framehandler.locations.minimap_middle(),
                     /*min_radius=*/ 1,
-                    /*d_radius=*/ Locations::MINIMAP_SMALL_RADIUS,
-                    /*arc_of_interest=*/ (0.0, 360.0),
+                    /*d_radius=*/ Locations::MINIMAP_RADIUS,
+                    self.arc_of_interest,
                     self.primary_pixel,
                     &self.check_pixels,
                 ) {
-                    None => (),
-                    Some(_) => return true,
+                    None => return false, // Failed to find the dst.
+                    Some(pos) => pos,
                 };
 
-                sleep(Duration::from_millis(100));
+                inputbot.move_to(&pos);
+                inputbot.left_click();
+
+                // TODO: Allow a second press on the minimap. Sometimes we are off if running.
+
+                // Wait until we are nearby or timeout.
+                let time = std::time::Instant::now();
+                while time.elapsed() < Duration::from_secs(20) {
+                    match check_map_pixels(
+                        &capturer.frame().unwrap(),
+                        framehandler.locations.minimap_middle(),
+                        /*min_radius=*/ 1,
+                        /*d_radius=*/ Locations::MINIMAP_SMALL_RADIUS,
+                        /*arc_of_interest=*/ (0.0, 360.0),
+                        self.primary_pixel,
+                        &self.check_pixels,
+                    ) {
+                        None => (),
+                        Some(_) => return true,
+                    };
+
+                    sleep(Duration::from_millis(100));
+                }
             }
 
             false
@@ -559,6 +570,16 @@ pub mod basic_action {
         }
     }
 
+    impl InventorySlotAction {
+        pub fn new(item: screen::InventorySlotPixels) -> InventorySlotAction {
+            InventorySlotAction {
+                item,
+                mouse_click: MouseClick::Left,
+                shift_click: false,
+            }
+        }
+    }
+
     impl Action for InventorySlotAction {
         fn do_action(
             &self,
@@ -579,7 +600,15 @@ pub mod basic_action {
                 framehandler.locations.inventory_slot_middle(slot_index),
                 3,
             ));
+
+            if self.shift_click {
+                inputbot.hold_shift();
+                sleep(Duration::from_millis(100));
+            }
             click_mouse(inputbot, self.mouse_click);
+            if self.shift_click {
+                inputbot.release_shift();
+            }
 
             true
         }
@@ -613,6 +642,7 @@ pub mod basic_action {
                 BankQuantity::All => framehandler.is_bank_quantity_all(&frame),
                 BankQuantity::X => framehandler.is_bank_quantity_x(&frame),
                 BankQuantity::One => framehandler.is_bank_quantity_one(&frame),
+                BankQuantity::Exact(_) => panic!("Invalid quantity for SetBankQuantity."),
             }
         }
 
@@ -621,6 +651,7 @@ pub mod basic_action {
                 BankQuantity::All => framehandler.locations.bank_quantity_all(),
                 BankQuantity::X => framehandler.locations.bank_quantity_x(),
                 BankQuantity::One => framehandler.locations.bank_quantity_one(),
+                BankQuantity::Exact(_) => panic!("Invalid quantity for SetBankQuantity."),
             }
         }
     }
@@ -891,8 +922,10 @@ pub mod compound_action {
             framehandler: &mut FrameHandler,
             capturer: &mut Capturer,
         ) -> bool {
+            println!("TravelTo");
             MaybeToggleRunning::run().do_action(inputbot, framehandler, capturer);
 
+            let mut worldmap_search_failed = false;
             let mut is_worldmap_open = false;
             let time = std::time::Instant::now();
             while time.elapsed() < self.timeout {
@@ -917,7 +950,14 @@ pub mod compound_action {
                         );
                         sleep(Duration::from_secs(if running { 2 } else { 4 }));
                     }
+
                     return true;
+                } else if worldmap_search_failed {
+                    // First check the minimap, then the worldmap. It is possible during
+                    // the delay between searching the minimap to searching the worldmap
+                    // that the destination will cross the boundary. Therefore if
+                    // worldmap search fails, give minimap search a second chance.
+                    break;
                 }
 
                 // We either did not find the destination on the minimap, or we did
@@ -933,27 +973,21 @@ pub mod compound_action {
                         framehandler,
                         capturer,
                     );
+                    if !is_worldmap_open {
+                        return false;
+                    }
                 }
 
-                if !is_worldmap_open
-                    || !self
+                worldmap_search_failed =
+                    !self
                         .travel_worldmap
-                        .do_action(inputbot, framehandler, capturer)
-                {
-                    // Either the worldmap failed to open or we couldn't even
-                    // find the destination on the worldmap.
-                    MaybeToggleWorldmap::close_worldmap().do_action(
-                        inputbot,
-                        framehandler,
-                        capturer,
-                    );
-                    return false;
-                }
+                        .do_action(inputbot, framehandler, capturer);
             }
 
             if is_worldmap_open {
                 MaybeToggleWorldmap::close_worldmap().do_action(inputbot, framehandler, capturer);
             }
+
             false
         }
     }
@@ -1092,10 +1126,7 @@ pub mod compound_action {
         ) -> DepositInBank {
             let mut deposit_actions = Vec::<InventorySlotAction>::new();
             for item in items {
-                deposit_actions.push(InventorySlotAction {
-                    item,
-                    mouse_click: MouseClick::Left,
-                });
+                deposit_actions.push(InventorySlotAction::new(item));
             }
 
             DepositInBank {
@@ -1374,6 +1405,7 @@ pub mod abstract_action {
         pub fn default_reset() -> ExplicitActions {
             let mut actions = Vec::<Box<dyn Action>>::new();
             actions.push(Box::new(PressMinimapMiddle {}));
+            actions.push(Box::new(MaybeToggleWorldmap::close_worldmap()));
             actions.push(Box::new(PressCompass {}));
             actions.push(Box::new(CloseChatbox {}));
             actions.push(Box::new(OpenInventory {}));
@@ -1414,7 +1446,7 @@ pub mod abstract_action {
         /// this action.
         pub fn new(
             bank_pixels: Vec<FuzzyPixel>,
-            bank_slot_and_quantity: Vec<(i32, i32)>,
+            bank_slot_and_quantity: Vec<(i32, BankQuantity)>,
         ) -> WithdrawFromBank {
             // Organize the withdrawals by quantity to optimize the number of
             // times we reset. Use a BTreeMap since the special values are the
@@ -1422,30 +1454,32 @@ pub mod abstract_action {
             // resetting quantity to One.
             let mut quantity_to_slot_indices = BTreeMap::<i32, Vec<i32>>::new();
             for (slot_index, quantity) in bank_slot_and_quantity.iter() {
-                assert!(*quantity >= -1 && *quantity <= 28);
-
-                quantity_to_slot_indices
-                    .entry(*quantity)
-                    .or_insert(Vec::<i32>::new())
-                    .push(*slot_index);
+                match quantity {
+                    BankQuantity::All => quantity_to_slot_indices
+                        .entry(-1)
+                        .or_insert(Vec::<i32>::new())
+                        .push(*slot_index),
+                    BankQuantity::X => quantity_to_slot_indices
+                        .entry(0)
+                        .or_insert(Vec::<i32>::new())
+                        .push(*slot_index),
+                    BankQuantity::Exact(val) => {
+                        assert!(*val <= 28);
+                        quantity_to_slot_indices
+                            .entry(*val)
+                            .or_insert(Vec::<i32>::new())
+                            .push(*slot_index);
+                    }
+                    BankQuantity::One => panic!("Invalid BankQuantity for WithdrawFromBank."),
+                }
             }
 
             // Convert each item we need to withdraw into actions.
             let mut withdrawal_actions = Vec::<Box<dyn Action>>::new();
             let mut set_quantity_to_one = false;
+            // Use BTreeMap + reverse iterator to erach All last.
             for (quantity, slot_indices) in quantity_to_slot_indices.iter().rev() {
                 if *quantity == -1 {
-                    withdrawal_actions.push(Box::new(SetBankQuantity {
-                        quantity: BankQuantity::X,
-                    }));
-
-                    for slot_index in slot_indices.iter() {
-                        withdrawal_actions.push(Box::new(ClickBankSlot {
-                            slot_index: *slot_index,
-                            mouse_click: MouseClick::Left,
-                        }));
-                    }
-                } else if *quantity == 0 {
                     assert_eq!(slot_indices.len(), 1);
 
                     withdrawal_actions.push(Box::new(SetBankQuantity {
@@ -1456,6 +1490,17 @@ pub mod abstract_action {
                         slot_index: slot_indices[0],
                         mouse_click: MouseClick::Left,
                     }));
+                } else if *quantity == 0 {
+                    withdrawal_actions.push(Box::new(SetBankQuantity {
+                        quantity: BankQuantity::X,
+                    }));
+
+                    for slot_index in slot_indices.iter() {
+                        withdrawal_actions.push(Box::new(ClickBankSlot {
+                            slot_index: *slot_index,
+                            mouse_click: MouseClick::Left,
+                        }));
+                    }
                 } else {
                     if !set_quantity_to_one {
                         // We rely on BTreeMap to guarantee we only need to call
