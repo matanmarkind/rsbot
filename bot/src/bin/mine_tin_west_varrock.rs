@@ -54,7 +54,7 @@ fn travel_to_mine() -> ExplicitActions {
         actions: vec![
             Box::new(PressCompass {}),
             Box::new(TravelStraight {
-                direction_degrees: 130.0,
+                direction_degrees: 120.0,
                 travel_time: Duration::from_secs(20),
             }),
             Box::new(TravelTo::new(
@@ -71,7 +71,7 @@ fn travel_to_mine() -> ExplicitActions {
                 /*timeout=*/ Duration::from_secs(60),
             )),
             Box::new(TravelStraight {
-                direction_degrees: 285.0,
+                direction_degrees: 315.0,
                 travel_time: Duration::from_secs(5),
             }),
             Box::new(PressMinimapMiddle {}),

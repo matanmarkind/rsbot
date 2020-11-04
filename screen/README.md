@@ -37,3 +37,4 @@ I am dependent on runelight popping up icons such as shrimp on fishing spots. TB
 # Explain how to extend
 - Explain adding new letters/words with bin/action_words.rs
 - Explain adding new inventory pixels with bin/inventory.rs & uncommenting in frame.rs
+- What the player looks like can cause an issue since those are also just pixels on the screen.

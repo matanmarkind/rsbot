@@ -614,14 +614,16 @@ pub mod fuzzy_pixels {
         }
     }
     pub fn copper_ore() -> FuzzyPixel {
+        // Main thing to avoid is iron which is a darker brown.
+        // There is a spot on my characters head which is 50, 76, 109
         // 52, 94, 147
         // 29, 53, 82
         FuzzyPixel {
-            blue_min: 30,
-            blue_max: 50,
-            green_min: 60,
+            blue_min: 40,
+            blue_max: 48,
+            green_min: 70,
             green_max: 90,
-            red_min: 85,
+            red_min: 100,
             red_max: 140,
         }
     }
