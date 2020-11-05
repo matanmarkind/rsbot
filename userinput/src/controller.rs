@@ -225,7 +225,7 @@ impl InputBot {
         }
     }
 
-    fn click_key(&mut self, key: Key) {
+    pub fn click_key(&mut self, key: Key) {
         let mut rng = rand::thread_rng();
         let duration = Uniform::new(MIN_CLICK_WAIT, MAX_CLICK_WAIT);
 

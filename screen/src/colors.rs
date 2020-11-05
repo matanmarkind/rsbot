@@ -555,6 +555,17 @@ pub mod fuzzy_pixels {
             red_max: 155,
         }
     }
+    pub fn furnace_grey() -> FuzzyPixel {
+        // This is the color of the furnace near the player.
+        FuzzyPixel {
+            blue_min: 18,
+            blue_max: 28,
+            green_min: 18,
+            green_max: 28,
+            red_min: 20,
+            red_max: 31,
+        }
+    }
     pub fn cookrange_medium_red() -> FuzzyPixel {
         // This is the color of the "fire" inside of the cook range.
         FuzzyPixel {

@@ -22,7 +22,7 @@ fn main() {
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
-    let text = &action_text::use_uncooked_pizza_rightarrow_range();
+    let text = &action_text::smelt_furnace();
 
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();

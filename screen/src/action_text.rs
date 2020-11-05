@@ -567,6 +567,23 @@ mod letters {
         }
     }
 
+    pub fn lower_u() -> Character {
+        Character {
+            width: 8,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 0, dy: 10 },
+                DeltaPosition { dx: 2, dy: 11 },
+                DeltaPosition { dx: 4, dy: 6 },
+                DeltaPosition { dx: 4, dy: 10 },
+            ],
+
+            display: "t",
+        }
+    }
+
     pub fn lower_v() -> Character {
         Character {
             width: 8,
@@ -792,6 +809,29 @@ pub fn use_uncooked_pizza_rightarrow_range() -> Text {
             (lower_n(), action_text_blue()),
             (lower_g(), action_text_blue()),
             (lower_e(), action_text_blue()),
+        ],
+    }
+}
+
+pub fn smelt_furnace() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_s(), action_text_white()),
+            (lower_m(), action_text_white()),
+            (lower_e(), action_text_white()),
+            (lower_l(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_f(), action_text_blue()),
+            (lower_u(), action_text_blue()),
+            (lower_r(), action_text_blue()),
+            (lower_n(), action_text_blue()),
+            (lower_a(), action_text_blue()),
+            (lower_c(), action_text_blue()),
+            (lower_e(), action_text_blue()),
+            (space(), action_text_white()),
+            (forward_slash(), action_text_white()),
         ],
     }
 }

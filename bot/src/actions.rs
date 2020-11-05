@@ -135,6 +135,10 @@ pub mod basic_action {
     /// This is needed for open screen actions.
     pub struct CloseChatbox {}
 
+    pub struct ClickKey {
+        pub key: userinput::Key,
+    }
+
     /// Make sure the player is in walking or running mode.
     pub struct MaybeToggleRunning {
         // If true, will attempt to set the player to run.
@@ -289,6 +293,19 @@ pub mod basic_action {
             }
 
             inputbot.click_esc();
+            true
+        }
+    }
+
+    impl Action for ClickKey {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            _framehandler: &mut FrameHandler,
+            _capturer: &mut Capturer,
+        ) -> bool {
+            println!("ClickKey");
+            inputbot.click_key(self.key);
             true
         }
     }

@@ -5,6 +5,7 @@ pub mod types;
 pub use constants::*;
 pub use controller::{InputBot, MouseMover};
 pub use types::*;
+pub use uinput::event::keyboard::Key;
 
 use structopt::StructOpt;
 #[derive(Debug, Clone, StructOpt)]

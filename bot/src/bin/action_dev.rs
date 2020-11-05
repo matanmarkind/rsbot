@@ -22,22 +22,28 @@ fn travel_to_furnace() -> TravelTo {
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
-        /*try_to_run=*/false,
+        /*try_to_run=*/ false,
     )
 }
 
-fn mine_copper() -> ConsumeInventory {
+fn smelt_bronze() -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: false,
         slot_consumption_waittime: Duration::from_secs(15),
         activity_timeout: Duration::from_secs(10 * 60),
-        item_to_consume: inventory_slot_pixels::empty(),
-        actions: vec![Box::new(OpenScreenAction::new(
-            /*expected_pixels=*/
-            vec![fuzzy_pixels::copper_ore()],
-            /*action_text=*/ Some(action_text::mine_rocks()),
-            /*mouse_click=*/ MouseClick::Left,
-        ))],
+        item_to_consume: inventory_slot_pixels::copper_ore(),
+        actions: vec![
+            Box::new(OpenScreenAction::new(
+                /*expected_pixels=*/
+                vec![fuzzy_pixels::furnace_grey()],
+                /*action_text=*/ Some(action_text::smelt_furnace()),
+                /*mouse_click=*/ MouseClick::Left,
+            )),
+            // TODO: Add WaitChatboxOpen.
+            Box::new(ClickKey {
+                key: userinput::Key::_1,
+            }),
+        ],
     }
 }
 
@@ -58,7 +64,7 @@ fn travel_to_bank() -> TravelTo {
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
-        /*try_to_run=*/false,
+        /*try_to_run=*/ false,
     )
 }
 
@@ -98,10 +104,11 @@ Assumes that:
     );
 
     // let reset_actions = ExplicitActions::default_reset();
+    // let travel_to_bank_actions = travel_to_bank();
+    // let deposit_bars = DepositEntireInventoryToBank{};
+    // Withdraw...
     let travel_to_furnace_actions = travel_to_furnace();
-    // let mine_copper_actions = mine_copper();
-    let travel_to_bank_actions = travel_to_bank();
-    // let deposit_copper_actions = deposit_copper();
+    let smelt_iron_actions = smelt_bronze();
 
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(10 * 60) {
@@ -116,12 +123,7 @@ Assumes that:
             dbg!(res);
             break;
         }
-        // let res = mine_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        // if !res {
-        //     dbg!(res);
-        //     break;
-        // }
-        let res = travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        let res = smelt_iron_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);
             break;
