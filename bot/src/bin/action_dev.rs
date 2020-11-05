@@ -26,6 +26,20 @@ fn travel_to_furnace() -> TravelTo {
     )
 }
 
+// #[derive(Clone)]
+// pub enum AwaitFrame {
+//     Time(Duration),
+//     IsBankOpen(Duration),
+//     IsInventoryOpen(Duration),
+//     IsWorldMapOpen(Duration),
+//     IsWorldMapClosed(Duration),
+//     IsChatboxOpen(Duration),
+
+//     IsCloseOnMinimap(Duration, Vec<FuzzyPixel>, Vec<FuzzyPixel>),
+//     // Only to be used with DescribeActionForMinimap which converts this to
+//     // IsCloseOnMinimap. Otherwise this is the equivalent of Time.
+//     IsCloseOnMinimapIncomplete(Duration),
+// }
 fn smelt_bronze() -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: false,
