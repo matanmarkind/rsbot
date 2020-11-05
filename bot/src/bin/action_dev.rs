@@ -9,39 +9,20 @@ use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
 
-fn travel_to_mine() -> ExplicitActions {
-    ExplicitActions {
-        actions: vec![
-            // No press compass since this is right after reset.
-            Box::new(TravelStraight {
-                direction_degrees: 0.0,
-                travel_time: Duration::from_secs(20),
-            }),
-            Box::new(TravelStraight {
-                direction_degrees: 60.0,
-                travel_time: Duration::from_secs(20),
-            }),
-            Box::new(TravelTo::new(
-                /*primary_pixel=*/ fuzzy_pixels::map_icon_pickaxe_dark_gray(),
-                /*check_pixels=*/
-                vec![
-                    fuzzy_pixels::map_icon_pickaxe_light_gray(),
-                    fuzzy_pixels::map_icon_pickaxe_handle_light_brown(),
-                    fuzzy_pixels::map_icon_pickaxe_handle_medium_brown(),
-                    fuzzy_pixels::map_icon_dark_gray(),
-                    fuzzy_pixels::map_icon_light_gray(),
-                ],
-                /*arc_of_interest=*/ (0.0, 360.0),
-                /*timeout=*/ Duration::from_secs(60),
-            )),
-            // Usually these rocks are less crowded.
-            // Box::new(TravelStraight {
-            //     direction_degrees: 245.0,
-            //     travel_time: Duration::from_secs(5),
-            // }),
-            // Box::new(PressMinimapMiddle {}),
+fn travel_to_furnace() -> TravelTo {
+    TravelTo::new(
+        /*primary_pixel=*/ fuzzy_pixels::map_icon_furnace_yellow(),
+        /*check_pixels=*/
+        vec![
+            fuzzy_pixels::map_icon_furnace_orange1(),
+            fuzzy_pixels::map_icon_furnace_orange2(),
+            fuzzy_pixels::map_icon_furnace_gray(),
+            fuzzy_pixels::map_icon_light_gray(),
+            fuzzy_pixels::map_floor_beige(),
         ],
-    }
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+    )
 }
 
 fn mine_copper() -> ConsumeInventory {
@@ -59,27 +40,18 @@ fn mine_copper() -> ConsumeInventory {
     }
 }
 
-fn travel_to_bank() -> ExplicitActions {
-    ExplicitActions {
-        actions: vec![
-            Box::new(PressCompass {}),
-            Box::new(TravelStraight {
-                direction_degrees: 290.0,
-                travel_time: Duration::from_secs(20),
-            }),
-            Box::new(TravelTo::new(
-                /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
-                /*check_pixels=*/
-                vec![
-                    fuzzy_pixels::map_icon_dark_gray(),
-                    fuzzy_pixels::map_icon_light_gray(),
-                    fuzzy_pixels::map_floor_brown(),
-                ],
-                /*arc_of_interest=*/ (0.0, 360.0),
-                /*timeout=*/ Duration::from_secs(60),
-            )),
+fn travel_to_bank() -> TravelTo {
+    TravelTo::new(
+        /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
+        /*check_pixels=*/
+        vec![
+            fuzzy_pixels::map_icon_dark_gray(),
+            fuzzy_pixels::map_icon_light_gray(),
+            fuzzy_pixels::map_floor_beige(),
         ],
-    }
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+    )
 }
 
 fn deposit_copper() -> DepositInBank {
@@ -117,39 +89,39 @@ Assumes that:
 "
     );
 
-    let reset_actions = ExplicitActions::default_reset();
-    let travel_to_mine_actions = travel_to_mine();
-    let mine_copper_actions = mine_copper();
+    // let reset_actions = ExplicitActions::default_reset();
+    let travel_to_furnace_actions = travel_to_furnace();
+    // let mine_copper_actions = mine_copper();
     let travel_to_bank_actions = travel_to_bank();
-    let deposit_copper_actions = deposit_copper();
+    // let deposit_copper_actions = deposit_copper();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(2 * 60 * 60) {
-        let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+    while time.elapsed() < std::time::Duration::from_secs(1) {
+        // let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        // if !res {
+        //     dbg!(res);
+        //     break;
+        // }
+        let res = travel_to_furnace_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);
             break;
         }
-        let res = travel_to_mine_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        if !res {
-            dbg!(res);
-            break;
-        }
-        let res = mine_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        if !res {
-            dbg!(res);
-            break;
-        }
+        // let res = mine_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        // if !res {
+        //     dbg!(res);
+        //     break;
+        // }
         let res = travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);
             break;
         }
-        let res = deposit_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        if !res {
-            dbg!(res);
-            break;
-        }
+        // let res = deposit_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        // if !res {
+        //     dbg!(res);
+        //     break;
+        // }
     }
 
     Ok(())

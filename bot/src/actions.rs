@@ -228,6 +228,10 @@ pub mod basic_action {
         pub mouse_click: MouseClick,
     }
 
+    pub struct DepositEntireInventoryToBank {
+        pub open_bank_action: OpenBank,
+    }
+
     /// Move to the middle of the chatbox, wait until chatbox is open, press.
     pub struct ClickChatboxMiddle {}
 
@@ -708,6 +712,48 @@ pub mod basic_action {
                 5,
             ));
             click_mouse(inputbot, self.mouse_click);
+
+            true
+        }
+    }
+
+    impl DepositEntireInventoryToBank {
+        pub fn new(
+            bank_pixels: Vec<FuzzyPixel>,
+            items: Vec<screen::InventorySlotPixels>,
+        ) -> DepositEntireInventoryToBank {
+            DepositEntireInventoryToBank {
+                open_bank_action: OpenBank::new(
+                    /*expected_pixels=*/ bank_pixels,
+                    /*timeout=*/ Duration::from_secs(60),
+                ),
+            }
+        }
+    }
+
+    impl Action for DepositEntireInventoryToBank {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            println!("DepositInBank");
+            if !self
+                .open_bank_action
+                .do_action(inputbot, framehandler, capturer)
+            {
+                println!("--- Unable to open the bank ---");
+                return false;
+            }
+
+            inputbot.move_to(&framehandler.locations.bank_deposit_inventory());
+            sleep(Duration::from_millis(50));
+            inputbot.left_click();
+
+            // For safety press again since sometimes the bank isn't responsive.
+            sleep(Duration::from_millis(100));
+            inputbot.left_click();
 
             true
         }

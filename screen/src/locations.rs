@@ -1,5 +1,8 @@
 use util::*;
 
+// TODO: refactor away from simple, compound, abstract. Move to just grouping by
+// topic: Bank, map, etc.
+
 /// Used to calculate the pixel location of a desired object on the screen.
 ///
 /// For interesting locations that don't move, we have recorded their location
@@ -292,6 +295,13 @@ impl Locations {
         Position {
             x: x0 + col * dx + dx / 2,
             y: y0 + row * dy + dy / 2,
+        }
+    }
+    pub fn bank_deposit_inventory(&self) -> Position {
+        let Position { x, y } = Self::to_bottom_right(self.bank_top_left(), self.bank_dimensions());
+        Position {
+            x: x - 50,
+            y: y - 15,
         }
     }
     pub fn bank_quantity_all(&self) -> Position {

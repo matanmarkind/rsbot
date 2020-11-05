@@ -197,6 +197,7 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
     dbg!(screenhandler.is_bank_open(&frame));
     dbg!(screenhandler.is_bank_quantity_all(&frame));
     dbg!(screenhandler.is_bank_quantity_one(&frame));
+    dbg!(screenhandler.is_bank_quantity_x(&frame));
 
     frame.flip_to_rgb();
     for i in 0..Locations::NUM_INVENTORY_SLOTS {
@@ -231,6 +232,10 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
     for i in 0..Locations::NUM_BANK_SLOTS {
         surrounding_box(&mut frame, &screenhandler.locations.bank_slot_center(i));
     }
+    surrounding_box(
+        &mut frame,
+        &screenhandler.locations.bank_deposit_inventory(),
+    );
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_all());
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_x());
     surrounding_box(&mut frame, &screenhandler.locations.bank_quantity_one());
@@ -248,13 +253,13 @@ fn main() {
     let frame = marked_open_screen(&mut capturer, &screenhandler);
     ofpath.push_str("screenshot_open_screen.png");
     println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
-    frame.save(ofpath.as_str());
+    // frame.save(ofpath.as_str());
 
     let frame = marked_worldmap(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");
     println!("Saving {}. Open the bank...", ofpath);
-    frame.save(ofpath.as_str());
+    // frame.save(ofpath.as_str());
 
     let frame = marked_inventories(&mut capturer, &screenhandler);
     ofpath = config.out_dir.clone();
