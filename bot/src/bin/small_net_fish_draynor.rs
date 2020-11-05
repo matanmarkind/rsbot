@@ -18,6 +18,7 @@ fn travel_to_bank() -> TravelTo {
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ true,
     )
 }
 
@@ -50,6 +51,7 @@ fn travel_to_fishing_spot() -> TravelTo {
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ true,
     )
 }
 

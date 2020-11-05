@@ -46,6 +46,7 @@ fn travel_to_bank() -> TravelTo {
             Location::VarrockWest => (250.0, 180.0),
         },
         /*timeout=*/ Duration::from_secs(60),
+        /*try_to_run=*/ true,
     )
 }
 

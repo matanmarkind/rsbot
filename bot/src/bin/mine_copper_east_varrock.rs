@@ -18,7 +18,7 @@ fn travel_to_mine() -> ExplicitActions {
             }),
             Box::new(TravelStraight {
                 direction_degrees: 60.0,
-                travel_time: Duration::from_secs(20),
+                travel_time: Duration::from_secs(10),
             }),
             Box::new(TravelTo::new(
                 /*primary_pixel=*/ fuzzy_pixels::map_icon_pickaxe_dark_gray(),
@@ -32,6 +32,7 @@ fn travel_to_mine() -> ExplicitActions {
                 ],
                 /*arc_of_interest=*/ (0.0, 360.0),
                 /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ true,
             )),
             // Usually these rocks are less crowded.
             // Box::new(TravelStraight {
@@ -64,7 +65,7 @@ fn travel_to_bank() -> ExplicitActions {
             Box::new(PressCompass {}),
             Box::new(TravelStraight {
                 direction_degrees: 290.0,
-                travel_time: Duration::from_secs(20),
+                travel_time: Duration::from_secs(10),
             }),
             Box::new(TravelTo::new(
                 /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
@@ -76,6 +77,7 @@ fn travel_to_bank() -> ExplicitActions {
                 ],
                 /*arc_of_interest=*/ (0.0, 360.0),
                 /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ true,
             )),
         ],
     }

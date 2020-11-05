@@ -482,7 +482,7 @@ pub mod basic_action {
             println!("TravelToOnMinimap");
 
             // Try twice. We may find the destination but hit something in the way.
-            for i in 0..2 {
+            for _ in 0..2 {
                 // Find the destination on the minimap.
                 let pos = match check_map_pixels(
                     &capturer.frame().unwrap(),
@@ -498,13 +498,31 @@ pub mod basic_action {
                 };
 
                 inputbot.move_to(&pos);
+
+                // We are often walking/running when we try to find a
+                // destination on the minimap. Since the mouse is normally the
+                // slowest part, the mouse location may now be incorrect since
+                // we kept moving. Move the mouse again to be closer, this
+                // should be fast since we are already very close.
+                let pos = match check_map_pixels(
+                    &capturer.frame().unwrap(),
+                    framehandler.locations.minimap_middle(),
+                    /*min_radius=*/ 1,
+                    /*d_radius=*/ Locations::MINIMAP_RADIUS,
+                    self.arc_of_interest,
+                    self.primary_pixel,
+                    &self.check_pixels,
+                ) {
+                    None => return false, // Failed to find the dst.
+                    Some(pos) => inputbot.move_to(&pos),
+                };
                 inputbot.left_click();
 
                 // TODO: Allow a second press on the minimap. Sometimes we are off if running.
 
                 // Wait until we are nearby or timeout.
                 let time = std::time::Instant::now();
-                while time.elapsed() < Duration::from_secs(20) {
+                while time.elapsed() < Duration::from_secs(15) {
                     match check_map_pixels(
                         &capturer.frame().unwrap(),
                         framehandler.locations.minimap_middle(),
@@ -847,6 +865,7 @@ pub mod compound_action {
     pub struct TravelTo {
         pub travel_minimap: TravelToOnMinimap,
         pub travel_worldmap: TravelTowardsOnWorldmap,
+        pub try_to_run: bool,
         pub timeout: Duration,
     }
 
@@ -944,6 +963,7 @@ pub mod compound_action {
             check_pixels: Vec<FuzzyPixel>,
             arc_of_interest: (f32, f32),
             timeout: Duration,
+            try_to_run: bool,
         ) -> TravelTo {
             TravelTo {
                 travel_minimap: TravelToOnMinimap {
@@ -957,6 +977,7 @@ pub mod compound_action {
                     arc_of_interest,
                 },
                 timeout,
+                try_to_run,
             }
         }
     }
@@ -969,7 +990,11 @@ pub mod compound_action {
             capturer: &mut Capturer,
         ) -> bool {
             println!("TravelTo");
-            MaybeToggleRunning::run().do_action(inputbot, framehandler, capturer);
+            if self.try_to_run {
+                MaybeToggleRunning::run().do_action(inputbot, framehandler, capturer);
+            } else {
+                MaybeToggleRunning::walk().do_action(inputbot, framehandler, capturer);
+            }
 
             let mut worldmap_search_failed = false;
             let mut is_worldmap_open = false;

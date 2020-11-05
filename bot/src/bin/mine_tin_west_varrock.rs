@@ -26,6 +26,7 @@ fn travel_to_bank() -> ExplicitActions {
                 ],
                 /*arc_of_interest=*/ (270.0, 180.0),
                 /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ false,
             )),
         ],
     }
@@ -55,7 +56,7 @@ fn travel_to_mine() -> ExplicitActions {
             Box::new(PressCompass {}),
             Box::new(TravelStraight {
                 direction_degrees: 120.0,
-                travel_time: Duration::from_secs(20),
+                travel_time: Duration::from_secs(15),
             }),
             Box::new(TravelTo::new(
                 /*primary_pixel=*/ fuzzy_pixels::map_icon_pickaxe_dark_gray(),
@@ -69,6 +70,7 @@ fn travel_to_mine() -> ExplicitActions {
                 ],
                 /*arc_of_interest=*/ (0.0, 145.0),
                 /*timeout=*/ Duration::from_secs(60),
+                /*try_to_run=*/ true,
             )),
             Box::new(TravelStraight {
                 direction_degrees: 315.0,

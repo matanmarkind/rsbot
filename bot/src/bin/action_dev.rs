@@ -22,6 +22,7 @@ fn travel_to_furnace() -> TravelTo {
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
+        /*try_to_run=*/false,
     )
 }
 
@@ -41,16 +42,23 @@ fn mine_copper() -> ConsumeInventory {
 }
 
 fn travel_to_bank() -> TravelTo {
+    // Use map_floor_beige as the primary pizel since clicking directly on the
+    // bank yellow can cause us to walk outside the bank (also happened when I
+    // manually pressed). I know that coming from the forge starts me on the
+    // side of the bank I want to be on, so using the floor biases me to this
+    // side.
     TravelTo::new(
-        /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
+        /*primary_pixel=*/
+        fuzzy_pixels::map_floor_beige(),
         /*check_pixels=*/
         vec![
             fuzzy_pixels::map_icon_dark_gray(),
             fuzzy_pixels::map_icon_light_gray(),
-            fuzzy_pixels::map_floor_beige(),
+            fuzzy_pixels::map_icon_bank_yellow(),
         ],
         /*arc_of_interest=*/ (0.0, 360.0),
         /*timeout=*/ Duration::from_secs(60),
+        /*try_to_run=*/false,
     )
 }
 
@@ -96,13 +104,14 @@ Assumes that:
     // let deposit_copper_actions = deposit_copper();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(1) {
+    while time.elapsed() < std::time::Duration::from_secs(10 * 60) {
         // let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         // if !res {
         //     dbg!(res);
         //     break;
         // }
-        let res = travel_to_furnace_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        let res =
+            travel_to_furnace_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);
             break;
