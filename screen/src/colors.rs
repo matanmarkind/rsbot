@@ -403,6 +403,18 @@ pub mod fuzzy_pixels {
             red_max: 110,
         }
     }
+    pub fn map_varrock_west_mining_ground_brown() -> FuzzyPixel {
+        // Minimap and worldmap are slightly different
+        // Minimap seems to change colors...
+        FuzzyPixel {
+            blue_min: 10,
+            blue_max: 30,
+            green_min: 30,
+            green_max: 60,
+            red_min: 50,
+            red_max: 90,
+        }
+    }
 
     // It seems that a lot of things in the map change color throughout the day,
     // so these may be unreliable.

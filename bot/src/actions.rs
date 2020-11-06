@@ -245,6 +245,55 @@ pub mod basic_action {
     /// bank.
     pub struct CloseBank {}
 
+    /// Wait for either a condition to be met or for a certain amount of time.
+    #[derive(Clone)]
+    pub enum AwaitCondition {
+        Time,
+        IsBankOpen,
+        IsInventoryOpen,
+        IsChatboxOpen,
+    }
+    pub struct Await {
+        pub condition: AwaitCondition,
+        pub timeout: Duration,
+    }
+    impl Action for Await {
+        fn do_action(
+            &self,
+            _inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            let time = std::time::Instant::now();
+            while time.elapsed() < self.timeout {
+                match self.condition {
+                    AwaitCondition::Time => {
+                        sleep(self.timeout);
+                        return true;
+                    }
+                    AwaitCondition::IsBankOpen => {
+                        if framehandler.is_bank_open(&capturer.frame().unwrap()) {
+                            return true;
+                        }
+                    }
+                    AwaitCondition::IsInventoryOpen => {
+                        if framehandler.is_inventory_open(&capturer.frame().unwrap()) {
+                            return true;
+                        }
+                    }
+                    AwaitCondition::IsChatboxOpen => {
+                        if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                            return true;
+                        }
+                    }
+                }
+                sleep(Duration::from_millis(50));
+            }
+
+            false
+        }
+    }
+
     impl Action for PressMinimapMiddle {
         fn do_action(
             &self,
@@ -501,7 +550,7 @@ pub mod basic_action {
             // Try twice. We may find the destination but hit something in the way.
             for _ in 0..2 {
                 // Find the destination on the minimap.
-                let pos = match check_map_pixels(
+                match check_map_pixels(
                     &capturer.frame().unwrap(),
                     framehandler.locations.minimap_middle(),
                     /*min_radius=*/ 1,
@@ -511,17 +560,15 @@ pub mod basic_action {
                     &self.check_pixels,
                 ) {
                     None => return false, // Failed to find the dst.
-                    Some(pos) => pos,
+                    Some(pos) =>  inputbot.move_to(&pos),
                 };
-
-                inputbot.move_to(&pos);
 
                 // We are often walking/running when we try to find a
                 // destination on the minimap. Since the mouse is normally the
                 // slowest part, the mouse location may now be incorrect since
                 // we kept moving. Move the mouse again to be closer, this
                 // should be fast since we are already very close.
-                let pos = match check_map_pixels(
+                match check_map_pixels(
                     &capturer.frame().unwrap(),
                     framehandler.locations.minimap_middle(),
                     /*min_radius=*/ 1,
@@ -604,7 +651,7 @@ pub mod basic_action {
                 &framehandler.locations.run_icon(),
                 &fuzzy_pixels::run_icon_on(),
             );
-            sleep(Duration::from_secs(if running { 4 } else { 8 }));
+            sleep(Duration::from_secs(if running { 3 } else { 6 }));
             true
         }
     }
@@ -753,10 +800,7 @@ pub mod basic_action {
     }
 
     impl DepositEntireInventoryToBank {
-        pub fn new(
-            bank_pixels: Vec<FuzzyPixel>,
-            items: Vec<screen::InventorySlotPixels>,
-        ) -> DepositEntireInventoryToBank {
+        pub fn new(bank_pixels: Vec<FuzzyPixel>) -> DepositEntireInventoryToBank {
             DepositEntireInventoryToBank {
                 open_bank_action: OpenBank::new(
                     /*expected_pixels=*/ bank_pixels,

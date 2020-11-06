@@ -1,9 +1,6 @@
 use bot::actions::*;
-use screen::{
-    action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel,
-};
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
-use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
@@ -55,14 +52,17 @@ fn travel_to_mine() -> ExplicitActions {
         actions: vec![
             Box::new(PressCompass {}),
             Box::new(TravelStraight {
-                direction_degrees: 120.0,
+                direction_degrees: 130.0,
                 travel_time: Duration::from_secs(15),
             }),
             Box::new(TravelTo::new(
-                /*primary_pixel=*/ fuzzy_pixels::map_icon_pickaxe_dark_gray(),
+                // Items on the ground can occlude parts of the map icon.
+
+                /*primary_pixel=*/
+                fuzzy_pixels::map_icon_pickaxe_light_gray(),
                 /*check_pixels=*/
                 vec![
-                    fuzzy_pixels::map_icon_pickaxe_light_gray(),
+                    fuzzy_pixels::map_varrock_west_mining_ground_brown(),
                     fuzzy_pixels::map_icon_pickaxe_handle_light_brown(),
                     fuzzy_pixels::map_icon_pickaxe_handle_medium_brown(),
                     fuzzy_pixels::map_icon_dark_gray(),

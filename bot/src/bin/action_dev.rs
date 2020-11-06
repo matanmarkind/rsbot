@@ -26,33 +26,29 @@ fn travel_to_furnace() -> TravelTo {
     )
 }
 
-// #[derive(Clone)]
-// pub enum AwaitFrame {
-//     Time(Duration),
-//     IsBankOpen(Duration),
-//     IsInventoryOpen(Duration),
-//     IsWorldMapOpen(Duration),
-//     IsWorldMapClosed(Duration),
-//     IsChatboxOpen(Duration),
-
-//     IsCloseOnMinimap(Duration, Vec<FuzzyPixel>, Vec<FuzzyPixel>),
-//     // Only to be used with DescribeActionForMinimap which converts this to
-//     // IsCloseOnMinimap. Otherwise this is the equivalent of Time.
-//     IsCloseOnMinimapIncomplete(Duration),
-// }
 fn smelt_bronze() -> ConsumeInventory {
     ConsumeInventory {
-        multi_slot_action: false,
+        multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(15),
         activity_timeout: Duration::from_secs(10 * 60),
         item_to_consume: inventory_slot_pixels::copper_ore(),
         actions: vec![
+            // Press minimap middle to close the chatbox before clicking 1.
+            Box::new(PressMinimapMiddle{}),
             Box::new(OpenScreenAction::new(
                 /*expected_pixels=*/
                 vec![fuzzy_pixels::furnace_grey()],
                 /*action_text=*/ Some(action_text::smelt_furnace()),
                 /*mouse_click=*/ MouseClick::Left,
             )),
+            Box::new(Await {
+                condition: AwaitCondition::IsChatboxOpen,
+                timeout: Duration::from_secs(3),
+            }),
+            Box::new(Await {
+                condition: AwaitCondition::IsChatboxOpen,
+                timeout: Duration::from_millis(500),
+            }),
             // TODO: Add WaitChatboxOpen.
             Box::new(ClickKey {
                 key: userinput::Key::_1,
@@ -82,21 +78,16 @@ fn travel_to_bank() -> TravelTo {
     )
 }
 
-fn deposit_copper() -> DepositInBank {
-    // TODO: consider dumping the entire inventory. This requires pickaxe is
-    // equipped not in inventory.
-    DepositInBank::new(
-        /*expected_pixels=*/
-        vec![fuzzy_pixels::varrock_bank_window1()],
-        /*items=*/
+fn withdraw_from_bank() -> WithdrawFromBank {
+    WithdrawFromBank::new(
+        /*bank_pixels=*/
         vec![
-            inventory_slot_pixels::copper_ore_bank(),
-            inventory_slot_pixels::silver_ore_bank(),
-            inventory_slot_pixels::iron_ore_bank(),
-            inventory_slot_pixels::clay_bank(),
-            inventory_slot_pixels::uncut_sapphire_bank(),
-            inventory_slot_pixels::uncut_ruby_bank(),
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
         ],
+        /*bank_slot_and_quantity=*/
+        vec![(6, BankQuantity::X), (7, BankQuantity::X)],
     )
 }
 
@@ -112,25 +103,43 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "\
 Assumes that:
-    1. We can't go through the Workman's gate.
-    2. We start at the bank with pickaxe equipped. 
+    1. Copper and tin are in bank slots 6 & 7 (end of the first row).
 "
     );
 
-    // let reset_actions = ExplicitActions::default_reset();
-    // let travel_to_bank_actions = travel_to_bank();
-    // let deposit_bars = DepositEntireInventoryToBank{};
-    // Withdraw...
+    let reset_actions = ExplicitActions::default_reset();
+    let travel_to_bank_actions = travel_to_bank();
+    let deposit_bars = DepositEntireInventoryToBank::new(/*bank_pixels=*/ vec![
+        fuzzy_pixels::bank_brown1(),
+        fuzzy_pixels::bank_brown2(),
+        fuzzy_pixels::bank_brown3(),
+    ]);
+    let withdraw_ore = withdraw_from_bank();
     let travel_to_furnace_actions = travel_to_furnace();
     let smelt_iron_actions = smelt_bronze();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(10 * 60) {
-        // let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        // if !res {
-        //     dbg!(res);
-        //     break;
-        // }
+    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+        let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = deposit_bars.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = withdraw_ore.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
         let res =
             travel_to_furnace_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
@@ -142,11 +151,6 @@ Assumes that:
             dbg!(res);
             break;
         }
-        // let res = deposit_copper_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        // if !res {
-        //     dbg!(res);
-        //     break;
-        // }
     }
 
     Ok(())
