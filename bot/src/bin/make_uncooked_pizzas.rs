@@ -1,29 +1,79 @@
 use bot::actions::*;
-use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
+use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel};
 use std::error::Error;
+use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
 
-fn withdraw_pizza_base_and_tomato() -> ExplicitActions {
+// Strucopt doesn't play nice with enum_util::FromStr...
+#[derive(Debug, Copy, Clone)]
+pub enum Location {
+    AlKharid,
+    Falador,
+}
+
+impl FromStr for Location {
+    type Err = std::io::Error;
+    fn from_str(loc: &str) -> Result<Self, Self::Err> {
+        match loc {
+            "AlKharid" => Ok(Location::AlKharid),
+            "Falador" => Ok(Location::Falador),
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                format!("Couldn't parse location from {}", loc),
+            )),
+        }
+    }
+}
+
+#[derive(Debug, StructOpt, Clone)]
+pub struct Config {
+    #[structopt(flatten)]
+    pub bot_config: bot::Config,
+
+    #[structopt(long, about = "Index of the slot in the bank pizza bases are stored.")]
+    pub pizza_base_bank_slot_index: i32,
+    #[structopt(long, about = "Index of the slot in the bank tomatos are stored.")]
+    pub tomato_bank_slot_index: i32,
+    #[structopt(long, about = "Index of the slot in the bank chesse are stored.")]
+    pub cheese_bank_slot_index: i32,
+
+    #[structopt(long, about = "Which bank we are located in.")]
+    pub location: Location,
+}
+
+fn bank_pixels(loc: Location) -> Vec<FuzzyPixel> {
+    match loc {
+        Location::AlKharid => vec![
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
+        ],
+        Location::Falador => vec![
+            fuzzy_pixels::falador_bank_brown1(),
+            fuzzy_pixels::falador_bank_brown2(),
+        ],
+    }
+}
+
+fn withdraw_pizza_base_and_tomato(config: &Config) -> ExplicitActions {
     ExplicitActions {
         actions: vec![
             Box::new(WithdrawFromBank::new(
-                /*bank_pixels=*/
-                vec![
-                    fuzzy_pixels::bank_brown1(),
-                    fuzzy_pixels::bank_brown2(),
-                    fuzzy_pixels::bank_brown3(),
-                ],
+                /*bank_pixels=*/ bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
-                vec![(9, BankQuantity::X), (10, BankQuantity::X)],
+                vec![
+                    (config.pizza_base_bank_slot_index, BankQuantity::X),
+                    (config.tomato_bank_slot_index, BankQuantity::X),
+                ],
             )),
             Box::new(CloseBank {}),
         ],
     }
 }
 
-fn make_incomplete_pizza() -> ConsumeInventory {
+fn make_incomplete_pizza(_config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(10),
@@ -37,25 +87,20 @@ fn make_incomplete_pizza() -> ConsumeInventory {
     }
 }
 
-fn withdraw_cheese() -> ExplicitActions {
+fn withdraw_cheese(config: &Config) -> ExplicitActions {
     ExplicitActions {
         actions: vec![
             Box::new(WithdrawFromBank::new(
-                /*bank_pixels=*/
-                vec![
-                    fuzzy_pixels::bank_brown1(),
-                    fuzzy_pixels::bank_brown2(),
-                    fuzzy_pixels::bank_brown3(),
-                ],
+                /*bank_pixels=*/ bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
-                vec![(8, BankQuantity::X)],
+                vec![(config.cheese_bank_slot_index, BankQuantity::X)],
             )),
             Box::new(CloseBank {}),
         ],
     }
 }
 
-fn make_uncooked_pizza() -> ConsumeInventory {
+fn make_uncooked_pizza(_config: &Config) -> ConsumeInventory {
     // Uncooked_pizzas look identical to uncooked pizzas.
     ConsumeInventory {
         multi_slot_action: true,
@@ -72,32 +117,17 @@ fn make_uncooked_pizza() -> ConsumeInventory {
     }
 }
 
-fn deposit_all() -> DepositInBank {
-    DepositInBank::new(
-        /*expected_pixels=*/
-        vec![
-            fuzzy_pixels::bank_brown1(),
-            fuzzy_pixels::bank_brown2(),
-            fuzzy_pixels::bank_brown3(),
-        ],
-        /*items=*/
-        vec![
-            inventory_slot_pixels::uncooked_pizza_bank(),
-            inventory_slot_pixels::incomplete_pizza_bank(),
-            inventory_slot_pixels::pizza_base_bank(),
-            inventory_slot_pixels::tomato_bank(),
-            inventory_slot_pixels::cheese_bank(),
-        ],
-    )
+fn deposit_all(config: &Config) -> DepositEntireInventoryToBank {
+    DepositEntireInventoryToBank::new(/*bank_pixels=*/ bank_pixels(config.location))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = bot::Config::from_args();
+    let config = Config::from_args();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
-    let mut inputbot = InputBot::new(config.userinput_config);
-    let mut framehandler = FrameHandler::new(config.screen_config);
+    let mut inputbot = InputBot::new(config.bot_config.userinput_config.clone());
+    let mut framehandler = FrameHandler::new(config.bot_config.screen_config.clone());
 
     println!(
         "\
@@ -109,11 +139,11 @@ Assumes that:
     );
 
     let reset_actions = ExplicitActions::default_reset();
-    let deposit_actions = deposit_all();
-    let withdraw_pizza_base_and_tomato_actions = withdraw_pizza_base_and_tomato();
-    let make_incomplete_pizza_actions = make_incomplete_pizza();
-    let withdraw_cheese_actions = withdraw_cheese();
-    let make_uncooked_pizza_actions = make_uncooked_pizza();
+    let deposit_actions = deposit_all(&config);
+    let withdraw_pizza_base_and_tomato_actions = withdraw_pizza_base_and_tomato(&config);
+    let make_incomplete_pizza_actions = make_incomplete_pizza(&config);
+    let withdraw_cheese_actions = withdraw_cheese(&config);
+    let make_uncooked_pizza_actions = make_uncooked_pizza(&config);
 
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(10 * 60 * 60) {
