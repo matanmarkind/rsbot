@@ -101,6 +101,8 @@ impl MousePathParser {
     // Take a stream of mouse Locations, and parse them into the actual mouse
     // movements within 'delta_mouse_locs' is expected to be long enough to contain
     // multiple full mouse movements.
+    //
+    // Updates 'mouse_paths'.
     fn parse_mouse_deltas(&self, delta_mouse_locs: Vec<Location>, mouse_paths: &mut MousePaths) {
         if delta_mouse_locs.is_empty() {
             return;
@@ -536,6 +538,16 @@ time_us,x,y
         // the one with fewer moves.
         let data = "\
 time_us,x,y
+0,0,0
+1000,1,1
+11000,2,2
+22000,3,1
+33000,10,20
+44000,13,23
+54000,10,25
+64000,15,31
+74000,20,31
+84000,15,31
 0,0,0
 1000,1,1
 11000,2,2

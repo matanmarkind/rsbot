@@ -31,8 +31,17 @@ pub const MAX_CHEAT_DISTANCE: i32 = 20;
 
 impl MouseMover {
     pub fn new(paths_fpath: &str) -> MouseMover {
+        let mut mouse_paths: MousePaths =
+            bincode::deserialize(&std::fs::read(paths_fpath).unwrap()[..]).unwrap();
+        // Don't allow a path which brings us back to the same point. This can
+        // result in an infinite loop. Note that distance is the key, so
+        // angle_rads doesn't matter.
+        mouse_paths.remove(&PathSummary {
+            distance: 0,
+            angle_rads: 0.0,
+        });
         MouseMover {
-            mouse_paths: bincode::deserialize(&std::fs::read(paths_fpath).unwrap()[..]).unwrap(),
+            mouse_paths: mouse_paths,
             device_state: DeviceState::new(),
         }
     }
@@ -70,7 +79,7 @@ impl MouseMover {
     pub fn move_to(&self, dst: &Position) -> bool {
         let mut just_cheated = false;
         loop {
-            self.follow_path_to(&dst, /*tolerance=*/ 1);
+            self.follow_path_to(&dst, /*tolerance=*/ MAX_CHEAT_DISTANCE - 1);
             let distance = self.distance_from(&dst);
             if distance <= MAX_CHEAT_DISTANCE {
                 break;
@@ -141,12 +150,26 @@ impl MouseMover {
         let mut relevant_paths = self
             .mouse_paths
             .range((Included(&min_distance), Included(&max_distance)));
+
         match relevant_paths.next() {
-            // Take the first path since it is the shortest. It is better to
-            // move too little and then find another path that keeps us going in
-            // the same direction than to overshoot and then go back repeatedly
-            // since that seems less natural to me.
-            Some((summary, path)) => replay_path(summary, path, &delta),
+            Some((first_summary, first_path)) => {
+                // There are paths that fit within this tolerance. Take the
+                // fastest one.
+                let mut min_len = first_path.len();
+                let mut min_len_summary = first_summary;
+                for (summary, path) in relevant_paths {
+                    if path.len() < min_len {
+                        min_len = path.len();
+                        min_len_summary = summary;
+                    }
+                }
+
+                replay_path(
+                    &min_len_summary,
+                    self.mouse_paths.get(&min_len_summary).unwrap(),
+                    &delta,
+                );
+            }
             None => {
                 // No path brings the mouse close enough. Expand the tolerance
                 // and try again.
@@ -171,6 +194,10 @@ impl MouseMover {
 /// 'net_delta' is the arrow from the current location to the destination. It
 /// gives the angle that 'path' must be rotated to.
 fn replay_path(summary: &PathSummary, path: &MousePath, net_delta: &DeltaPosition) {
+    // TODO: consider coming up with something smarter. Currently this is
+    // enforced in the parser.
+    assert_ne!(summary.distance, 0);
+
     let rotation_needed = net_delta.angle_rads() - summary.angle_rads;
 
     for delta in path {
