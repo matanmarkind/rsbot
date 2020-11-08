@@ -122,6 +122,9 @@ pub mod basic_action {
     /// representing a meaningful activity.
     use super::*;
 
+    /// Click on the location for platelegs in the smithing menu.
+    pub struct PressSmithingPlatelegs {}
+
     /// Useful reset. Will press near the center of the minimap.
     pub struct PressMinimapMiddle {}
 
@@ -252,6 +255,9 @@ pub mod basic_action {
         IsBankOpen,
         IsInventoryOpen,
         IsChatboxOpen,
+        // Wait until the pixel at the given position stops matching the one
+        // given.
+        PixelMismatch(Position, FuzzyPixel),
     }
     pub struct Await {
         pub condition: AwaitCondition,
@@ -286,11 +292,34 @@ pub mod basic_action {
                             return true;
                         }
                     }
+                    AwaitCondition::PixelMismatch(pos, pixel) => {
+                        let frame = capturer.frame().unwrap();
+                        if !pixel.matches(&frame.get_pixel(&pos)) {
+                            return true;
+                        }
+                    }
                 }
                 sleep(Duration::from_millis(50));
             }
 
             false
+        }
+    }
+
+    impl Action for PressSmithingPlatelegs {
+        fn do_action(
+            &self,
+            inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            _capturer: &mut Capturer,
+        ) -> bool {
+            println!("PressSmithingPlatelegs");
+            inputbot.move_to(&util::random_position_polar(
+                framehandler.locations.smith_box_platelegs(),
+                10,
+            ));
+            inputbot.left_click();
+            true
         }
     }
 
@@ -560,7 +589,7 @@ pub mod basic_action {
                     &self.check_pixels,
                 ) {
                     None => return false, // Failed to find the dst.
-                    Some(pos) =>  inputbot.move_to(&pos),
+                    Some(pos) => inputbot.move_to(&pos),
                 };
 
                 // We are often walking/running when we try to find a

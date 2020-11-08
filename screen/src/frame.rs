@@ -144,7 +144,7 @@ pub trait Frame {
     }
 
     fn save(&self, fpath: &str) {
-        // dbg!(fpath);
+        dbg!(fpath);
         repng::encode(
             File::create(fpath).unwrap(),
             self.width() as u32,

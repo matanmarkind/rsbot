@@ -59,9 +59,10 @@ fn travel_to_mine() -> ExplicitActions {
                 // Items on the ground can occlude parts of the map icon.
 
                 /*primary_pixel=*/
-                fuzzy_pixels::map_icon_pickaxe_light_gray(),
+                fuzzy_pixels::map_icon_pickaxe_dark_gray(),
                 /*check_pixels=*/
                 vec![
+                    fuzzy_pixels::map_icon_pickaxe_light_gray(),
                     fuzzy_pixels::map_varrock_west_mining_ground_brown(),
                     fuzzy_pixels::map_icon_pickaxe_handle_light_brown(),
                     fuzzy_pixels::map_icon_pickaxe_handle_medium_brown(),
@@ -72,6 +73,12 @@ fn travel_to_mine() -> ExplicitActions {
                 /*timeout=*/ Duration::from_secs(60),
                 /*try_to_run=*/ true,
             )),
+            // Has a habit of deciding we are close too far away. So wait just
+            // to be sure.
+            Box::new(Await {
+                condition: AwaitCondition::Time,
+                timeout: Duration::from_secs(5),
+            }),
             Box::new(TravelStraight {
                 direction_degrees: 315.0,
                 travel_time: Duration::from_secs(5),

@@ -57,6 +57,7 @@ fn marked_open_screen(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         &screenhandler.locations.inventory_inner_dimensions(),
     );
 
+    surrounding_box(&mut frame, &screenhandler.locations.enemy_healthbar_right());
     surrounding_box(&mut frame, &screenhandler.locations.mid_screen());
     surrounding_box(&mut frame, &screenhandler.locations.all_chat_button());
     surrounding_box(&mut frame, &screenhandler.locations.worldmap_icon());
@@ -242,28 +243,46 @@ fn marked_inventories(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
     frame
 }
 
+fn marked_smithing(cap: &mut Capturer, screenhandler: &FrameHandler) -> OwnedFrame {
+    let mut frame = cap.frame().unwrap().to_owned();
+    frame.flip_to_rgb();
+
+    frame.draw_red_box(
+        &screenhandler.locations.smith_box_top_left(),
+        &screenhandler.locations.smith_box_dimensions(),
+    );
+    surrounding_box(&mut frame, &screenhandler.locations.smith_box_platelegs());
+    frame
+}
+
 fn main() {
     let config = Config::from_args();
     dbg!(&config);
-    let mut ofpath = config.out_dir.clone();
 
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
     let frame = marked_open_screen(&mut capturer, &screenhandler);
+    let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_open_screen.png");
     println!("Saving {}. Open the worldmap and the chatbox...", ofpath);
     frame.save(ofpath.as_str());
 
     let frame = marked_worldmap(&mut capturer, &screenhandler);
-    ofpath = config.out_dir.clone();
+    let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_worldmap.png");
     println!("Saving {}. Open the bank...", ofpath);
     frame.save(ofpath.as_str());
 
     let frame = marked_inventories(&mut capturer, &screenhandler);
-    ofpath = config.out_dir.clone();
+    let mut ofpath = config.out_dir.clone();
     ofpath.push_str("screenshot_inventories.png");
+    println!("Saving {}. Open smithing...", ofpath);
+    frame.save(ofpath.as_str());
+
+    let frame = marked_smithing(&mut capturer, &screenhandler);
+    let mut ofpath = config.out_dir.clone();
+    ofpath.push_str("screenshot_smith.png");
     println!("Saving {}...", ofpath);
     frame.save(ofpath.as_str());
 }

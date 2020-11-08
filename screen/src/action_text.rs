@@ -1,5 +1,5 @@
 use crate::fuzzy_pixels::{
-    action_text_blue, action_text_orange, action_text_white, action_text_yellow,
+    action_text_blue, action_text_green, action_text_orange, action_text_white, action_text_yellow,
 };
 use crate::types::*;
 use crate::{pixels, Frame};
@@ -59,6 +59,26 @@ impl fmt::Display for Text {
 mod letters {
     use super::Character;
     use util::*;
+
+    pub fn upper_a() -> Character {
+        Character {
+            width: 9,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 11 },
+                DeltaPosition { dx: 0, dy: 8 },
+                DeltaPosition { dx: 0, dy: 5 },
+                DeltaPosition { dx: 3, dy: 2 },
+                DeltaPosition { dx: 3, dy: 6 },
+                DeltaPosition { dx: 5, dy: 11 },
+                DeltaPosition { dx: 5, dy: 8 },
+                DeltaPosition { dx: 5, dy: 5 },
+            ],
+
+            display: "A",
+        }
+    }
 
     pub fn upper_b() -> Character {
         Character {
@@ -711,8 +731,66 @@ mod letters {
             display: ">",
         }
     }
+
+    pub fn open_paren() -> Character {
+        Character {
+            width: 6,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 5 },
+                DeltaPosition { dx: 0, dy: 8 },
+                DeltaPosition { dx: 2, dy: 2 },
+                DeltaPosition { dx: 2, dy: 11 },
+            ],
+
+            display: "(",
+        }
+    }
 }
 use letters::*;
+
+pub fn smith_anvil() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_s(), action_text_white()),
+            (lower_m(), action_text_white()),
+            (lower_i(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_h(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_a(), action_text_blue()),
+            (lower_n(), action_text_blue()),
+            (lower_v(), action_text_blue()),
+            (lower_i(), action_text_blue()),
+            (lower_l(), action_text_blue()),
+            (space(), action_text_white()),
+            (forward_slash(), action_text_white()),
+        ],
+    }
+}
+
+pub fn attack_cow() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_a(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_a(), action_text_white()),
+            (lower_c(), action_text_white()),
+            (lower_k(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_c(), action_text_yellow()),
+            (lower_o(), action_text_yellow()),
+            (lower_w(), action_text_yellow()),
+            (space(), action_text_white()),
+            (space(), action_text_white()),
+            (open_paren(), action_text_green()),
+        ],
+    }
+}
 
 pub fn use_raw_shrimp_rightarrow_fire() -> Text {
     Text {

@@ -75,6 +75,13 @@ impl Locations {
             y: self.top_left.y + 3,
         }
     }
+    // A specific point near the right edge of an enemy healthbar.
+    pub fn enemy_healthbar_right(&self) -> Position {
+        Position {
+            x: self.top_left.x + 130,
+            y: self.top_left.y + 45,
+        }
+    }
     pub fn midpoint(top_left: Position, dimensions: DeltaPosition) -> Position {
         Position {
             x: top_left.x + (dimensions.dx as f32 / 2.0).round() as i32,
@@ -167,6 +174,30 @@ impl Locations {
             ret.push((box_top_left, box_dimensions));
         }
         ret
+    }
+
+    pub fn smith_box_dimensions(&self) -> DeltaPosition {
+        // Size of the pop up box when smithing at an anvil.
+        DeltaPosition { dx: 488, dy: 308 }
+    }
+    pub fn smith_box_top_left(&self) -> Position {
+        let top_left_y_offset =
+            (self.chatbox_outer_top_left().y - self.top_left.y - self.smith_box_dimensions().dy)
+                / 2;
+        let top_left_x_offset =
+            (self.minimap_plus_top_left().x - 4 - self.top_left.x - self.smith_box_dimensions().dx)
+                / 2;
+        Position {
+            x: self.top_left.x + top_left_x_offset,
+            y: self.top_left.y + top_left_y_offset,
+        }
+    }
+    pub fn smith_box_platelegs(&self) -> Position {
+        let Position { x, y } = self.smith_box_top_left();
+        Position {
+            x: x + 185,
+            y: y + 100,
+        }
     }
 
     // Locations given in reference to the bottom left corner of the screen.

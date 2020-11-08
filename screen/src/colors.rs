@@ -83,6 +83,16 @@ pub mod fuzzy_pixels {
             red_max: 235,
         }
     }
+    pub fn action_text_green() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 0,
+            blue_max: 30,
+            green_min: 190,
+            green_max: 235,
+            red_min: 0,
+            red_max: 30,
+        }
+    }
     pub fn action_text_orange() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 45,
@@ -158,6 +168,90 @@ pub mod fuzzy_pixels {
             red_max: 129,
         }
     }
+    // Falador bank corlors are from behind the counter. This is because reset
+    // causes us to see the bank from this angle.
+    pub fn falador_bank_brown1() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 32,
+            blue_max: 43,
+            green_min: 65,
+            green_max: 83,
+            red_min: 93,
+            red_max: 116,
+        }
+    }
+    pub fn falador_bank_brown2() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 28,
+            blue_max: 36,
+            green_min: 63,
+            green_max: 77,
+            red_min: 83,
+            red_max: 100,
+        }
+    }
+
+    pub fn anvil_light_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 60,
+            blue_max: 70,
+            green_min: 60,
+            green_max: 70,
+            red_min: 70,
+            red_max: 80,
+        }
+    }
+    pub fn anvil_dark_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 25,
+            blue_max: 35,
+            green_min: 25,
+            green_max: 35,
+            red_min: 30,
+            red_max: 40,
+        }
+    }
+
+    pub fn cow_white() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 96,
+            blue_max: 119,
+            green_min: 102,
+            green_max: 152,
+            red_min: 107,
+            red_max: 158,
+        }
+    }
+    pub fn cow_black() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 3,
+            blue_max: 33,
+            green_min: 9,
+            green_max: 49,
+            red_min: 12,
+            red_max: 56,
+        }
+    }
+    pub fn cow_dark_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 23,
+            blue_max: 52,
+            green_min: 29,
+            green_max: 59,
+            red_min: 41,
+            red_max: 71,
+        }
+    }
+    pub fn cow_light_brown() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 69,
+            blue_max: 88,
+            green_min: 90,
+            green_max: 101,
+            red_min: 115,
+            red_max: 121,
+        }
+    }
 
     pub fn run_icon_on() -> FuzzyPixel {
         FuzzyPixel {
@@ -167,6 +261,17 @@ pub mod fuzzy_pixels {
             green_max: 221,
             red_min: 233,
             red_max: 239,
+        }
+    }
+
+    pub fn enemy_healthbar_red() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 15,
+            blue_max: 30,
+            green_min: 15,
+            green_max: 30,
+            red_min: 90,
+            red_max: 110,
         }
     }
 
@@ -239,6 +344,16 @@ pub mod fuzzy_pixels {
             green_max: 42,
             red_min: 79,
             red_max: 83,
+        }
+    }
+    pub fn map_icon_anvil_gray() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 59,
+            blue_max: 63,
+            green_min: 61,
+            green_max: 65,
+            red_min: 61,
+            red_max: 65,
         }
     }
     pub fn map_icon_pickaxe_light_gray() -> FuzzyPixel {
@@ -1522,6 +1637,73 @@ pub mod inventory_slot_pixels {
         };
         pixels
     }
+
+    pub fn bronze_platelegs() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 0,
+                blue_max: 2,
+                green_min: 20,
+                green_max: 24,
+                red_min: 29,
+                red_max: 33,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 23,
+                blue_max: 27,
+                green_min: 46,
+                green_max: 50,
+                red_min: 67,
+                red_max: 71,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 0,
+                blue_max: 2,
+                green_min: 25,
+                green_max: 29,
+                red_min: 40,
+                red_max: 44,
+            },
+            inventory_background_dark(),
+            inventory_background(),
+        ]
+    }
+    pub fn bronze_platelegs_bank() -> InventorySlotPixels {
+        let mut pixels = bronze_platelegs();
+        pixels[2] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels[6] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels[10] = FuzzyPixel {
+            blue_min: 49,
+            blue_max: 53,
+            green_min: 49,
+            green_max: 53,
+            red_min: 49,
+            red_max: 53,
+        };
+        pixels
+    }
+
     pub fn pizza_base() -> InventorySlotPixels {
         [
             inventory_background(),

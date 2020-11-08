@@ -1,84 +1,159 @@
-/*
-use bot::{
-    controller, AwaitFrame, ConsumeInventoryParams, DescribeAction, DescribeActionEnableWalk,
-    DescribeActionForActionText, DescribeActionForOpenScreen, MousePress, TravelToParams,
-};
-use screen::{action_text, fuzzy_pixels, inventory_slot_pixels, Frame};
+/// Used to develop new actions.
+use bot::actions::*;
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
+use userinput::InputBot;
 
-fn travel_to_bank_params() -> TravelToParams {
-    TravelToParams {
-        destination_pixels: vec![fuzzy_pixels::map_icon_bank_yellow()],
-        confirmation_pixels: vec![
-            fuzzy_pixels::map_icon_dark_gray(),
-            fuzzy_pixels::map_icon_light_gray(),
-            // fuzzy_pixels::map_floor_beige(),
-            // fuzzy_pixels::black(),
-        ],
-        starting_direction: None,
-        try_to_run: true,
-        arc_of_interest: (0.0, 360.0),
-    }
-}
+pub const COPPER_ORE_BANK_INDEX: i32 = 6;
+pub const TIN_ORE_BANK_INDEX: i32 = 7;
 
-fn travel_to_furnace_params() -> TravelToParams {
-    TravelToParams {
-        destination_pixels: vec![
-            fuzzy_pixels::map_icon_furnace_yellow(),
-            fuzzy_pixels::map_icon_furnace_orange1(),
-            fuzzy_pixels::map_icon_furnace_orange2(),
-            fuzzy_pixels::map_icon_furnace_gray(),
-        ],
-        confirmation_pixels: vec![
-            fuzzy_pixels::map_icon_furnace_yellow(),
+fn travel_to_furnace() -> TravelTo {
+    TravelTo::new(
+        /*primary_pixel=*/ fuzzy_pixels::map_icon_furnace_yellow(),
+        /*check_pixels=*/
+        vec![
             fuzzy_pixels::map_icon_furnace_orange1(),
             fuzzy_pixels::map_icon_furnace_orange2(),
             fuzzy_pixels::map_icon_furnace_gray(),
             fuzzy_pixels::map_icon_light_gray(),
             fuzzy_pixels::map_floor_beige(),
-            fuzzy_pixels::black(),
         ],
-        starting_direction: None,
-        try_to_run: true,
-        arc_of_interest: (0.0, 360.0),
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+        /*try_to_run=*/ false,
+    )
+}
+
+fn smelt_bronze() -> ConsumeInventory {
+    ConsumeInventory {
+        multi_slot_action: true,
+        slot_consumption_waittime: Duration::from_secs(15),
+        activity_timeout: Duration::from_secs(10 * 60),
+        item_to_consume: inventory_slot_pixels::copper_ore(),
+        actions: vec![
+            // Press minimap middle to close the chatbox before clicking 1.
+            Box::new(PressMinimapMiddle {}),
+            Box::new(OpenScreenAction::new(
+                /*expected_pixels=*/
+                vec![fuzzy_pixels::furnace_grey()],
+                /*action_text=*/ Some(action_text::smelt_furnace()),
+                /*mouse_click=*/ MouseClick::Left,
+            )),
+            Box::new(Await {
+                condition: AwaitCondition::IsChatboxOpen,
+                timeout: Duration::from_secs(3),
+            }),
+            Box::new(Await {
+                condition: AwaitCondition::IsChatboxOpen,
+                timeout: Duration::from_millis(500),
+            }),
+            // TODO: Add WaitChatboxOpen.
+            Box::new(ClickKey {
+                key: userinput::Key::_1,
+            }),
+        ],
     }
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    // TODO: Add door opening since furnace door can be closed.
-    println!("Make sure the set bank Quantity X as 14!!!!");
+fn travel_to_bank() -> TravelTo {
+    // Use map_floor_beige as the primary pizel since clicking directly on the
+    // bank yellow can cause us to walk outside the bank (also happened when I
+    // manually pressed). I know that coming from the forge starts me on the
+    // side of the bank I want to be on, so using the floor biases me to this
+    // side.
+    TravelTo::new(
+        /*primary_pixel=*/
+        fuzzy_pixels::map_floor_beige(),
+        /*check_pixels=*/
+        vec![
+            fuzzy_pixels::map_icon_dark_gray(),
+            fuzzy_pixels::map_icon_light_gray(),
+            fuzzy_pixels::map_icon_bank_yellow(),
+        ],
+        /*arc_of_interest=*/ (0.0, 360.0),
+        /*timeout=*/ Duration::from_secs(60),
+        /*try_to_run=*/ false,
+    )
+}
 
+fn withdraw_from_bank() -> WithdrawFromBank {
+    WithdrawFromBank::new(
+        /*bank_pixels=*/
+        vec![
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
+        ],
+        /*bank_slot_and_quantity=*/
+        vec![(6, BankQuantity::X), (7, BankQuantity::X)],
+    )
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
     dbg!(&config);
 
-    let mut player = controller::Player::new(config);
-    player.reset();
+    let mut capturer = Capturer::new();
+    let mut inputbot = InputBot::new(config.userinput_config);
+    let mut framehandler = FrameHandler::new(config.screen_config);
+    // Starting with the inventory full of uncooked pizzas is an optimization to
+    // avoid putting reset between deposit and withdraw.
+    println!(
+        "\
+Assumes that:
+    1. Copper ore is in bank slot {}
+    2. Tin ore is in bank slot {}.
+",
+        COPPER_ORE_BANK_INDEX, TIN_ORE_BANK_INDEX
+    );
 
-    let frame = player.capturer.frame().unwrap();
+    let reset_actions = ExplicitActions::default_reset();
+    let travel_to_bank_actions = travel_to_bank();
+    let deposit_bars = DepositEntireInventoryToBank::new(/*bank_pixels=*/ vec![
+        fuzzy_pixels::bank_brown1(),
+        fuzzy_pixels::bank_brown2(),
+        fuzzy_pixels::bank_brown3(),
+    ]);
+    let withdraw_ore = withdraw_from_bank();
+    let travel_to_furnace_actions = travel_to_furnace();
+    let smelt_iron_actions = smelt_bronze();
 
-    // Worldmap closed - 98, 101, 77
-    // Worldmap open - 80, 91, 80
-    // let pixel = frame.get_pixel(&player.framehandler.locations.worldmap_icon());
-    // dbg!(pixel);
+    let time = std::time::Instant::now();
+    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+        let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = deposit_bars.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = withdraw_ore.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res =
+            travel_to_furnace_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+        let res = smelt_iron_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
+        if !res {
+            dbg!(res);
+            break;
+        }
+    }
 
-    // Go to bank
-    player.travel_to(&travel_to_bank_params());
-
-    // Deposit bronze bars
-    // Withdraw 14 tin & 14 copper
-    // Go to furnace
-
-    // player.travel_to(&travel_to_furnace_params());
-
-    // Smelt bronze - use 1 button. Level up will stop us so then continue.
-
-    Ok(())
-}
-*/
-
-use std::error::Error;
-fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
