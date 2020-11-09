@@ -240,7 +240,9 @@ pub mod basic_action {
     }
 
     /// Move to the middle of the chatbox, wait until chatbox is open, press.
-    pub struct ClickChatboxMiddle {}
+    pub struct ClickChatboxMiddle {
+        pub await_chatbox_open: Await,
+    }
 
     /// Make sure the bank is closed. Don't need to use this if you know that
     /// you will take a move that doesn't depend on the bank such as TravelTo
@@ -289,6 +291,8 @@ pub mod basic_action {
                     }
                     AwaitCondition::IsChatboxOpen => {
                         if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                            // Sleep here so we don't have perfect reflexes.
+                            sleep(Duration::from_millis(100));
                             return true;
                         }
                     }
@@ -299,7 +303,7 @@ pub mod basic_action {
                         }
                     }
                 }
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(100));
             }
 
             false
@@ -409,7 +413,7 @@ pub mod basic_action {
                 if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
                     return true;
                 }
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(100));
             }
 
             // If the chatbox is still open it's possible a different chat tab was
@@ -427,7 +431,7 @@ pub mod basic_action {
                 if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
                     return true;
                 }
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(100));
             }
 
             // Click the center of the minimap since this will only move us a small
@@ -440,7 +444,7 @@ pub mod basic_action {
                 if !framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
                     return true;
                 }
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(100));
             }
 
             false
@@ -713,7 +717,7 @@ pub mod basic_action {
             let slot_index = slot_index.unwrap();
             inputbot.move_to(&util::random_position_polar(
                 framehandler.locations.inventory_slot_middle(slot_index),
-                3,
+                10,
             ));
 
             if self.shift_click {
@@ -820,7 +824,7 @@ pub mod basic_action {
 
             inputbot.move_to(&util::random_position_polar(
                 framehandler.locations.bank_slot_center(self.slot_index),
-                5,
+                10,
             ));
             click_mouse(inputbot, self.mouse_click);
 
@@ -846,7 +850,7 @@ pub mod basic_action {
             framehandler: &mut FrameHandler,
             capturer: &mut Capturer,
         ) -> bool {
-            println!("DepositInBank");
+            println!("DepositEntireInventoryToBank");
             if !self
                 .open_bank_action
                 .do_action(inputbot, framehandler, capturer)
@@ -856,7 +860,7 @@ pub mod basic_action {
             }
 
             inputbot.move_to(&framehandler.locations.bank_deposit_inventory());
-            sleep(Duration::from_millis(50));
+            sleep(Duration::from_millis(100));
             inputbot.left_click();
 
             // For safety press again since sometimes the bank isn't responsive.
@@ -864,6 +868,17 @@ pub mod basic_action {
             inputbot.left_click();
 
             true
+        }
+    }
+
+    impl ClickChatboxMiddle {
+        pub fn new() -> ClickChatboxMiddle {
+            ClickChatboxMiddle {
+                await_chatbox_open: Await {
+                    condition: AwaitCondition::IsChatboxOpen,
+                    timeout: Duration::from_secs(3),
+                },
+            }
         }
     }
 
@@ -877,15 +892,15 @@ pub mod basic_action {
             println!("ClickChatboxMiddle");
             inputbot.move_to(&util::random_position_polar(
                 framehandler.locations.chatbox_middle(),
-                10,
+                20,
             ));
-            let time = std::time::Instant::now();
-            while time.elapsed() < Duration::from_secs(3) {
-                if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
-                    inputbot.left_click();
-                    return true;
-                }
-                sleep(Duration::from_millis(50));
+
+            if self
+                .await_chatbox_open
+                .do_action(inputbot, framehandler, capturer)
+            {
+                inputbot.left_click();
+                return true;
             }
             false
         }
@@ -912,7 +927,7 @@ pub mod basic_action {
                 if !framehandler.is_bank_open(&capturer.frame().unwrap()) {
                     return true;
                 }
-                sleep(Duration::from_millis(50));
+                sleep(Duration::from_millis(100));
             }
 
             false
@@ -1202,12 +1217,13 @@ pub mod compound_action {
                         return true;
                     }
 
+                    // CheckActionText includes clicking.
                     let action_text_time = std::time::Instant::now();
                     while action_text_time.elapsed() < util::REDRAW_TIME {
                         // Put the sleep first to lower the chance of us reading
                         // an old action text.
 
-                        sleep(Duration::from_millis(50));
+                        sleep(Duration::from_millis(100));
                         if self.check_action_text.as_ref().unwrap().do_action(
                             inputbot,
                             framehandler,
@@ -1254,6 +1270,7 @@ pub mod compound_action {
                     // We were unabe to find a matching spot. Pan the screen in
                     // case the angle is a problem.
                     inputbot.pan_left(37.0);
+                    continue;
                 }
 
                 // Make sure hover text isn't covering the bank corners.
@@ -1263,7 +1280,7 @@ pub mod compound_action {
                 );
                 inputbot.move_to(&util::random_position(
                     /*top_left=*/ &bottom_right,
-                    &DeltaPosition { dx: 30, dy: 30 },
+                    &DeltaPosition { dx: 50, dy: 50 },
                 ));
 
                 let await_time = std::time::Instant::now();
@@ -1271,7 +1288,7 @@ pub mod compound_action {
                     if framehandler.is_bank_open(&capturer.frame().unwrap()) {
                         return true;
                     }
-                    sleep(Duration::from_millis(50));
+                    sleep(Duration::from_millis(100));
                 }
             }
 
@@ -1442,7 +1459,7 @@ pub mod abstract_action {
             framehandler: &mut FrameHandler,
             capturer: &mut Capturer,
         ) -> bool {
-            println!("ConsumeInventory");
+            println!("ConsumeSingleInventoryItem");
             let first_matching_inventory_slot = framehandler
                 .first_matching_inventory_slot(&capturer.frame().unwrap(), &self.item_to_consume);
             if first_matching_inventory_slot.is_none() {
@@ -1460,7 +1477,7 @@ pub mod abstract_action {
 
                 let waittime = std::time::Instant::now();
                 while waittime.elapsed() < Duration::from_secs(5) {
-                    sleep(Duration::from_millis(50));
+                    sleep(Duration::from_millis(100));
                     let matching_slot = framehandler.first_matching_inventory_slot(
                         &capturer.frame().unwrap(),
                         &self.item_to_consume,
@@ -1566,6 +1583,10 @@ pub mod abstract_action {
         pub fn default_reset() -> ExplicitActions {
             let mut actions = Vec::<Box<dyn Action>>::new();
             actions.push(Box::new(PressMinimapMiddle {}));
+            actions.push(Box::new(Await {
+                condition: AwaitCondition::Time,
+                timeout: Duration::from_secs(1),
+            }));
             actions.push(Box::new(MaybeToggleWorldmap::close_worldmap()));
             actions.push(Box::new(PressCompass {}));
             actions.push(Box::new(CloseChatbox {}));
