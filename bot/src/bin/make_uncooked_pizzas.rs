@@ -1,30 +1,16 @@
 use bot::actions::*;
 use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel};
 use std::error::Error;
-use std::str::FromStr;
 use std::time::Duration;
 use structopt::StructOpt;
+use strum_macros::EnumString;
 use userinput::InputBot;
 
-// Strucopt doesn't play nice with enum_util::FromStr...
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, EnumString)]
 pub enum Location {
     AlKharid,
     Falador,
-}
-
-impl FromStr for Location {
-    type Err = std::io::Error;
-    fn from_str(loc: &str) -> Result<Self, Self::Err> {
-        match loc {
-            "AlKharid" => Ok(Location::AlKharid),
-            "Falador" => Ok(Location::Falador),
-            _ => Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!("Couldn't parse location from {}", loc),
-            )),
-        }
-    }
+    VarrockWest,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -54,6 +40,7 @@ fn bank_pixels(loc: Location) -> Vec<FuzzyPixel> {
             fuzzy_pixels::falador_bank_brown1(),
             fuzzy_pixels::falador_bank_brown2(),
         ],
+        Location::VarrockWest => vec![fuzzy_pixels::varrock_bank_window1()],
     }
 }
 
@@ -82,7 +69,7 @@ fn make_incomplete_pizza(_config: &Config) -> ConsumeInventory {
         actions: vec![
             Box::new(InventorySlotAction::new(inventory_slot_pixels::pizza_base())),
             Box::new(InventorySlotAction::new(inventory_slot_pixels::tomato())),
-            Box::new(ClickChatboxMiddle {}),
+            Box::new(ClickChatboxMiddle::new()),
         ],
     }
 }
@@ -112,7 +99,7 @@ fn make_uncooked_pizza(_config: &Config) -> ConsumeInventory {
                 inventory_slot_pixels::incomplete_pizza(),
             )),
             Box::new(InventorySlotAction::new(inventory_slot_pixels::cheese())),
-            Box::new(ClickChatboxMiddle {}),
+            Box::new(ClickChatboxMiddle::new()),
         ],
     }
 }
@@ -146,7 +133,7 @@ Assumes that:
     let make_uncooked_pizza_actions = make_uncooked_pizza(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(10 * 60 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

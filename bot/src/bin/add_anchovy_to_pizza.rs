@@ -1,27 +1,55 @@
 use bot::actions::*;
-use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
+use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
+use strum_macros::EnumString;
 use userinput::InputBot;
 
-pub const PLAIN_PIZZA_BANK_INDEX_SLOT: i32 = 13;
-pub const ANCHOVY_BANK_INDEX_SLOT: i32 = 4;
+#[derive(Debug, Copy, Clone, EnumString)]
+pub enum Location {
+    AlKharid,
+    Falador,
+}
 
-fn withdraw_pizza_and_anchovies() -> ExplicitActions {
+#[derive(Debug, StructOpt, Clone)]
+pub struct Config {
+    #[structopt(flatten)]
+    pub bot_config: bot::Config,
+
+    #[structopt(long, about = "Index of the slot in the bank pizza bases are stored.")]
+    pub plain_pizza_bank_slot_index: i32,
+    #[structopt(long, about = "Index of the slot in the bank tomatos are stored.")]
+    pub anchovy_bank_slot_index: i32,
+
+    #[structopt(long, about = "Which bank we are located in.")]
+    pub location: Location,
+}
+
+fn bank_pixels(loc: Location) -> Vec<FuzzyPixel> {
+    match loc {
+        Location::AlKharid => vec![
+            fuzzy_pixels::bank_brown1(),
+            fuzzy_pixels::bank_brown2(),
+            fuzzy_pixels::bank_brown3(),
+        ],
+        Location::Falador => vec![
+            fuzzy_pixels::falador_bank_brown1(),
+            fuzzy_pixels::falador_bank_brown2(),
+        ],
+    }
+}
+
+fn withdraw_pizza_and_anchovies(config: &Config) -> ExplicitActions {
     ExplicitActions {
         actions: vec![
             Box::new(WithdrawFromBank::new(
                 /*bank_pixels=*/
-                vec![
-                    fuzzy_pixels::bank_brown1(),
-                    fuzzy_pixels::bank_brown2(),
-                    fuzzy_pixels::bank_brown3(),
-                ],
+                bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
                 vec![
-                    (PLAIN_PIZZA_BANK_INDEX_SLOT, BankQuantity::X),
-                    (ANCHOVY_BANK_INDEX_SLOT, BankQuantity::X),
+                    (config.plain_pizza_bank_slot_index, BankQuantity::X),
+                    (config.anchovy_bank_slot_index, BankQuantity::X),
                 ],
             )),
             Box::new(CloseBank {}),
@@ -29,7 +57,7 @@ fn withdraw_pizza_and_anchovies() -> ExplicitActions {
     }
 }
 
-fn add_anchovies_to_pizza() -> ConsumeInventory {
+fn add_anchovies_to_pizza(_config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(10),
@@ -44,36 +72,23 @@ fn add_anchovies_to_pizza() -> ConsumeInventory {
             Box::new(InventorySlotAction::new(
                 inventory_slot_pixels::plain_pizza(),
             )),
-            Box::new(ClickChatboxMiddle {}),
+            Box::new(ClickChatboxMiddle::new()),
         ],
     }
 }
 
-fn deposit_pizzas() -> DepositInBank {
+fn deposit_pizzas(config: &Config) -> DepositEntireInventoryToBank {
     // TODO: consider dumping the entire inventory.
-    DepositInBank::new(
-        /*expected_pixels=*/
-        vec![
-            fuzzy_pixels::bank_brown1(),
-            fuzzy_pixels::bank_brown2(),
-            fuzzy_pixels::bank_brown3(),
-        ],
-        /*items=*/
-        vec![
-            inventory_slot_pixels::plain_pizza_bank(),
-            inventory_slot_pixels::cooked_anchovies_bank(),
-            inventory_slot_pixels::anchovy_pizza_bank(),
-        ],
-    )
+    DepositEntireInventoryToBank::new(/*bank_pixels=*/ bank_pixels(config.location))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = bot::Config::from_args();
+    let config = Config::from_args();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
-    let mut inputbot = InputBot::new(config.userinput_config);
-    let mut framehandler = FrameHandler::new(config.screen_config);
+    let mut inputbot = InputBot::new(config.bot_config.userinput_config.clone());
+    let mut framehandler = FrameHandler::new(config.bot_config.screen_config.clone());
 
     // Starting with the inventory full of uncooked pizzas is an optimization to
     // avoid putting reset between deposit and withdraw.
@@ -82,17 +97,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 Assumes that:
     1. Shift click is configured to Use for anchovies (https://github.com/runelite/runelite/wiki/Menu-Entry-Swapper).
     2. Bank Quantity X is set to 14. 
-    3. Bank slot index for plain pizza is {}
-    4. Bank slot index for anchovy is {}
-",
-        PLAIN_PIZZA_BANK_INDEX_SLOT,
-        ANCHOVY_BANK_INDEX_SLOT,
-    );
+    3. We are standing in a bank
+");
 
     let reset_actions = ExplicitActions::default_reset();
-    let deposit_pizzas_actions = deposit_pizzas();
-    let withdraw_pizza_and_anchovies_actions = withdraw_pizza_and_anchovies();
-    let add_anchovies_to_pizza_actions = add_anchovies_to_pizza();
+    let deposit_pizzas_actions = deposit_pizzas(&config);
+    let withdraw_pizza_and_anchovies_actions = withdraw_pizza_and_anchovies(&config);
+    let add_anchovies_to_pizza_actions = add_anchovies_to_pizza(&config);
 
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(10 * 60) {

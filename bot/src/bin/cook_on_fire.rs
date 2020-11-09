@@ -143,7 +143,7 @@ fn cook_fish() -> ConsumeInventory {
                 /*mouse_click=*/
                 MouseClick::Left,
             )),
-            Box::new(ClickChatboxMiddle {}),
+            Box::new(ClickChatboxMiddle::new()),
         ],
     }
 }

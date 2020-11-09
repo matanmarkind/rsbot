@@ -56,7 +56,7 @@ fn cook_pizzas() -> ConsumeInventory {
                 /*mouse_click=*/
                 MouseClick::Left,
             )),
-            Box::new(ClickChatboxMiddle {}),
+            Box::new(ClickChatboxMiddle::new()),
         ],
     }
 }

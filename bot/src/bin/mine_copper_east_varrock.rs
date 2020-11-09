@@ -74,27 +74,27 @@ fn travel_to_bank() -> ExplicitActions {
                 ],
                 /*arc_of_interest=*/ (0.0, 360.0),
                 /*timeout=*/ Duration::from_secs(60),
-                /*try_to_run=*/ true,
+                /*try_to_run=*/ false,
             )),
         ],
     }
 }
 
-fn deposit_copper() -> DepositInBank {
+fn deposit_copper() -> DepositEntireInventoryToBank {
     // TODO: consider dumping the entire inventory. This requires pickaxe is
     // equipped not in inventory.
-    DepositInBank::new(
+    DepositEntireInventoryToBank::new(
         /*expected_pixels=*/
         vec![fuzzy_pixels::varrock_bank_window1()],
-        /*items=*/
-        vec![
-            inventory_slot_pixels::copper_ore_bank(),
-            inventory_slot_pixels::silver_ore_bank(),
-            inventory_slot_pixels::iron_ore_bank(),
-            inventory_slot_pixels::clay_bank(),
-            inventory_slot_pixels::uncut_sapphire_bank(),
-            inventory_slot_pixels::uncut_ruby_bank(),
-        ],
+        // /*items=*/
+        // vec![
+        //     inventory_slot_pixels::copper_ore_bank(),
+        //     inventory_slot_pixels::silver_ore_bank(),
+        //     inventory_slot_pixels::iron_ore_bank(),
+        //     inventory_slot_pixels::clay_bank(),
+        //     inventory_slot_pixels::uncut_sapphire_bank(),
+        //     inventory_slot_pixels::uncut_ruby_bank(),
+        // ],
     )
 }
 
