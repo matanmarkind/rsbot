@@ -156,6 +156,11 @@ pub mod basic_action {
     }
 
     /// Use the minimap to identify a destination and walk towards it.
+    ///
+    /// If this fails the most likely culprit is that one of the colors on the
+    /// minimap (other than an icon) changed shade; they get lighter or darker
+    /// during the day. It is also possible that there is an occlusion (anitem
+    /// on the ground creates a red dot covering part of an icon).
     pub struct TravelToOnMinimap {
         /// The most identifying pixel for the destination we want to reach. This is
         /// an optimization so that we don't have to check every N pixels at every
@@ -1338,7 +1343,7 @@ pub mod compound_action {
 
             // Add a slight delay since sometimes it takes a moment for the bank
             // being open to allow us to interact with it.
-            sleep(Duration::from_millis(100));
+            sleep(util::REDRAW_TIME);
 
             if !self
                 .quantity_all_action
@@ -1353,9 +1358,10 @@ pub mod compound_action {
                 // Don't check for success here since we pass in items which may
                 // not always appear in the inventory.
                 action.do_action(inputbot, framehandler, capturer);
+                sleep(Duration::from_millis(100));
             }
 
-            sleep(Duration::from_millis(100));
+            sleep(util::REDRAW_TIME);
 
             // For safety do it again since sometimes the item is not removed
             // even after pressing it. This will likely result in double
@@ -1364,6 +1370,7 @@ pub mod compound_action {
                 // Don't check for success here since we pass in items which may
                 // not always appear in the inventory.
                 action.do_action(inputbot, framehandler, capturer);
+                sleep(Duration::from_millis(100));
             }
 
             true

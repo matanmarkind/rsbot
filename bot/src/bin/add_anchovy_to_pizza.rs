@@ -72,7 +72,13 @@ fn add_anchovies_to_pizza(_config: &Config) -> ConsumeInventory {
             Box::new(InventorySlotAction::new(
                 inventory_slot_pixels::plain_pizza(),
             )),
-            Box::new(ClickChatboxMiddle::new()),
+            Box::new(Await {
+                condition: AwaitCondition::IsChatboxOpen,
+                timeout: Duration::from_secs(3),
+            }),
+            Box::new(ClickKey {
+                key: userinput::Key::Space,
+            }),
         ],
     }
 }
@@ -106,7 +112,7 @@ Assumes that:
     let add_anchovies_to_pizza_actions = add_anchovies_to_pizza(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(10 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(120 * 60) {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

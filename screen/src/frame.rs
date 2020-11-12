@@ -526,12 +526,12 @@ impl FrameHandler {
             while pos.x < past_bottom_right.x {
                 // Used to add new items to the inventory_slot_pixels list.
                 {
-                    // let pixel = frame.get_pixel(&pos);
-                    // let dbgstr = format!(
-                    //     "slot_index={}, {:?}, {:?} {:?}",
-                    //     slot_index, pos, pixel, expected_colors[i]
-                    // );
-                    // dbg!(dbgstr);
+                    let pixel = frame.get_pixel(&pos);
+                    let dbgstr = format!(
+                        "slot_index={}, {:?}, {:?} {:?}",
+                        slot_index, pos, pixel, expected_colors[i]
+                    );
+                    dbg!(dbgstr);
                 }
                 if !frame.check_loose_pixel(&pos, &expected_colors[i]) {
                     return false;

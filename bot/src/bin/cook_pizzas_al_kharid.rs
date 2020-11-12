@@ -5,9 +5,16 @@ use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
 
-pub const UNCOOKED_PIZZA_BANK_INDEX_SLOT: i32 = 12;
+#[derive(Debug, StructOpt, Clone)]
+pub struct Config {
+    #[structopt(flatten)]
+    pub bot_config: bot::Config,
 
-fn withdraw_uncooked_pizzas() -> WithdrawFromBank {
+    #[structopt(long)]
+    pub uncooked_pizza_bank_slot_index: i32,
+}
+
+fn withdraw_uncooked_pizzas(config: &Config) -> WithdrawFromBank {
     WithdrawFromBank::new(
         /*bank_pixels=*/
         vec![
@@ -16,11 +23,11 @@ fn withdraw_uncooked_pizzas() -> WithdrawFromBank {
             fuzzy_pixels::bank_brown3(),
         ],
         /*bank_slot_and_quantity=*/
-        vec![(UNCOOKED_PIZZA_BANK_INDEX_SLOT, BankQuantity::All)],
+        vec![(config.uncooked_pizza_bank_slot_index, BankQuantity::All)],
     )
 }
 
-fn travel_to_cookrange() -> TravelTo {
+fn travel_to_cookrange(_config: &Config) -> TravelTo {
     TravelTo::new(
         /*primary_pixel=*/ fuzzy_pixels::map_floor_beige(),
         /*check_pixels=*/
@@ -38,7 +45,7 @@ fn travel_to_cookrange() -> TravelTo {
     )
 }
 
-fn cook_pizzas() -> ConsumeInventory {
+fn cook_pizzas(_config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(10),
@@ -61,7 +68,7 @@ fn cook_pizzas() -> ConsumeInventory {
     }
 }
 
-fn travel_to_bank() -> TravelTo {
+fn travel_to_bank(_config: &Config) -> TravelTo {
     TravelTo::new(
         /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
         /*check_pixels=*/
@@ -75,7 +82,7 @@ fn travel_to_bank() -> TravelTo {
     )
 }
 
-fn deposit_pizzas() -> DepositInBank {
+fn deposit_pizzas(_config: &Config) -> DepositInBank {
     // TODO: consider dumping the entire inventory. This requires pickaxe is
     // equipped not in inventory.
     DepositInBank::new(
@@ -95,12 +102,12 @@ fn deposit_pizzas() -> DepositInBank {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = bot::Config::from_args();
+    let config = Config::from_args();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
-    let mut inputbot = InputBot::new(config.userinput_config);
-    let mut framehandler = FrameHandler::new(config.screen_config);
+    let mut inputbot = InputBot::new(config.bot_config.userinput_config.clone());
+    let mut framehandler = FrameHandler::new(config.bot_config.screen_config.clone());
 
     // Starting with the inventory full of uncooked pizzas is an optimization to
     // avoid putting reset between deposit and withdraw.
@@ -109,18 +116,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 Assumes that:
     1. We start with the inventory full of uncooked pizzas.
     2. We start in the Al Kharid Bank.
-    3. Uncooked Pizzas are in bank_slot_index {}.
-    4. Assumes shift click is configured to Use for anchovies (https://github.com/runelite/runelite/wiki/Menu-Entry-Swapper).
-",
-        UNCOOKED_PIZZA_BANK_INDEX_SLOT
+    3. Assumes shift click is configured to Use for anchovies (https://github.com/runelite/runelite/wiki/Menu-Entry-Swapper).
+"
     );
 
     let reset_actions = ExplicitActions::default_reset();
-    let withdraw_uncooked_pizzas_actions = withdraw_uncooked_pizzas();
-    let travel_to_cookrange_actions = travel_to_cookrange();
-    let cook_pizzas_actions = cook_pizzas();
-    let travel_to_bank_actions = travel_to_bank();
-    let deposit_pizzas_actions = deposit_pizzas();
+    let withdraw_uncooked_pizzas_actions = withdraw_uncooked_pizzas(&config);
+    let travel_to_cookrange_actions = travel_to_cookrange(&config);
+    let cook_pizzas_actions = cook_pizzas(&config);
+    let travel_to_bank_actions = travel_to_bank(&config);
+    let deposit_pizzas_actions = deposit_pizzas(&config);
 
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(10 * 60) {

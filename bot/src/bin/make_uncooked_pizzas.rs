@@ -11,6 +11,7 @@ pub enum Location {
     AlKharid,
     Falador,
     VarrockWest,
+    Draynor,
 }
 
 #[derive(Debug, StructOpt, Clone)]
@@ -31,7 +32,7 @@ pub struct Config {
 
 fn bank_pixels(loc: Location) -> Vec<FuzzyPixel> {
     match loc {
-        Location::AlKharid => vec![
+        Location::AlKharid | Location::Draynor => vec![
             fuzzy_pixels::bank_brown1(),
             fuzzy_pixels::bank_brown2(),
             fuzzy_pixels::bank_brown3(),
@@ -133,7 +134,7 @@ Assumes that:
     let make_uncooked_pizza_actions = make_uncooked_pizza(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(60 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(40 * 60) {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

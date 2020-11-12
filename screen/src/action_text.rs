@@ -82,7 +82,7 @@ mod letters {
 
     pub fn upper_b() -> Character {
         Character {
-            width: 8,
+            width: 8,  // or 9...
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
@@ -103,7 +103,7 @@ mod letters {
 
     pub fn upper_c() -> Character {
         Character {
-            width: 8,
+            width: 9, // 8 ?
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
@@ -293,6 +293,26 @@ mod letters {
             ],
 
             display: "U",
+        }
+    }
+
+    pub fn upper_w() -> Character {
+        Character {
+            width: 10,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 3 },
+                DeltaPosition { dx: 0, dy: 6 },
+                DeltaPosition { dx: 1, dy: 10 },
+                DeltaPosition { dx: 3, dy: 11 },
+                DeltaPosition { dx: 3, dy: 7 },
+                DeltaPosition { dx: 5, dy: 10 },
+                DeltaPosition { dx: 6, dy: 3 },
+                DeltaPosition { dx: 6, dy: 6 },
+            ],
+
+            display: "W",
         }
     }
 
@@ -1022,6 +1042,31 @@ pub fn chop_down_oak() -> Text {
     }
 }
 
+pub fn chop_down_willow() -> Text {
+    Text {
+        letters: vec![
+            (upper_c(), action_text_white()),
+            (lower_h(), action_text_white()),
+            (lower_o(), action_text_white()),
+            (lower_p(), action_text_white()),
+            (space(), action_text_white()),
+            (lower_d(), action_text_white()),
+            (lower_o(), action_text_white()),
+            (lower_w(), action_text_white()),
+            (lower_n(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_w(), action_text_blue()),
+            (lower_i(), action_text_blue()),
+            (lower_l(), action_text_blue()),
+            (lower_l(), action_text_blue()),
+            (lower_o(), action_text_blue()),
+            (lower_w(), action_text_blue()),
+            (space(), action_text_white()),
+            (forward_slash(), action_text_white()),
+        ],
+    }
+}
+
 pub fn small_net_fishing_spot() -> Text {
     Text {
         letters: vec![
@@ -1069,7 +1114,7 @@ pub fn check_action_letters(
         frame,
         &action_text.letters[..],
         action_text_top_left,
-        &[0, -1, 1],
+        &[0, -1, 1, -2, 2],
     );
     action_text.letters.len() > 10 * num_letter_mistmatches
 }

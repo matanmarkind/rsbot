@@ -79,14 +79,16 @@ impl MouseMover {
     pub fn move_to(&self, dst: &Position) -> bool {
         let mut just_cheated = false;
         loop {
-            self.follow_path_to(&dst, /*tolerance=*/ MAX_CHEAT_DISTANCE - 1);
+            let prev_distance = self.distance_from(&dst);
+            self.follow_path_to(&dst, /*tolerance=*/ MAX_CHEAT_DISTANCE / 2);
             let distance = self.distance_from(&dst);
+
             if distance <= MAX_CHEAT_DISTANCE {
                 break;
-            } else if self.distance_from(&dst) >= distance {
-                // We couldn't find a path to move in the right direction, so
-                // cheat a little and try again. If we just cheated, exit to
-                // avoid an infinite loop.
+            } else if distance >= prev_distance {
+                // We couldn't find a path to move in the right direction or the
+                // edge of the screen got in our way, so cheat a little and try
+                // again. If we just cheated, exit to avoid an infinite loop.
                 if just_cheated {
                     return &self.current_position() == dst;
                 }

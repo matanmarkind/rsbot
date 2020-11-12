@@ -1,12 +1,6 @@
-#![allow(dead_code, unused_imports)]
-
-/// Used to develop new actions.
 use bot::actions::*;
-use screen::{
-    action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, Frame, FrameHandler, FuzzyPixel,
-};
+use screen::{action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
-use std::thread::sleep;
 use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;

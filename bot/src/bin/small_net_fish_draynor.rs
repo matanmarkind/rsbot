@@ -85,7 +85,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let catch_fish_actions = small_net_fish();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
         let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         dbg!(reset);
 

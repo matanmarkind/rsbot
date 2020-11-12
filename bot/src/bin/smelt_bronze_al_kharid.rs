@@ -6,10 +6,18 @@ use std::time::Duration;
 use structopt::StructOpt;
 use userinput::InputBot;
 
-pub const COPPER_ORE_BANK_INDEX: i32 = 6;
-pub const TIN_ORE_BANK_INDEX: i32 = 7;
+#[derive(Debug, StructOpt, Clone)]
+pub struct Config {
+    #[structopt(flatten)]
+    pub bot_config: bot::Config,
 
-fn travel_to_furnace() -> TravelTo {
+    #[structopt(long)]
+    pub copper_ore_bank_slot_index: i32,
+    #[structopt(long)]
+    pub tin_ore_bank_slot_index: i32,
+}
+
+fn travel_to_furnace(_config: &Config) -> TravelTo {
     TravelTo::new(
         /*primary_pixel=*/ fuzzy_pixels::map_icon_furnace_yellow(),
         /*check_pixels=*/
@@ -26,7 +34,7 @@ fn travel_to_furnace() -> TravelTo {
     )
 }
 
-fn smelt_bronze() -> ConsumeInventory {
+fn smelt_bronze(_config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(15),
@@ -57,7 +65,7 @@ fn smelt_bronze() -> ConsumeInventory {
     }
 }
 
-fn travel_to_bank() -> TravelTo {
+fn travel_to_bank(_config: &Config) -> TravelTo {
     // Use map_floor_beige as the primary pizel since clicking directly on the
     // bank yellow can cause us to walk outside the bank (also happened when I
     // manually pressed). I know that coming from the forge starts me on the
@@ -78,7 +86,7 @@ fn travel_to_bank() -> TravelTo {
     )
 }
 
-fn withdraw_from_bank() -> WithdrawFromBank {
+fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
     WithdrawFromBank::new(
         /*bank_pixels=*/
         vec![
@@ -87,38 +95,40 @@ fn withdraw_from_bank() -> WithdrawFromBank {
             fuzzy_pixels::bank_brown3(),
         ],
         /*bank_slot_and_quantity=*/
-        vec![(6, BankQuantity::X), (7, BankQuantity::X)],
+        vec![
+            (config.copper_ore_bank_slot_index, BankQuantity::X),
+            (config.tin_ore_bank_slot_index, BankQuantity::X),
+        ],
     )
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = bot::Config::from_args();
+    let config = Config::from_args();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
-    let mut inputbot = InputBot::new(config.userinput_config);
-    let mut framehandler = FrameHandler::new(config.screen_config);
+    let mut inputbot = InputBot::new(config.bot_config.userinput_config.clone());
+    let mut framehandler = FrameHandler::new(config.bot_config.screen_config.clone());
     // Starting with the inventory full of uncooked pizzas is an optimization to
     // avoid putting reset between deposit and withdraw.
     println!(
         "\
 Assumes that:
-    1. Copper ore is in bank slot {}
-    2. Tin ore is in bank slot {}.
-",
-        COPPER_ORE_BANK_INDEX, TIN_ORE_BANK_INDEX
+    1. BankQuantity::X is set to 14.
+    2. We start in AlKharid bank
+"
     );
 
     let reset_actions = ExplicitActions::default_reset();
-    let travel_to_bank_actions = travel_to_bank();
+    let travel_to_bank_actions = travel_to_bank(&config);
     let deposit_bars = DepositEntireInventoryToBank::new(/*bank_pixels=*/ vec![
         fuzzy_pixels::bank_brown1(),
         fuzzy_pixels::bank_brown2(),
         fuzzy_pixels::bank_brown3(),
     ]);
-    let withdraw_ore = withdraw_from_bank();
-    let travel_to_furnace_actions = travel_to_furnace();
-    let smelt_iron_actions = smelt_bronze();
+    let withdraw_ore = withdraw_from_bank(&config);
+    let travel_to_furnace_actions = travel_to_furnace(&config);
+    let smelt_iron_actions = smelt_bronze(&config);
 
     let time = std::time::Instant::now();
     while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {

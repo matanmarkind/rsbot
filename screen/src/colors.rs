@@ -487,12 +487,14 @@ pub mod fuzzy_pixels {
         }
     }
     pub fn map_floor_beige() -> FuzzyPixel {
+        // 60, 93, 101
+        // 76, 124, 130
         FuzzyPixel {
-            blue_min: 60,
-            blue_max: 90,
-            green_min: 100,
+            blue_min: 55,
+            blue_max: 85,
+            green_min: 90,
             green_max: 130,
-            red_min: 105,
+            red_min: 95,
             red_max: 135,
         }
     }
@@ -670,6 +672,31 @@ pub mod fuzzy_pixels {
             green_max: 85,
             red_min: 114,
             red_max: 118,
+        }
+    }
+    pub fn willow_bark1() -> FuzzyPixel {
+        // 23, 46, 50
+        FuzzyPixel {
+            blue_min: 21,
+            blue_max: 25,
+            green_min: 44,
+            green_max: 48,
+            red_min: 48,
+            red_max: 52,
+        }
+    }
+    pub fn willow_bark2() -> FuzzyPixel {
+        // 33, 63, 70
+        // 34, 65, 73
+        // 23, 46, 50
+        // 39, 76, 86
+        FuzzyPixel {
+            blue_min: 31,
+            blue_max: 41,
+            green_min: 61,
+            green_max: 78,
+            red_min: 68,
+            red_max: 88,
         }
     }
     pub fn small_net_fishing_spot() -> FuzzyPixel {
