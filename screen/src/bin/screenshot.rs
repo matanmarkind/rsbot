@@ -57,6 +57,7 @@ fn marked_open_screen(cap: &mut Capturer, screenhandler: &FrameHandler) -> Owned
         &screenhandler.locations.inventory_inner_dimensions(),
     );
 
+    surrounding_box(&mut frame, &screenhandler.locations.enemy_healthbar_left());
     surrounding_box(&mut frame, &screenhandler.locations.enemy_healthbar_right());
     surrounding_box(&mut frame, &screenhandler.locations.mid_screen());
     surrounding_box(&mut frame, &screenhandler.locations.all_chat_button());

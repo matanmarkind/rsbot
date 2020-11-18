@@ -22,7 +22,7 @@ fn main() {
     let mut capturer = screen::Capturer::new();
     let screenhandler = screen::FrameHandler::new(config.screen_config);
 
-    let text = &action_text::bank_bank_booth();
+    let text = &action_text::attack_al_kharid_warrior();
 
     println!("Capturing, cropping, flipping, drawing...");
     let frame = capturer.frame().unwrap();

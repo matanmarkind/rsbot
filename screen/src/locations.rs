@@ -75,7 +75,13 @@ impl Locations {
             y: self.top_left.y + 3,
         }
     }
-    // A specific point near the right edge of an enemy healthbar.
+    // A specific point near the edge of an enemy healthbar.
+    pub fn enemy_healthbar_left(&self) -> Position {
+        Position {
+            x: self.top_left.x + 8,
+            y: self.top_left.y + 45,
+        }
+    }
     pub fn enemy_healthbar_right(&self) -> Position {
         Position {
             x: self.top_left.x + 130,

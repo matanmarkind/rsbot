@@ -82,7 +82,7 @@ mod letters {
 
     pub fn upper_b() -> Character {
         Character {
-            width: 8,  // or 9...
+            width: 8, // or 9...
 
             // Delta from the top left corner of the letters box.
             checkpoints: vec![
@@ -155,6 +155,25 @@ mod letters {
             ],
 
             display: "F",
+        }
+    }
+
+    pub fn upper_k() -> Character {
+        Character {
+            width: 9,
+
+            // Delta from the top left corner of the letters box.
+            checkpoints: vec![
+                DeltaPosition { dx: 0, dy: 3 },
+                DeltaPosition { dx: 0, dy: 7 },
+                DeltaPosition { dx: 0, dy: 11 },
+                DeltaPosition { dx: 3, dy: 4 },
+                DeltaPosition { dx: 3, dy: 7 },
+                DeltaPosition { dx: 5, dy: 3 },
+                DeltaPosition { dx: 6, dy: 10 },
+            ],
+
+            display: "K",
         }
     }
 
@@ -805,6 +824,41 @@ pub fn attack_cow() -> Text {
             (upper_c(), action_text_yellow()),
             (lower_o(), action_text_yellow()),
             (lower_w(), action_text_yellow()),
+            (space(), action_text_white()),
+            (space(), action_text_white()),
+            (open_paren(), action_text_green()),
+        ],
+    }
+}
+
+pub fn attack_al_kharid_warrior() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_a(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_a(), action_text_white()),
+            (lower_c(), action_text_white()),
+            (lower_k(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_a(), action_text_yellow()),
+            (lower_l(), action_text_yellow()),
+            (hyphen(), action_text_yellow()),
+            (upper_k(), action_text_yellow()),
+            (lower_h(), action_text_yellow()),
+            (lower_a(), action_text_yellow()),
+            (lower_r(), action_text_yellow()),
+            (lower_i(), action_text_yellow()),
+            (lower_d(), action_text_yellow()),
+            (space(), action_text_white()),
+            (lower_w(), action_text_yellow()),
+            (lower_a(), action_text_yellow()),
+            (lower_r(), action_text_yellow()),
+            (lower_r(), action_text_yellow()),
+            (lower_i(), action_text_yellow()),
+            (lower_o(), action_text_yellow()),
+            (lower_r(), action_text_yellow()),
             (space(), action_text_white()),
             (space(), action_text_white()),
             (open_paren(), action_text_green()),

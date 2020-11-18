@@ -253,6 +253,29 @@ pub mod fuzzy_pixels {
         }
     }
 
+    pub fn al_kharid_warrior_purple1() -> FuzzyPixel {
+        // 103, 5, 105
+        // 81, 5, 82
+        FuzzyPixel {
+            blue_min: 79,
+            blue_max: 105,
+            green_min: 3,
+            green_max: 7,
+            red_min: 80,
+            red_max: 107,
+        }
+    }
+    pub fn al_kharid_warrior_purple2() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 55,
+            blue_max: 30,
+            green_min: 5,
+            green_max: 0,
+            red_min: 55,
+            red_max: 30,
+        }
+    }
+
     pub fn run_icon_on() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 100,
@@ -1241,6 +1264,67 @@ pub mod inventory_slot_pixels {
     pub fn oak_logs_bank() -> InventorySlotPixels {
         oak_logs()
     }
+    pub fn willow_logs() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 5,
+                blue_max: 9,
+                green_min: 25,
+                green_max: 29,
+                red_min: 31,
+                red_max: 35,
+            },
+            FuzzyPixel {
+                blue_min: 10,
+                blue_max: 14,
+                green_min: 44,
+                green_max: 48,
+                red_min: 52,
+                red_max: 56,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 35,
+                blue_max: 39,
+                green_min: 69,
+                green_max: 73,
+                red_min: 78,
+                red_max: 82,
+            },
+            FuzzyPixel {
+                blue_min: 8,
+                blue_max: 12,
+                green_min: 33,
+                green_max: 37,
+                red_min: 40,
+                red_max: 44,
+            },
+            FuzzyPixel {
+                blue_min: 12,
+                blue_max: 16,
+                green_min: 47,
+                green_max: 51,
+                red_min: 55,
+                red_max: 59,
+            },
+            black(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 13,
+                blue_max: 17,
+                green_min: 51,
+                green_max: 55,
+                red_min: 59,
+                red_max: 63,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn willow_logs_bank() -> InventorySlotPixels {
+        willow_logs()
+    }
     pub fn tin_ore() -> InventorySlotPixels {
         [
             inventory_background(),
@@ -2214,5 +2298,151 @@ pub mod inventory_slot_pixels {
             red_max: 53,
         };
         pixels
+    }
+
+    pub fn jug() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 67,
+                blue_max: 71,
+                green_min: 67,
+                green_max: 71,
+                red_min: 74,
+                red_max: 78,
+            },
+            black(),
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 130,
+                blue_max: 134,
+                green_min: 131,
+                green_max: 135,
+                red_min: 144,
+                red_max: 148,
+            },
+            FuzzyPixel {
+                blue_min: 78,
+                blue_max: 82,
+                green_min: 78,
+                green_max: 82,
+                red_min: 86,
+                red_max: 90,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 115,
+                blue_max: 119,
+                green_min: 116,
+                green_max: 120,
+                red_min: 128,
+                red_max: 132,
+            },
+            black(),
+            inventory_background(),
+        ]
+    }
+    pub fn jug_bank() -> InventorySlotPixels {
+        jug()
+    }
+    pub fn jug_of_water() -> InventorySlotPixels {
+        jug()
+    }
+    pub fn jug_of_water_bank() -> InventorySlotPixels {
+        jug_of_water()
+    }
+
+    pub fn pot() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 12,
+                blue_max: 16,
+                green_min: 32,
+                green_max: 36,
+                red_min: 55,
+                red_max: 59,
+            },
+            FuzzyPixel {
+                blue_min: 20,
+                blue_max: 24,
+                green_min: 50,
+                green_max: 54,
+                red_min: 85,
+                red_max: 89,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 37,
+                blue_max: 41,
+                green_min: 91,
+                green_max: 95,
+                red_min: 154,
+                red_max: 158,
+            },
+            FuzzyPixel {
+                blue_min: 35,
+                blue_max: 39,
+                green_min: 84,
+                green_max: 88,
+                red_min: 141,
+                red_max: 145,
+            },
+            FuzzyPixel {
+                blue_min: 21,
+                blue_max: 25,
+                green_min: 52,
+                green_max: 56,
+                red_min: 88,
+                red_max: 92,
+            },
+            inventory_background(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 31,
+                blue_max: 35,
+                green_min: 76,
+                green_max: 80,
+                red_min: 129,
+                red_max: 133,
+            },
+            FuzzyPixel {
+                blue_min: 17,
+                blue_max: 21,
+                green_min: 41,
+                green_max: 45,
+                red_min: 71,
+                red_max: 75,
+            },
+            inventory_background(),
+        ]
+    }
+    pub fn pot_bank() -> InventorySlotPixels {
+        pot()
+    }
+    pub fn pot_of_flour() -> InventorySlotPixels {
+        let mut pixels = pot();
+        pixels[1] = FuzzyPixel {
+            blue_min: 223,
+            blue_max: 227,
+            green_min: 224,
+            green_max: 228,
+            red_min: 228,
+            red_max: 232,
+        };
+        pixels[2] = FuzzyPixel {
+            blue_min: 24,
+            blue_max: 28,
+            green_min: 60,
+            green_max: 64,
+            red_min: 102,
+            red_max: 106,
+        };
+        pixels
+    }
+    pub fn pot_of_flour_bank() -> InventorySlotPixels {
+        pot_of_flour()
     }
 }

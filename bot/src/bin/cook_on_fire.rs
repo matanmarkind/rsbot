@@ -2,37 +2,58 @@
 use bot::actions::*;
 use screen::{
     action_text, fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel,
+    InventorySlotPixels,
 };
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
+use strum_macros::EnumString;
 use userinput::InputBot;
 
-enum Location {
+#[derive(Debug, Copy, Clone, EnumString)]
+pub enum Location {
     Draynor,
     VarrockWest,
 }
 
-enum Food {
+#[derive(Debug, Copy, Clone, EnumString)]
+pub enum Food {
     Shrimp,
     Anchovies,
 }
 
-struct Version {
-    pub location: Location,
-    pub food: Food,
-    pub food_bank_slot_index: i32,
-    pub wood_bank_slot_index: i32,
+#[derive(Debug, Copy, Clone, EnumString)]
+pub enum Logs {
+    Oak,
+    Willow,
 }
 
-const VERSION: Version = Version {
-    location: Location::VarrockWest,
-    food: Food::Anchovies,
-    food_bank_slot_index: 2,
-    wood_bank_slot_index: 5,
-};
+#[derive(Debug, StructOpt, Clone)]
+pub struct Config {
+    #[structopt(flatten)]
+    pub bot_config: bot::Config,
 
-fn travel_to_bank() -> TravelTo {
+    #[structopt(long)]
+    pub location: Location,
+    #[structopt(long)]
+    pub logs: Logs,
+    #[structopt(long)]
+    pub food: Food,
+
+    #[structopt(long)]
+    pub food_bank_slot_index: i32,
+    #[structopt(long)]
+    pub logs_bank_slot_index: i32,
+}
+
+fn get_logs_inventory_pixel(config: &Config) -> InventorySlotPixels {
+    match config.logs {
+        Logs::Oak => inventory_slot_pixels::oak_logs(),
+        Logs::Willow => inventory_slot_pixels::willow_logs(),
+    }
+}
+
+fn travel_to_bank(config: &Config) -> TravelTo {
     TravelTo::new(
         /*primary_pixel=*/ fuzzy_pixels::map_icon_bank_yellow(),
         /*check_pixels=*/
@@ -41,7 +62,7 @@ fn travel_to_bank() -> TravelTo {
             fuzzy_pixels::map_icon_light_gray(),
         ],
         /*arc_of_interest=*/
-        match VERSION.location {
+        match config.location {
             Location::Draynor => (0.0, 360.0),
             Location::VarrockWest => (250.0, 180.0),
         },
@@ -50,8 +71,8 @@ fn travel_to_bank() -> TravelTo {
     )
 }
 
-fn bank_pixels() -> Vec<FuzzyPixel> {
-    match VERSION.location {
+fn bank_pixels(config: &Config) -> Vec<FuzzyPixel> {
+    match config.location {
         Location::Draynor => vec![
             fuzzy_pixels::bank_brown1(),
             fuzzy_pixels::bank_brown2(),
@@ -61,13 +82,14 @@ fn bank_pixels() -> Vec<FuzzyPixel> {
     }
 }
 
-fn deposit_in_bank() -> DepositInBank {
+fn deposit_in_bank(config: &Config) -> DepositInBank {
     DepositInBank::new(
         /*expected_pixels=*/
-        bank_pixels(),
+        bank_pixels(config),
         /*items=*/
         vec![
             inventory_slot_pixels::oak_logs(),
+            inventory_slot_pixels::willow_logs(),
             inventory_slot_pixels::raw_shrimp_bank(),
             inventory_slot_pixels::cooked_shrimp_bank(),
             inventory_slot_pixels::burned_shrimp_bank(),
@@ -77,28 +99,28 @@ fn deposit_in_bank() -> DepositInBank {
     )
 }
 
-fn withdraw_from_bank() -> WithdrawFromBank {
+fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
     WithdrawFromBank::new(
         /*bank_pixels=*/
-        bank_pixels(),
+        bank_pixels(config),
         /*bank_slot_and_quantity=*/
         vec![
-            (VERSION.wood_bank_slot_index, BankQuantity::Exact(2)),
-            (VERSION.food_bank_slot_index, BankQuantity::All),
+            (config.logs_bank_slot_index, BankQuantity::Exact(2)),
+            (config.food_bank_slot_index, BankQuantity::All),
         ],
     )
 }
 
-fn travel_to_cooking_spot() -> ExplicitActions {
+fn travel_to_cooking_spot(config: &Config) -> ExplicitActions {
     ExplicitActions {
         actions: vec![
             Box::new(PressCompass {}),
             Box::new(TravelStraight {
-                direction_degrees: match VERSION.location {
+                direction_degrees: match config.location {
                     Location::Draynor => 85.0,
                     Location::VarrockWest => 100.0,
                 },
-                travel_time: Duration::from_secs(match VERSION.location {
+                travel_time: Duration::from_secs(match config.location {
                     Location::Draynor => 9,
                     Location::VarrockWest => 6,
                 }),
@@ -107,28 +129,28 @@ fn travel_to_cooking_spot() -> ExplicitActions {
     }
 }
 
-fn light_fire() -> ConsumeSingleInventoryItem {
+fn light_fire(config: &Config) -> ConsumeSingleInventoryItem {
     ConsumeSingleInventoryItem {
-        item_to_consume: inventory_slot_pixels::oak_logs(),
+        item_to_consume: get_logs_inventory_pixel(config),
         timeout: Duration::from_secs(10),
         actions: vec![
-            Box::new(InventorySlotAction::new(inventory_slot_pixels::oak_logs())),
+            Box::new(InventorySlotAction::new(get_logs_inventory_pixel(config))),
             Box::new(InventorySlotAction::new(inventory_slot_pixels::tinderbox())),
         ],
     }
 }
 
-fn cook_fish() -> ConsumeInventory {
+fn cook_fish(config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(10),
         activity_timeout: Duration::from_secs(2 * 60),
-        item_to_consume: match VERSION.food {
+        item_to_consume: match config.food {
             Food::Shrimp => inventory_slot_pixels::raw_shrimp(),
             Food::Anchovies => inventory_slot_pixels::raw_anchovies(),
         },
         actions: vec![
-            Box::new(InventorySlotAction::new(match VERSION.food {
+            Box::new(InventorySlotAction::new(match config.food {
                 Food::Shrimp => inventory_slot_pixels::raw_shrimp(),
                 Food::Anchovies => inventory_slot_pixels::raw_anchovies(),
             })),
@@ -136,7 +158,7 @@ fn cook_fish() -> ConsumeInventory {
                 /*expected_pixels=*/
                 vec![fuzzy_pixels::fire_dark(), fuzzy_pixels::fire_light()],
                 /*action_text=*/
-                Some(match VERSION.food {
+                Some(match config.food {
                     Food::Shrimp => action_text::use_raw_shrimp_rightarrow_fire(),
                     Food::Anchovies => action_text::use_raw_anchovies_rightarrow_fire(),
                 }),
@@ -149,23 +171,23 @@ fn cook_fish() -> ConsumeInventory {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let config = bot::Config::from_args();
+    let config = Config::from_args();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
-    let mut inputbot = InputBot::new(config.userinput_config);
-    let mut framehandler = FrameHandler::new(config.screen_config);
+    let mut inputbot = InputBot::new(config.bot_config.userinput_config.clone());
+    let mut framehandler = FrameHandler::new(config.bot_config.screen_config.clone());
 
     let reset_actions = ExplicitActions::default_reset();
-    let travel_to_bank_actions = travel_to_bank();
-    let deposit_in_bank_actions = deposit_in_bank();
-    let withdraw_from_bank_actions = withdraw_from_bank();
-    let travel_to_cooking_spot_actions = travel_to_cooking_spot();
-    let light_fire_actions = light_fire();
-    let cook_fish_actions = cook_fish();
+    let travel_to_bank_actions = travel_to_bank(&config);
+    let deposit_in_bank_actions = deposit_in_bank(&config);
+    let withdraw_from_bank_actions = withdraw_from_bank(&config);
+    let travel_to_cooking_spot_actions = travel_to_cooking_spot(&config);
+    let light_fire_actions = light_fire(&config);
+    let cook_fish_actions = cook_fish(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(30 * 60) {
         let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         dbg!(reset);
 

@@ -1,18 +1,9 @@
-use bot::actions::*;
-use screen::{fuzzy_pixels, inventory_slot_pixels, Capturer, FrameHandler, FuzzyPixel};
+use bot::*;
+use screen::{inventory_slot_pixels, Capturer, FrameHandler};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;
-use strum_macros::EnumString;
 use userinput::InputBot;
-
-#[derive(Debug, Copy, Clone, EnumString)]
-pub enum Location {
-    AlKharid,
-    Falador,
-    VarrockWest,
-    Draynor,
-}
 
 #[derive(Debug, StructOpt, Clone)]
 pub struct Config {
@@ -27,22 +18,7 @@ pub struct Config {
     pub cheese_bank_slot_index: i32,
 
     #[structopt(long, about = "Which bank we are located in.")]
-    pub location: Location,
-}
-
-fn bank_pixels(loc: Location) -> Vec<FuzzyPixel> {
-    match loc {
-        Location::AlKharid | Location::Draynor => vec![
-            fuzzy_pixels::bank_brown1(),
-            fuzzy_pixels::bank_brown2(),
-            fuzzy_pixels::bank_brown3(),
-        ],
-        Location::Falador => vec![
-            fuzzy_pixels::falador_bank_brown1(),
-            fuzzy_pixels::falador_bank_brown2(),
-        ],
-        Location::VarrockWest => vec![fuzzy_pixels::varrock_bank_window1()],
-    }
+    pub location: BankLocation,
 }
 
 fn withdraw_pizza_base_and_tomato(config: &Config) -> ExplicitActions {
@@ -134,7 +110,7 @@ Assumes that:
     let make_uncooked_pizza_actions = make_uncooked_pizza(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(40 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(90 * 60) {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

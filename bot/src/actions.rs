@@ -85,6 +85,61 @@ fn click_mouse(inputbot: &mut InputBot, click: MouseClick) {
     }
 }
 
+/// Wait for either a condition to be met or for a certain amount of time.
+#[derive(Clone, Copy)]
+pub enum AwaitCondition {
+    Time,
+    IsBankOpen,
+    IsInventoryOpen,
+    IsChatboxOpen,
+    // Wait until the pixel at the given position stops matching the one
+    // given.
+    PixelMismatch(Position, FuzzyPixel),
+    PixelMatch(Position, FuzzyPixel),
+}
+
+fn is_condition_met(
+    framehandler: &mut FrameHandler,
+    capturer: &mut Capturer,
+    condition: AwaitCondition,
+) -> bool {
+    match condition {
+        AwaitCondition::Time => {
+            return true;
+        }
+        AwaitCondition::IsBankOpen => {
+            if framehandler.is_bank_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+        }
+        AwaitCondition::IsInventoryOpen => {
+            if framehandler.is_inventory_open(&capturer.frame().unwrap()) {
+                return true;
+            }
+        }
+        AwaitCondition::IsChatboxOpen => {
+            if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
+                // Sleep here so we don't have perfect reflexes.
+                sleep(Duration::from_millis(100));
+                return true;
+            }
+        }
+        AwaitCondition::PixelMismatch(pos, pixel) => {
+            let frame = capturer.frame().unwrap();
+            if !pixel.matches(&frame.get_pixel(&pos)) {
+                return true;
+            }
+        }
+        AwaitCondition::PixelMatch(pos, pixel) => {
+            let frame = capturer.frame().unwrap();
+            if pixel.matches(&frame.get_pixel(&pos)) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 /// This trait is used to define the interface that controls how the bot will
 /// behave. In it we pass all of the primitives needed for the bot to interact
 /// with and understand the game.
@@ -255,21 +310,45 @@ pub mod basic_action {
     /// bank.
     pub struct CloseBank {}
 
-    /// Wait for either a condition to be met or for a certain amount of time.
-    #[derive(Clone)]
-    pub enum AwaitCondition {
-        Time,
-        IsBankOpen,
-        IsInventoryOpen,
-        IsChatboxOpen,
-        // Wait until the pixel at the given position stops matching the one
-        // given.
-        PixelMismatch(Position, FuzzyPixel),
-    }
     pub struct Await {
         pub condition: AwaitCondition,
         pub timeout: Duration,
     }
+    pub struct AwaitAny {
+        pub conditions: Vec<AwaitCondition>,
+        pub timeout: Duration,
+    }
+
+    impl Action for AwaitAny {
+        fn do_action(
+            &self,
+            _inputbot: &mut InputBot,
+            framehandler: &mut FrameHandler,
+            capturer: &mut Capturer,
+        ) -> bool {
+            let time = std::time::Instant::now();
+            while time.elapsed() < self.timeout {
+                for cond in &self.conditions {
+                    match cond {
+                        AwaitCondition::Time => {
+                            // This makes AwaitAny meaningless...
+                            sleep(self.timeout);
+                            return true;
+                        }
+                        _ => {
+                            if is_condition_met(framehandler, capturer, *cond) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+                sleep(Duration::from_millis(100));
+            }
+
+            false
+        }
+    }
+
     impl Action for Await {
         fn do_action(
             &self,
@@ -284,26 +363,8 @@ pub mod basic_action {
                         sleep(self.timeout);
                         return true;
                     }
-                    AwaitCondition::IsBankOpen => {
-                        if framehandler.is_bank_open(&capturer.frame().unwrap()) {
-                            return true;
-                        }
-                    }
-                    AwaitCondition::IsInventoryOpen => {
-                        if framehandler.is_inventory_open(&capturer.frame().unwrap()) {
-                            return true;
-                        }
-                    }
-                    AwaitCondition::IsChatboxOpen => {
-                        if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
-                            // Sleep here so we don't have perfect reflexes.
-                            sleep(Duration::from_millis(100));
-                            return true;
-                        }
-                    }
-                    AwaitCondition::PixelMismatch(pos, pixel) => {
-                        let frame = capturer.frame().unwrap();
-                        if !pixel.matches(&frame.get_pixel(&pos)) {
+                    _ => {
+                        if is_condition_met(framehandler, capturer, self.condition) {
                             return true;
                         }
                     }
