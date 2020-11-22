@@ -810,6 +810,31 @@ pub fn smith_anvil() -> Text {
     }
 }
 
+pub fn attack_chicken() -> Text {
+    Text {
+        letters: vec![
+            (start(), action_text_white()),
+            (upper_a(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_t(), action_text_white()),
+            (lower_a(), action_text_white()),
+            (lower_c(), action_text_white()),
+            (lower_k(), action_text_white()),
+            (space(), action_text_white()),
+            (upper_c(), action_text_yellow()),
+            (lower_h(), action_text_yellow()),
+            (lower_i(), action_text_yellow()),
+            (lower_c(), action_text_yellow()),
+            (lower_k(), action_text_yellow()),
+            (lower_e(), action_text_yellow()),
+            (lower_n(), action_text_yellow()),
+            // (space(), action_text_white()),
+            // (space(), action_text_white()),
+            // (open_paren(), action_text_green()),
+        ],
+    }
+}
+
 pub fn attack_cow() -> Text {
     Text {
         letters: vec![
@@ -824,9 +849,9 @@ pub fn attack_cow() -> Text {
             (upper_c(), action_text_yellow()),
             (lower_o(), action_text_yellow()),
             (lower_w(), action_text_yellow()),
-            (space(), action_text_white()),
-            (space(), action_text_white()),
-            (open_paren(), action_text_green()),
+            // (space(), action_text_white()),
+            // (space(), action_text_white()),
+            // (open_paren(), action_text_green()),
         ],
     }
 }
@@ -859,9 +884,9 @@ pub fn attack_al_kharid_warrior() -> Text {
             (lower_i(), action_text_yellow()),
             (lower_o(), action_text_yellow()),
             (lower_r(), action_text_yellow()),
-            (space(), action_text_white()),
-            (space(), action_text_white()),
-            (open_paren(), action_text_green()),
+            // (space(), action_text_white()),
+            // (space(), action_text_white()),
+            // (open_paren(), action_text_green()),
         ],
     }
 }

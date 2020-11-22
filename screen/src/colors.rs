@@ -253,6 +253,43 @@ pub mod fuzzy_pixels {
         }
     }
 
+    pub fn chicken_beige1() -> FuzzyPixel {
+        // 113, 157, 184
+        // 102, 147, 173
+        FuzzyPixel {
+            blue_min: 100,
+            blue_max: 115,
+            green_min: 145,
+            green_max: 159,
+            red_min: 171,
+            red_max: 186,
+        }
+    }
+    pub fn chicken_beige2() -> FuzzyPixel {
+        // 86, 122, 145
+        // 75, 107, 127
+        FuzzyPixel {
+            blue_min: 73,
+            blue_max: 88,
+            green_min: 124,
+            green_max: 105,
+            red_min: 125,
+            red_max: 147,
+        }
+    }
+    pub fn chicken_brown() -> FuzzyPixel {
+        // 35, 71, 101
+        // 23, 62, 94
+        FuzzyPixel {
+            blue_min: 21,
+            blue_max: 37,
+            green_min: 60,
+            green_max: 73,
+            red_min: 92,
+            red_max: 103,
+        }
+    }
+
     pub fn al_kharid_warrior_purple1() -> FuzzyPixel {
         // 103, 5, 105
         // 81, 5, 82

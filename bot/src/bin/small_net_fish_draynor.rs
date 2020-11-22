@@ -58,7 +58,7 @@ fn travel_to_fishing_spot() -> TravelTo {
 fn small_net_fish() -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
-        slot_consumption_waittime: Duration::from_secs(15),
+        slot_consumption_waittime: Duration::from_secs(20),
         activity_timeout: Duration::from_secs(10 * 60),
         item_to_consume: inventory_slot_pixels::empty(),
         actions: vec![Box::new(OpenScreenAction::new(

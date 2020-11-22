@@ -35,6 +35,6 @@ scrap
 I am dependent on runelight popping up icons such as shrimp on fishing spots. TBH if I was a regular player I'd really want this since seeing certain things is quite difficult.
 
 # Explain how to extend
-- Explain adding new letters/words with bin/action_words.rs
-- Explain adding new inventory pixels with bin/inventory.rs & uncommenting in frame.rs
+- To add new letters/words use tha action_words binary. This will put red dots on each of the pixels being checked.
+- To add new inventory_slot_pixels, go to frame.rs and uncomment 'dbgstr' from 'check_inventory_slot'. Then this will result in printing out the pixels as well as the expectation and if there was a match.
 - What the player looks like can cause an issue since those are also just pixels on the screen.

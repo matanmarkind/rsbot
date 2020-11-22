@@ -9,6 +9,10 @@ use userinput::InputBot;
 #[derive(Debug, Copy, Clone, EnumString)]
 pub enum Enemy {
     Cow,
+    Chicken,
+    // DO NOT USE I think that the Al Khradir Warriors caused the ban since we
+    // can't tell when the enemy is outside the door, so we clicked on
+    // inaccessible enemies.
     AlKharidWarrior,
 }
 
@@ -32,6 +36,11 @@ pub fn enemy_pixels(enemy: Enemy) -> Vec<FuzzyPixel> {
             // fuzzy_pixels::cow_dark_brown(),
             // fuzzy_pixels::cow_light_brown(),
         ],
+        Enemy::Chicken => vec![
+            fuzzy_pixels::chicken_brown(),
+            fuzzy_pixels::chicken_beige1(),
+            fuzzy_pixels::chicken_beige2(),
+        ],
         Enemy::AlKharidWarrior => vec![
             fuzzy_pixels::al_kharid_warrior_purple1(),
             fuzzy_pixels::al_kharid_warrior_purple2(),
@@ -42,6 +51,7 @@ pub fn enemy_pixels(enemy: Enemy) -> Vec<FuzzyPixel> {
 pub fn get_action_text(enemy: Enemy) -> ActionText {
     match enemy {
         Enemy::Cow => action_text::attack_cow(),
+        Enemy::Chicken => action_text::attack_chicken(),
         Enemy::AlKharidWarrior => action_text::attack_al_kharid_warrior(),
     }
 }
@@ -69,9 +79,10 @@ Assumes that:
         /*mouse_click=*/ MouseClick::Left,
     );
 
+    // TODO: Immediately start waiting for pixel match instead of set time.
     let await_begin_fighting = Await {
         condition: AwaitCondition::Time,
-        timeout: Duration::from_secs(5),
+        timeout: Duration::from_secs(10),
     };
 
     let await_done_fighting = ExplicitActions {
@@ -108,6 +119,8 @@ Assumes that:
             continue;
         }
 
+        // TODO: If we fail to start fighting twice in a row, exit/reset. We may be clicking across the fence.
+
         await_begin_fighting.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !fuzzy_pixels::enemy_healthbar_red().matches(
             &capturer
@@ -115,7 +128,7 @@ Assumes that:
                 .unwrap()
                 .get_pixel(&framehandler.locations.enemy_healthbar_right()),
         ) {
-            inputbot.pan_left(37.0);
+            inputbot.pan_left(60.0);
             continue;
         }
 
