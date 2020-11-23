@@ -84,6 +84,7 @@ pub mod fuzzy_pixels {
         }
     }
     pub fn action_text_green() -> FuzzyPixel {
+        // Used when an enemy is 10+ combat levels below us.
         FuzzyPixel {
             blue_min: 0,
             blue_max: 30,

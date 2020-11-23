@@ -828,14 +828,14 @@ pub fn attack_chicken() -> Text {
             (lower_k(), action_text_yellow()),
             (lower_e(), action_text_yellow()),
             (lower_n(), action_text_yellow()),
-            // (space(), action_text_white()),
-            // (space(), action_text_white()),
-            // (open_paren(), action_text_green()),
+            // Don't use open parens since chickens may not be green at the
+            // beginning.
         ],
     }
 }
 
 pub fn attack_cow() -> Text {
+    // Assumes cows are much lower level (action_text_green).
     Text {
         letters: vec![
             (start(), action_text_white()),
@@ -849,9 +849,9 @@ pub fn attack_cow() -> Text {
             (upper_c(), action_text_yellow()),
             (lower_o(), action_text_yellow()),
             (lower_w(), action_text_yellow()),
-            // (space(), action_text_white()),
-            // (space(), action_text_white()),
-            // (open_paren(), action_text_green()),
+            (space(), action_text_white()),
+            (space(), action_text_white()),
+            (open_paren(), action_text_green()),
         ],
     }
 }
@@ -884,9 +884,9 @@ pub fn attack_al_kharid_warrior() -> Text {
             (lower_i(), action_text_yellow()),
             (lower_o(), action_text_yellow()),
             (lower_r(), action_text_yellow()),
-            // (space(), action_text_white()),
-            // (space(), action_text_white()),
-            // (open_paren(), action_text_green()),
+            (space(), action_text_white()),
+            (space(), action_text_white()),
+            (open_paren(), action_text_green()),
         ],
     }
 }
