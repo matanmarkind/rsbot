@@ -98,7 +98,7 @@ Assumes that:
                         fuzzy_pixels::enemy_healthbar_red(),
                     ),
                 ],
-                timeout: Duration::from_secs(10),
+                timeout: Duration::from_secs(5),
             }),
         ],
     };

@@ -104,40 +104,23 @@ fn is_condition_met(
     condition: AwaitCondition,
 ) -> bool {
     match condition {
-        AwaitCondition::Time => {
-            return true;
-        }
-        AwaitCondition::IsBankOpen => {
-            if framehandler.is_bank_open(&capturer.frame().unwrap()) {
-                return true;
-            }
-        }
+        AwaitCondition::Time => true,
+        AwaitCondition::IsBankOpen => framehandler.is_bank_open(&capturer.frame().unwrap()),
         AwaitCondition::IsInventoryOpen => {
-            if framehandler.is_inventory_open(&capturer.frame().unwrap()) {
-                return true;
-            }
+            framehandler.is_inventory_open(&capturer.frame().unwrap())
         }
         AwaitCondition::IsChatboxOpen => {
-            if framehandler.is_chatbox_open(&capturer.frame().unwrap()) {
-                // Sleep here so we don't have perfect reflexes.
-                sleep(Duration::from_millis(100));
-                return true;
-            }
+            // Sleep here so we don't have perfect reflexes.
+            sleep(Duration::from_millis(100));
+            framehandler.is_chatbox_open(&capturer.frame().unwrap())
         }
         AwaitCondition::PixelMismatch(pos, pixel) => {
-            let frame = capturer.frame().unwrap();
-            if !pixel.matches(&frame.get_pixel(&pos)) {
-                return true;
-            }
+            !pixel.matches(&capturer.frame().unwrap().get_pixel(&pos))
         }
         AwaitCondition::PixelMatch(pos, pixel) => {
-            let frame = capturer.frame().unwrap();
-            if pixel.matches(&frame.get_pixel(&pos)) {
-                return true;
-            }
+            pixel.matches(&capturer.frame().unwrap().get_pixel(&pos))
         }
     }
-    false
 }
 
 /// This trait is used to define the interface that controls how the bot will
