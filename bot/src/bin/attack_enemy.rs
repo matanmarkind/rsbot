@@ -80,9 +80,27 @@ Assumes that:
     );
 
     // TODO: Immediately start waiting for pixel match instead of set time.
-    let await_begin_fighting = Await {
-        condition: AwaitCondition::Time,
-        timeout: Duration::from_secs(10),
+    let await_begin_fighting = ExplicitActions {
+        actions: vec![
+            // Wait until the healthbar of the last enemy has disappeared.
+            Box::new(Await {
+                condition: AwaitCondition::Time,
+                timeout: Duration::from_secs(3),
+            }),
+            Box::new(AwaitAny {
+                conditions: vec![
+                    AwaitCondition::PixelMatch(
+                        framehandler.locations.enemy_healthbar_right(),
+                        fuzzy_pixels::enemy_healthbar_green(),
+                    ),
+                    AwaitCondition::PixelMatch(
+                        framehandler.locations.enemy_healthbar_right(),
+                        fuzzy_pixels::enemy_healthbar_red(),
+                    ),
+                ],
+                timeout: Duration::from_secs(10),
+            }),
+        ],
     };
 
     let await_done_fighting = ExplicitActions {
@@ -112,6 +130,7 @@ Assumes that:
     // Run so that we don't waste too much time getting to the cow.
     MaybeToggleRunning::run().do_action(&mut inputbot, &mut framehandler, &mut capturer);
     let time = std::time::Instant::now();
+    let mut just_failed_to_start_fight = false;
     while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
         let res = attack_cow_action.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
@@ -121,14 +140,19 @@ Assumes that:
 
         // TODO: If we fail to start fighting twice in a row, exit/reset. We may be clicking across the fence.
 
-        await_begin_fighting.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        if !fuzzy_pixels::enemy_healthbar_red().matches(
-            &capturer
-                .frame()
-                .unwrap()
-                .get_pixel(&framehandler.locations.enemy_healthbar_right()),
-        ) {
-            inputbot.pan_left(60.0);
+        if await_begin_fighting.do_action(&mut inputbot, &mut framehandler, &mut capturer) {
+            just_failed_to_start_fight = false;
+        } else {
+            if just_failed_to_start_fight {
+                // If we keep failing to start a fight we may be attacking an
+                // enemy across a wall or fence which is a giveaway for being a
+                // bot.
+                println!("Failed to start fights consecutively.");
+                break;
+            }
+
+            just_failed_to_start_fight = true;
+            inputbot.pan_left(90.0);
             continue;
         }
 

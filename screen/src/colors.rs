@@ -335,6 +335,16 @@ pub mod fuzzy_pixels {
             red_max: 110,
         }
     }
+    pub fn enemy_healthbar_green() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 52,
+            blue_max: 57,
+            green_min: 137,
+            green_max: 143,
+            red_min: 6,
+            red_max: 11,
+        }
+    }
 
     /// Pixels used to identify things on the maps (minimap or worldmap).
     pub fn map_icon_bank_yellow() -> FuzzyPixel {
