@@ -337,12 +337,12 @@ pub mod fuzzy_pixels {
     }
     pub fn enemy_healthbar_green() -> FuzzyPixel {
         FuzzyPixel {
-            blue_min: 52,
-            blue_max: 57,
-            green_min: 137,
-            green_max: 143,
-            red_min: 6,
-            red_max: 11,
+            blue_min: 48,
+            blue_max: 60,
+            green_min: 132,
+            green_max: 145,
+            red_min: 2,
+            red_max: 15,
         }
     }
 
