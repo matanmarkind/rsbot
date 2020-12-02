@@ -24,6 +24,7 @@ pub enum Food {
 
 #[derive(Debug, Copy, Clone, EnumString)]
 pub enum Logs {
+    Tree,
     Oak,
     Willow,
 }
@@ -48,6 +49,7 @@ pub struct Config {
 
 fn get_logs_inventory_pixel(config: &Config) -> InventorySlotPixels {
     match config.logs {
+        Logs::Tree => inventory_slot_pixels::tree_logs(),
         Logs::Oak => inventory_slot_pixels::oak_logs(),
         Logs::Willow => inventory_slot_pixels::willow_logs(),
     }
@@ -88,6 +90,7 @@ fn deposit_in_bank(config: &Config) -> DepositInBank {
         bank_pixels(config),
         /*items=*/
         vec![
+            inventory_slot_pixels::tree_logs(),
             inventory_slot_pixels::oak_logs(),
             inventory_slot_pixels::willow_logs(),
             inventory_slot_pixels::raw_shrimp_bank(),
@@ -121,7 +124,7 @@ fn travel_to_cooking_spot(config: &Config) -> ExplicitActions {
                     Location::VarrockWest => 100.0,
                 },
                 travel_time: Duration::from_secs(match config.location {
-                    Location::Draynor => 9,
+                    Location::Draynor => 10,
                     Location::VarrockWest => 6,
                 }),
             }),
@@ -144,6 +147,7 @@ fn cook_fish(config: &Config) -> ConsumeInventory {
     ConsumeInventory {
         multi_slot_action: true,
         slot_consumption_waittime: Duration::from_secs(10),
+        // Takes about 2m, but this is only checked if we stop consuming slots.
         activity_timeout: Duration::from_secs(2 * 60),
         item_to_consume: match config.food {
             Food::Shrimp => inventory_slot_pixels::raw_shrimp(),
@@ -187,7 +191,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cook_fish_actions = cook_fish(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(30 * 60) {
+    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
         let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         dbg!(reset);
 
@@ -221,7 +225,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             // wait for fire to start.
-            std::thread::sleep(Duration::from_secs(5));
+            std::thread::sleep(Duration::from_secs(7));
 
             let cooked =
                 cook_fish_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);

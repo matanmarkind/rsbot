@@ -1244,6 +1244,67 @@ pub mod inventory_slot_pixels {
             inventory_background(),
         ]
     }
+    pub fn tree_logs() -> InventorySlotPixels {
+        [
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 21,
+                blue_max: 25,
+                green_min: 44,
+                green_max: 48,
+                red_min: 62,
+                red_max: 66,
+            },
+            FuzzyPixel {
+                blue_min: 29,
+                blue_max: 33,
+                green_min: 60,
+                green_max: 64,
+                red_min: 86,
+                red_max: 90,
+            },
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 50,
+                blue_max: 54,
+                green_min: 107,
+                green_max: 111,
+                red_min: 142,
+                red_max: 146,
+            },
+            FuzzyPixel {
+                blue_min: 24,
+                blue_max: 38,
+                green_min: 51,
+                green_max: 55,
+                red_min: 73,
+                red_max: 77,
+            },
+            FuzzyPixel {
+                blue_min: 32,
+                blue_max: 36,
+                green_min: 67,
+                green_max: 71,
+                red_min: 96,
+                red_max: 100,
+            },
+black(),
+            inventory_background(),
+            FuzzyPixel {
+                blue_min: 33,
+                blue_max: 37,
+                green_min: 69,
+                green_max: 73,
+                red_min: 99,
+                red_max: 103,
+            },
+            inventory_background(),
+            inventory_background(),
+        ]
+    }
+    pub fn tree_logs_bank() -> InventorySlotPixels {
+        tree_logs()
+    }
     pub fn oak_logs() -> InventorySlotPixels {
         [
             inventory_background(),
