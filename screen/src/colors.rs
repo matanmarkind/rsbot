@@ -357,6 +357,26 @@ pub mod fuzzy_pixels {
             red_max: 234,
         }
     }
+    pub fn dungeon_icon_red() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 39,
+            blue_max: 43,
+            green_min: 40,
+            green_max: 44,
+            red_min: 238,
+            red_max: 242,
+        }
+    }
+    pub fn dungeon_icon_blue() -> FuzzyPixel {
+        FuzzyPixel {
+            blue_min: 251,
+            blue_max: 255,
+            green_min: 131,
+            green_max: 135,
+            red_min: 39,
+            red_max: 43,
+        }
+    }
     pub fn map_icon_fish_dark_blue() -> FuzzyPixel {
         FuzzyPixel {
             blue_min: 218,
@@ -1288,7 +1308,7 @@ pub mod inventory_slot_pixels {
                 red_min: 96,
                 red_max: 100,
             },
-black(),
+            black(),
             inventory_background(),
             FuzzyPixel {
                 blue_min: 33,

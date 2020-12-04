@@ -1,5 +1,5 @@
 use bot::actions::*;
-use screen::{action_text, fuzzy_pixels, ActionText, Capturer, Frame, FrameHandler, FuzzyPixel};
+use screen::{action_text, fuzzy_pixels, ActionText, Capturer, FrameHandler, FuzzyPixel};
 use std::error::Error;
 use std::time::Duration;
 use structopt::StructOpt;

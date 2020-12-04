@@ -21,22 +21,4 @@ fn main() -> Result<(), Box<dyn Error>> {
         framehandler.check_inventory_slot(&frame, 1, &inventory_slot_pixels::tree_logs())
     );
     return Ok(());
-
-    // framehandler.is_inventory_slot_open(&frame, 2);
-
-    // let empty_slot = framehandler.first_open_inventory_slot(&frame);
-    // let shrimp_slot =
-    //     framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::raw_shrimp());
-    // let anchovies_slot =
-    //     framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::raw_anchovies());
-    // let tinderbox_slot =
-    //     framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::tinderbox());
-    // let oak_logs_slot =
-    //     framehandler.first_matching_inventory_slot(&frame, &inventory_slot_pixels::oak_logs());
-    // println!(
-    //     "empty_slot={:?} shrimp_slot={:?} anchovies_slot={:?} tinderbox_slot={:?} oak_logs_slot={:?}",
-    //     empty_slot, shrimp_slot, anchovies_slot, tinderbox_slot, oak_logs_slot
-    // );
-
-    // Ok(())
 }
