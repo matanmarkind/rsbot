@@ -196,7 +196,8 @@ Assumes that:
     let chop_willow_actions = chop_wood(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
+    let runtime = config.bot_config.runtime();
+    while time.elapsed() < runtime {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

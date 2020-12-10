@@ -131,7 +131,8 @@ Assumes that:
     let smelt_iron_actions = smelt_bronze(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(1 * 60 * 60) {
+    let runtime = config.bot_config.runtime();
+    while time.elapsed() < runtime {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

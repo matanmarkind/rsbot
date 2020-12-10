@@ -91,7 +91,8 @@ Assumes that:
     let add_anchovies_to_pizza_actions = add_anchovies_to_pizza(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(2 * 60 * 60) {
+    let runtime = config.bot_config.runtime();
+    while time.elapsed() < runtime {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);

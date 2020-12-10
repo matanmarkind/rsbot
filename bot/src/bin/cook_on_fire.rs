@@ -191,7 +191,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let cook_fish_actions = cook_fish(&config);
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
+    let runtime = config.bot_config.runtime();
+    while time.elapsed() < runtime {
         let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         dbg!(reset);
 

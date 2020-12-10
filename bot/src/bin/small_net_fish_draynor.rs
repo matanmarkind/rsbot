@@ -72,6 +72,7 @@ fn small_net_fish() -> ConsumeInventory {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
+    let runtime = config.runtime();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
@@ -85,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let catch_fish_actions = small_net_fish();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
+    while time.elapsed() < runtime {
         let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         dbg!(reset);
 

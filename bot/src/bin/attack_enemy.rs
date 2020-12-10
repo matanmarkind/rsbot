@@ -131,7 +131,8 @@ Assumes that:
     MaybeToggleRunning::run().do_action(&mut inputbot, &mut framehandler, &mut capturer);
     let time = std::time::Instant::now();
     let mut just_failed_to_start_fight = false;
-    while time.elapsed() < std::time::Duration::from_secs(3 * 60 * 60) {
+    let runtime = config.bot_config.runtime();
+    while time.elapsed() < runtime {
         let res = attack_cow_action.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             inputbot.pan_left(37.0);

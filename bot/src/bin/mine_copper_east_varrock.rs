@@ -100,6 +100,7 @@ fn deposit_copper() -> DepositEntireInventoryToBank {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let config = bot::Config::from_args();
+    let runtime = config.runtime();
     dbg!(&config);
 
     let mut capturer = Capturer::new();
@@ -122,7 +123,7 @@ Assumes that:
     let deposit_copper_actions = deposit_copper();
 
     let time = std::time::Instant::now();
-    while time.elapsed() < std::time::Duration::from_secs(2 * 60 * 60) {
+    while time.elapsed() < runtime {
         let res = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
         if !res {
             dbg!(res);
