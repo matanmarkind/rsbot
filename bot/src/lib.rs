@@ -47,11 +47,13 @@ impl Config {
 
         let runtime = Duration::from_secs((self.bot_runtime_hours * 3600.0).round() as u64);
         let tolerance = Duration::from_secs(self.bot_runtime_tolerance_mins * 60);
-        assert!((runtime - tolerance) > Duration::from_secs(0));
-        assert!((runtime + tolerance) > Duration::from_secs(6 * 3600));
+        let min = runtime - tolerance;
+        let max = runtime + tolerance;
+        assert!(min > Duration::from_secs(0));
+        assert!(max < Duration::from_secs(6 * 3600));
 
         let mut rng = rand::thread_rng();
-        let dist = rand::distributions::Uniform::new(runtime - tolerance, runtime + tolerance);
+        let dist = rand::distributions::Uniform::new(min, max);
         dist.sample(&mut rng)
     }
 }
