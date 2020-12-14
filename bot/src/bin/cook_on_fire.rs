@@ -121,8 +121,8 @@ fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
                 config.food_bank_slot_index,
                 BankQuantity::All,
                 match config.food {
-                    Food::Shrimp => inventory_slot_pixels::cooked_shrimp_bank(),
-                    Food::Anchovies => inventory_slot_pixels::cooked_anchovies_bank(),
+                    Food::Shrimp => inventory_slot_pixels::raw_shrimp_bank(),
+                    Food::Anchovies => inventory_slot_pixels::raw_anchovies_bank(),
                 },
             ),
         ],
@@ -208,20 +208,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let time = std::time::Instant::now();
     let runtime = config.bot_config.runtime();
     while time.elapsed() < runtime {
-        let reset = reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        dbg!(reset);
+        assert!(reset_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer));
 
-        let arrived_at_bank =
-            travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        dbg!(arrived_at_bank);
+        assert!(travel_to_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer));
 
-        let depositted =
-            deposit_in_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        dbg!(depositted);
+        assert!(deposit_in_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer));
 
-        let withdrew =
-            withdraw_from_bank_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
-        dbg!(withdrew);
+        assert!(withdraw_from_bank_actions.do_action(
+            &mut inputbot,
+            &mut framehandler,
+            &mut capturer
+        ));
 
         let time = std::time::Instant::now();
         while time.elapsed() < Duration::from_secs(5 * 60) {

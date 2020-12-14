@@ -1750,6 +1750,7 @@ impl Action for WithdrawFromBank {
         framehandler: &mut FrameHandler,
         capturer: &mut Capturer,
     ) -> bool {
+        println!("WithdrawFromBank");
         if !self
             .open_bank_action
             .do_action(inputbot, framehandler, capturer)
@@ -1764,6 +1765,7 @@ impl Action for WithdrawFromBank {
             sleep(Duration::from_millis(100));
         }
 
+        sleep(Duration::from_secs(1));
         let frame = capturer.frame().unwrap();
         for item in &self.items {
             if framehandler

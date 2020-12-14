@@ -25,7 +25,6 @@ pub struct Config {
     pub location: BankLocation,
 }
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::from_args();
     dbg!(&config);
@@ -48,8 +47,7 @@ Assumes that:
     assert!(res);
     let time = std::time::Instant::now();
     let runtime = config.bot_config.runtime();
-    while time.elapsed() < runtime {
-    }
+    while time.elapsed() < runtime {}
 
     Ok(())
 }
