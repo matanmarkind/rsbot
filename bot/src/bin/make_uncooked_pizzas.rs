@@ -28,8 +28,16 @@ fn withdraw_pizza_base_and_tomato(config: &Config) -> ExplicitActions {
                 /*bank_pixels=*/ bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
                 vec![
-                    (config.pizza_base_bank_slot_index, BankQuantity::X),
-                    (config.tomato_bank_slot_index, BankQuantity::X),
+                    (
+                        config.pizza_base_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::pizza_base_bank(),
+                    ),
+                    (
+                        config.tomato_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::tomato_bank(),
+                    ),
                 ],
             )),
             Box::new(CloseBank {}),
@@ -57,7 +65,11 @@ fn withdraw_cheese(config: &Config) -> ExplicitActions {
             Box::new(WithdrawFromBank::new(
                 /*bank_pixels=*/ bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
-                vec![(config.cheese_bank_slot_index, BankQuantity::X)],
+                vec![(
+                    config.cheese_bank_slot_index,
+                    BankQuantity::X,
+                    inventory_slot_pixels::cheese_bank(),
+                )],
             )),
             Box::new(CloseBank {}),
         ],

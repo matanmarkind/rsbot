@@ -108,8 +108,23 @@ fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
         bank_pixels(config),
         /*bank_slot_and_quantity=*/
         vec![
-            (config.logs_bank_slot_index, BankQuantity::Exact(2)),
-            (config.food_bank_slot_index, BankQuantity::All),
+            (
+                config.logs_bank_slot_index,
+                BankQuantity::Exact(2),
+                match config.logs {
+                    Logs::Tree => inventory_slot_pixels::tree_logs_bank(),
+                    Logs::Oak => inventory_slot_pixels::oak_logs_bank(),
+                    Logs::Willow => inventory_slot_pixels::willow_logs_bank(),
+                },
+            ),
+            (
+                config.food_bank_slot_index,
+                BankQuantity::All,
+                match config.food {
+                    Food::Shrimp => inventory_slot_pixels::cooked_shrimp_bank(),
+                    Food::Anchovies => inventory_slot_pixels::cooked_anchovies_bank(),
+                },
+            ),
         ],
     )
 }

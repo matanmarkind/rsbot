@@ -96,8 +96,16 @@ fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
         ],
         /*bank_slot_and_quantity=*/
         vec![
-            (config.copper_ore_bank_slot_index, BankQuantity::X),
-            (config.tin_ore_bank_slot_index, BankQuantity::X),
+            (
+                config.copper_ore_bank_slot_index,
+                BankQuantity::X,
+                inventory_slot_pixels::copper_ore_bank(),
+            ),
+            (
+                config.tin_ore_bank_slot_index,
+                BankQuantity::X,
+                inventory_slot_pixels::tin_ore_bank(),
+            ),
         ],
     )
 }

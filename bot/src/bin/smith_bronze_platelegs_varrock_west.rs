@@ -45,7 +45,11 @@ fn withdraw_from_bank(config: &Config) -> WithdrawFromBank {
         /*bank_pixels=*/
         vec![fuzzy_pixels::varrock_bank_window1()],
         /*bank_slot_and_quantity=*/
-        vec![(config.bronze_bar_bank_slot_index, BankQuantity::All)],
+        vec![(
+            config.bronze_bar_bank_slot_index,
+            BankQuantity::All,
+            inventory_slot_pixels::bronze_bar_bank(),
+        )],
     )
 }
 

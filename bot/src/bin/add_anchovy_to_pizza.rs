@@ -27,8 +27,16 @@ fn withdraw_pizza_and_anchovies(config: &Config) -> ExplicitActions {
                 bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
                 vec![
-                    (config.plain_pizza_bank_slot_index, BankQuantity::X),
-                    (config.anchovy_bank_slot_index, BankQuantity::X),
+                    (
+                        config.plain_pizza_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::plain_pizza_bank(),
+                    ),
+                    (
+                        config.anchovy_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::cooked_anchovies_bank(),
+                    ),
                 ],
             )),
             Box::new(CloseBank {}),

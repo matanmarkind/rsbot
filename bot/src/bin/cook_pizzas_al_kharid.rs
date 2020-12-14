@@ -23,7 +23,11 @@ fn withdraw_uncooked_pizzas(config: &Config) -> WithdrawFromBank {
             fuzzy_pixels::bank_brown3(),
         ],
         /*bank_slot_and_quantity=*/
-        vec![(config.uncooked_pizza_bank_slot_index, BankQuantity::All)],
+        vec![(
+            config.uncooked_pizza_bank_slot_index,
+            BankQuantity::All,
+            inventory_slot_pixels::uncooked_pizza_bank(),
+        )],
     )
 }
 

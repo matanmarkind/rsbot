@@ -34,8 +34,16 @@ fn withdraw_ingredients(config: &Config) -> ExplicitActions {
                 /*bank_pixels=*/ bank_pixels(config.location),
                 /*bank_slot_and_quantity=*/
                 vec![
-                    (config.pot_of_flour_bank_slot_index, BankQuantity::X),
-                    (config.jug_of_water_bank_slot_index, BankQuantity::X),
+                    (
+                        config.pot_of_flour_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::pot_of_flour_bank(),
+                    ),
+                    (
+                        config.jug_of_water_bank_slot_index,
+                        BankQuantity::X,
+                        inventory_slot_pixels::jug_of_water_bank(),
+                    ),
                 ],
             )),
             Box::new(CloseBank {}),
