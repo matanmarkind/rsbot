@@ -310,17 +310,29 @@ impl InputBot {
     pub fn right_click(&self) {
         self.click_mouse(&inputbot::MouseButton::RightButton);
     }
-    /// Moves the mouse to the given spot. This should never fail assuming the
-    /// mouse_paths are reasonably good.
-    pub fn move_to(&self, dst: &Position) {
+    pub fn try_to_move_to(&self, dst: &Position, timout: Duration) -> bool {
         let time = std::time::Instant::now();
-        while !self.mouse.move_to(dst) && time.elapsed() < MOVE_TO_TIMEOUT {}
+        while !self.mouse.move_to(dst) && time.elapsed() < timeout {}
 
         // If we didn't make it exactly there, it's possible that this is due
         // to hitting the edge of the screen since move_near doesn't know the
         // max x/y.
         let DeltaPosition { dx, dy } = *dst - self.mouse_position();
-        assert!(dx <= 1 && dy <= 1);
+        dx <= 1 && dy <= 1
+    }
+
+    /// Moves the mouse to the given spot. This should never fail assuming the
+    /// mouse_paths are reasonably good.
+    pub fn move_to(&self, dst: &Position) {
+        let timout = MOVE_TO_TIMEOUT / 3;
+        if self.try_to_move_to(dst, timeout) {
+            return;
+        }
+
+        // We were unable to move to the destination, perhaps we cycled or the edge of the screen
+        // got in the way.
+        self.try_to_move_to(&Position {x: 0, y: 0}, timeout);
+        assert!(self.try_to_move_to(dst, timeout));
     }
 
     /// Moves the mouse close to 'dst'.
