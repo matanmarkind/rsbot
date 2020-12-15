@@ -310,7 +310,7 @@ impl InputBot {
     pub fn right_click(&self) {
         self.click_mouse(&inputbot::MouseButton::RightButton);
     }
-    pub fn try_to_move_to(&self, dst: &Position, timout: Duration) -> bool {
+    pub fn try_to_move_to(&self, dst: &Position, timeout: Duration) -> bool {
         let time = std::time::Instant::now();
         while !self.mouse.move_to(dst) && time.elapsed() < timeout {}
 
@@ -324,7 +324,7 @@ impl InputBot {
     /// Moves the mouse to the given spot. This should never fail assuming the
     /// mouse_paths are reasonably good.
     pub fn move_to(&self, dst: &Position) {
-        let timout = MOVE_TO_TIMEOUT / 3;
+        let timeout = MOVE_TO_TIMEOUT / 3;
         if self.try_to_move_to(dst, timeout) {
             return;
         }
