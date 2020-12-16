@@ -103,7 +103,12 @@ impl MouseMover {
         // This helps avoid stuttering near 'dst' with a bunch of short paths.
         MouseMover::sleep_between_moves();
         self.move_directly_to(&dst);
-        &self.current_position() == dst
+        // There seems to be a race condition between moving the mouse and reading the position
+        // which is causing this to fail after move_directly_to, which results in the mouse
+        // "vibrating". For now just rely on move_directly_to.
+        // &self.current_position() == dst
+        true
+
     }
 
     fn sleep_between_moves() {
@@ -312,13 +317,13 @@ impl InputBot {
     }
     pub fn try_to_move_to(&self, dst: &Position, timeout: Duration) -> bool {
         let time = std::time::Instant::now();
-        while !self.mouse.move_to(dst) && time.elapsed() < timeout {}
+        while time.elapsed() < timeout {
+            if self.mouse.move_to(dst) {
+                return true;
+            }
+        }
 
-        // If we didn't make it exactly there, it's possible that this is due
-        // to hitting the edge of the screen since move_near doesn't know the
-        // max x/y.
-        let DeltaPosition { dx, dy } = *dst - self.mouse_position();
-        dx <= 1 && dy <= 1
+        false
     }
 
     /// Moves the mouse to the given spot. This should never fail assuming the
