@@ -108,7 +108,6 @@ impl MouseMover {
         // "vibrating". For now just rely on move_directly_to.
         // &self.current_position() == dst
         true
-
     }
 
     fn sleep_between_moves() {
@@ -336,7 +335,7 @@ impl InputBot {
 
         // We were unable to move to the destination, perhaps we cycled or the edge of the screen
         // got in the way.
-        self.try_to_move_to(&Position {x: 0, y: 0}, timeout);
+        self.try_to_move_to(&Position { x: 0, y: 0 }, timeout);
         assert!(self.try_to_move_to(dst, timeout));
     }
 

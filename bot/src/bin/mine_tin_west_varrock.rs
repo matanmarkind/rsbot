@@ -76,8 +76,8 @@ fn travel_to_mine() -> ExplicitActions {
             // Has a habit of deciding we are close too far away. So wait just
             // to be sure.
             Box::new(Await {
-                condition: AwaitCondition::Time,
-                timeout: Duration::from_secs(5),
+                condition: AwaitCondition::Time(Duration::from_secs(5)),
+                timeout: Duration::from_secs(0),
             }),
             Box::new(TravelStraight {
                 direction_degrees: 315.0,

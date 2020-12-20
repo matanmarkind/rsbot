@@ -88,10 +88,11 @@ fn click_mouse(inputbot: &mut InputBot, click: MouseClick) {
 /// Wait for either a condition to be met or for a certain amount of time.
 #[derive(Clone, Copy)]
 pub enum AwaitCondition {
-    Time,
+    Time(Duration),
     IsBankOpen,
     IsInventoryOpen,
     IsChatboxOpen,
+    InventoryContains(screen::InventorySlotPixels),
     // Wait until the pixel at the given position stops matching the one
     // given.
     PixelMismatch(Position, FuzzyPixel),
@@ -103,23 +104,20 @@ fn is_condition_met(
     capturer: &mut Capturer,
     condition: AwaitCondition,
 ) -> bool {
+    let frame = capturer.frame().unwrap();
     match condition {
-        AwaitCondition::Time => true,
-        AwaitCondition::IsBankOpen => framehandler.is_bank_open(&capturer.frame().unwrap()),
-        AwaitCondition::IsInventoryOpen => {
-            framehandler.is_inventory_open(&capturer.frame().unwrap())
+        AwaitCondition::Time(duration) => {
+            sleep(duration);
+            true
         }
-        AwaitCondition::IsChatboxOpen => {
-            // Sleep here so we don't have perfect reflexes.
-            sleep(Duration::from_millis(100));
-            framehandler.is_chatbox_open(&capturer.frame().unwrap())
-        }
-        AwaitCondition::PixelMismatch(pos, pixel) => {
-            !pixel.matches(&capturer.frame().unwrap().get_pixel(&pos))
-        }
-        AwaitCondition::PixelMatch(pos, pixel) => {
-            pixel.matches(&capturer.frame().unwrap().get_pixel(&pos))
-        }
+        AwaitCondition::IsBankOpen => framehandler.is_bank_open(&frame),
+        AwaitCondition::IsInventoryOpen => framehandler.is_inventory_open(&frame),
+        AwaitCondition::IsChatboxOpen => framehandler.is_chatbox_open(&frame),
+        AwaitCondition::InventoryContains(item) => framehandler
+            .first_matching_inventory_slot(&frame, &item)
+            .is_some(),
+        AwaitCondition::PixelMismatch(pos, pixel) => !pixel.matches(&frame.get_pixel(&pos)),
+        AwaitCondition::PixelMatch(pos, pixel) => pixel.matches(&frame.get_pixel(&pos)),
     }
 }
 
@@ -286,42 +284,20 @@ pub struct ClickChatboxMiddle {
 pub struct CloseBank {}
 
 pub struct Await {
+    // timeout is meaningless if the condition is Time which carries its own
+    // duration.
     pub condition: AwaitCondition,
     pub timeout: Duration,
 }
-pub struct AwaitAny {
+pub struct AwaitAll {
     pub conditions: Vec<AwaitCondition>,
     pub timeout: Duration,
 }
 
-impl Action for AwaitAny {
-    fn do_action(
-        &self,
-        _inputbot: &mut InputBot,
-        framehandler: &mut FrameHandler,
-        capturer: &mut Capturer,
-    ) -> bool {
-        let time = std::time::Instant::now();
-        while time.elapsed() < self.timeout {
-            for cond in &self.conditions {
-                match cond {
-                    AwaitCondition::Time => {
-                        // This makes AwaitAny meaningless...
-                        sleep(self.timeout);
-                        return true;
-                    }
-                    _ => {
-                        if is_condition_met(framehandler, capturer, *cond) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            sleep(Duration::from_millis(100));
-        }
-
-        false
-    }
+// Do not use AwaitAny with Time.
+pub struct AwaitAny {
+    pub conditions: Vec<AwaitCondition>,
+    pub timeout: Duration,
 }
 
 impl Action for Await {
@@ -333,16 +309,54 @@ impl Action for Await {
     ) -> bool {
         let time = std::time::Instant::now();
         while time.elapsed() < self.timeout {
-            match self.condition {
-                AwaitCondition::Time => {
-                    sleep(self.timeout);
-                    return true;
-                }
-                _ => {
-                    if is_condition_met(framehandler, capturer, self.condition) {
-                        return true;
-                    }
-                }
+            if is_condition_met(framehandler, capturer, self.condition) {
+                return true;
+            }
+            sleep(Duration::from_millis(100));
+        }
+
+        false
+    }
+}
+
+impl Action for AwaitAny {
+    fn do_action(
+        &self,
+        _inputbot: &mut InputBot,
+        framehandler: &mut FrameHandler,
+        capturer: &mut Capturer,
+    ) -> bool {
+        let time = std::time::Instant::now();
+        while time.elapsed() < self.timeout {
+            if self
+                .conditions
+                .iter()
+                .any(|&cond| is_condition_met(framehandler, capturer, cond))
+            {
+                return true;
+            }
+            sleep(Duration::from_millis(100));
+        }
+
+        false
+    }
+}
+
+impl Action for AwaitAll {
+    fn do_action(
+        &self,
+        _inputbot: &mut InputBot,
+        framehandler: &mut FrameHandler,
+        capturer: &mut Capturer,
+    ) -> bool {
+        let time = std::time::Instant::now();
+        while time.elapsed() < self.timeout {
+            if self
+                .conditions
+                .iter()
+                .all(|&cond| is_condition_met(framehandler, capturer, cond))
+            {
+                return true;
             }
             sleep(Duration::from_millis(100));
         }
@@ -935,6 +949,8 @@ impl Action for ClickChatboxMiddle {
             .await_chatbox_open
             .do_action(inputbot, framehandler, capturer)
         {
+            // Sleep here so we don't have perfect reflexes.
+            sleep(Duration::from_millis(100));
             inputbot.left_click();
             return true;
         }
@@ -1477,7 +1493,7 @@ pub struct WithdrawFromBank {
 
     // Items that should be withdrawn from the bank. Used to check withdrawal
     // succeeded.
-    pub items: Vec<screen::InventorySlotPixels>,
+    pub await_items: AwaitAll,
 }
 
 impl Action for ConsumeSingleInventoryItem {
@@ -1610,8 +1626,8 @@ impl ExplicitActions {
         let mut actions = Vec::<Box<dyn Action>>::new();
         actions.push(Box::new(PressMinimapMiddle {}));
         actions.push(Box::new(Await {
-            condition: AwaitCondition::Time,
-            timeout: Duration::from_secs(1),
+            condition: AwaitCondition::Time(Duration::from_secs(1)),
+            timeout: Duration::from_secs(0),
         }));
         actions.push(Box::new(MaybeToggleWorldmap::close_worldmap()));
         actions.push(Box::new(PressCompass {}));
@@ -1661,9 +1677,9 @@ impl WithdrawFromBank {
         // lowest ones, so when we reach 1-28, we won't have to keep
         // resetting quantity to One.
         let mut quantity_to_slot_indices = BTreeMap::<i32, Vec<i32>>::new();
-        let mut items = Vec::<screen::InventorySlotPixels>::new();
+        let mut await_conditions = Vec::<AwaitCondition>::new();
         for (slot_index, quantity, item) in bank_slot_and_quantity_and_item {
-            items.push(item);
+            await_conditions.push(AwaitCondition::InventoryContains(item));
             match quantity {
                 BankQuantity::All => quantity_to_slot_indices
                     .entry(-1)
@@ -1738,7 +1754,10 @@ impl WithdrawFromBank {
                 /*timeout=*/ Duration::from_secs(60),
             ),
             withdrawal_actions,
-            items,
+            await_items: AwaitAll {
+                conditions: await_conditions,
+                timeout: Duration::from_secs(5),
+            },
         }
     }
 }
@@ -1765,17 +1784,6 @@ impl Action for WithdrawFromBank {
             sleep(Duration::from_millis(100));
         }
 
-        sleep(Duration::from_secs(1));
-        let frame = capturer.frame().unwrap();
-        for item in &self.items {
-            if framehandler
-                .first_matching_inventory_slot(&frame, item)
-                .is_none()
-            {
-                return false;
-            }
-        }
-
-        true
+        self.await_items.do_action(inputbot, framehandler, capturer)
     }
 }

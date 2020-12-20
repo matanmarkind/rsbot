@@ -87,8 +87,8 @@ fn smith_bronze_platelegs(_config: &Config) -> ConsumeInventory {
             )),
             // TODO: Add check for is smithing open.
             Box::new(Await {
-                condition: AwaitCondition::Time,
-                timeout: Duration::from_secs(3),
+                condition: AwaitCondition::Time(Duration::from_secs(3)),
+                timeout: Duration::from_secs(0),
             }),
             Box::new(PressSmithingPlatelegs {}),
         ],

@@ -71,8 +71,8 @@ fn make_pizza_base(_config: &Config) -> ConsumeInventory {
                 timeout: Duration::from_secs(3),
             }),
             Box::new(Await {
-                condition: AwaitCondition::Time,
-                timeout: util::REDRAW_TIME,
+                condition: AwaitCondition::Time(util::REDRAW_TIME),
+                timeout: Duration::from_secs(0),
             }),
             Box::new(ClickKey {
                 key: userinput::Key::_3,

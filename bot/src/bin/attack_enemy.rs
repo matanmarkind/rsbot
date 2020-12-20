@@ -84,8 +84,8 @@ Assumes that:
         actions: vec![
             // Wait until the healthbar of the last enemy has disappeared.
             Box::new(Await {
-                condition: AwaitCondition::Time,
-                timeout: Duration::from_secs(3),
+                condition: AwaitCondition::Time(Duration::from_secs(3)),
+                timeout: Duration::from_secs(0),
             }),
             Box::new(AwaitAny {
                 conditions: vec![
@@ -120,7 +120,7 @@ Assumes that:
             }),
             // Wait until the body disappears so we dont click on a dead enemy.
             Box::new(Await {
-                condition: AwaitCondition::Time,
+                condition: AwaitCondition::Time(Duration::from_secs(0)),
                 timeout: Duration::from_secs(3),
             }),
         ],
