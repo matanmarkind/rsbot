@@ -308,10 +308,15 @@ impl Action for Await {
         capturer: &mut Capturer,
     ) -> bool {
         let time = std::time::Instant::now();
-        while time.elapsed() < self.timeout {
+        loop {
             if is_condition_met(framehandler, capturer, self.condition) {
                 return true;
             }
+
+            if time.elapsed() > self.timeout {
+                break;
+            }
+
             sleep(Duration::from_millis(100));
         }
 
@@ -327,7 +332,7 @@ impl Action for AwaitAny {
         capturer: &mut Capturer,
     ) -> bool {
         let time = std::time::Instant::now();
-        while time.elapsed() < self.timeout {
+        loop {
             if self
                 .conditions
                 .iter()
@@ -335,6 +340,11 @@ impl Action for AwaitAny {
             {
                 return true;
             }
+
+            if time.elapsed() > self.timeout {
+                break;
+            }
+
             sleep(Duration::from_millis(100));
         }
 
@@ -350,7 +360,7 @@ impl Action for AwaitAll {
         capturer: &mut Capturer,
     ) -> bool {
         let time = std::time::Instant::now();
-        while time.elapsed() < self.timeout {
+        loop {
             if self
                 .conditions
                 .iter()
@@ -358,6 +368,11 @@ impl Action for AwaitAll {
             {
                 return true;
             }
+
+            if time.elapsed() > self.timeout {
+                break;
+            }
+
             sleep(Duration::from_millis(100));
         }
 

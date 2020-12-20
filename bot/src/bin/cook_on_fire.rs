@@ -238,7 +238,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
 
             // wait for fire to start.
-            std::thread::sleep(Duration::from_secs(7));
+            std::thread::sleep(Duration::from_secs(5));
 
             let cooked =
                 cook_fish_actions.do_action(&mut inputbot, &mut framehandler, &mut capturer);
