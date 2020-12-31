@@ -1,4 +1,6 @@
-This crate is dedicated to handling the visual aspects of the RS bot. That means taking screenshots and finding objects of interest.
+This crate is dedicated to handling the visual aspects of the RS bot. That means taking screenshots and finding objects of interest. Note this is all done by screenshotting and sampling pixels. There is no computer vision involved. This is mostly due to not finding libraries easily, but has the side effect of being fairly performant, if only mildly accurate.
+
+One thing to note is that what the player/other players look like will effect us since we only see pixels on the screen.
 
 # Screenshot
 
@@ -29,12 +31,25 @@ Now that we have decided what to look for, we need to find it. We search for rel
 $ cargo run -p screen --bin find_pixel_fuzzy -- --top-left 960,40 --past-bottom-right 1920,1040
 ```
 
+# Checking the Inventory
+
+Items in the inventory are placed at regular intervals and appear the same in each slot, so we are able to check if an item is an a given invetory slot. This is done by sampling pixels at a regular interval. This required constants for the inventory slot size and the distance between sampling points, since we manually record the points to be checked against.
+
+To update the library of inventory items, you will update the inventory_slot_items in colors.rs. To do this uncomment the section with 'dbgstr' from the function 'check_inventory_slot' so that we will print out the pixel found at each of the points used to check the inventory slot. Then run bin/inventory.rs.
+
+Note that there is a separate _bank variant for each item. This is because items seem to change their color slightly when the bank is open.
+
+# Add Action Words
+
+Action words are the words that appear in the top left of the screen describing what will happen if you left click. We use this to check that the action we are about to perform is correct. We "read" the text by approximating each letter with a set of points that sketch it. We assume a letter is fairly consistent in its shape, and placed at the same height. The width of letters and spaces does seem to vary.
+
+To check letters use bin/action_words.rs, which will create a screenshot with red dots over the pixels checked.
+
+```
+$ RUST_BACKTRACE=1 cargo run -p screen --bin action_words -- --out-dir /path/to/screenshots/ --screen-top-left 965,54 --screen-bottom-right  1915,660
+```
+
 # Libraries with dependencies
 scrap
 
-I am dependent on runelight popping up icons such as shrimp on fishing spots. TBH if I was a regular player I'd really want this since seeing certain things is quite difficult.
-
-# Explain how to extend
-- To add new letters/words use tha action_words binary. This will put red dots on each of the pixels being checked.
-- To add new inventory_slot_pixels, go to frame.rs and uncomment 'dbgstr' from 'check_inventory_slot'. Then this will result in printing out the pixels as well as the expectation and if there was a match.
-- What the player looks like can cause an issue since those are also just pixels on the screen.
+I am dependent on runelight popping up icons such as shrimp on fishing spots. I'm not sure this is a bad dependency since if I was to play myself I would want these things.
