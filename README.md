@@ -10,9 +10,14 @@ My goal was to create a general-ish framework that I could use to create lots of
 
 # Running the bot
 
-The bot requires some inputs in order to run properly. For the mouse controller to run it requires a library of movements from which to draw in order to make the mouse movements look human. This is done by recording your mouse as you move around which the controller then plays back. See 'userinput' crate for details on this.
+The bot requires some inputs in order to run properly. For the mouse controller to run it requires a library of movements from which to draw in order to make the mouse movements look human. This is done by recording your mouse as you move around which the controller then plays back. See 'userinput' crate for details on this. This requires sudo privelages.
 
 The second thing needed are the bounds on the screen. This actually also requires a bit of setup in the game also, which will be covered later. The bot needs to know the position of the top-left and bottom-right pixel's of the screen. Note that these are not of the program's window, but of the game content (there is usually a gray border). I suggest taking a screenshot and using https://yangcha.github.io/iview/iview.html. Be careful to get this measurement correct.
+
+Example run command:
+```
+$ BINARY=chop_wood_draynor && CRATE=bot && date && RUST_BACKTRACE=1 cargo build -p $CRATE --bin $BINARY && sudo RUST_BACKTRACE=1 ./target/debug/$BINARY --mouse-paths-fpath ./rsbot/data/mouse_paths.bincode --screen-top-left 964,54 --screen-bottom-right 1915,660 --tree-type Oak
+```
 
 # Game Setup
 
@@ -55,3 +60,11 @@ An early example of the bot running. I gave it a FuzzyPixel to search for and cl
 Once we could find a target on the open screen we needed to be able to monitor our state so that we could take actions sequentially. This shows the bot finding a tree and then seeing that we got another log in the inventory and moving onto the next tree.
 
 ![](data/readme/ConsumeInventory_ChopTree.gif)
+
+Now for a full loop task. In this we start with the bot cooking anchovies on a fire. Once all the anchovies are cooked, the bot travels to the bank, deposits the cooked anchovies and logs and then withdraws new logs and reaw anchovies to begin again.
+
+![](data/readme/CookAnchoviesAndBank.gif)
+
+This next video shows the bot navigating. This loop is going back to the bank to cook shrimp. Since it doesn't find a bank in the minimap, it opens up the worldmap where it finds a bank and runs in that direction. I manually gave it the slots in the bank to withdraw logs and raw shrimp from. In this case they are wrong so the bot quits when it fails to withdraw the desired items.
+
+![](data/readme/TravelTo_WithdrawFromBank.gif)

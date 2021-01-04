@@ -53,3 +53,21 @@ $ RUST_BACKTRACE=1 cargo run -p screen --bin action_words -- --out-dir /path/to/
 scrap
 
 I am dependent on runelight popping up icons such as shrimp on fishing spots. I'm not sure this is a bad dependency since if I was to play myself I would want these things.
+
+# Screenshot examples
+
+Here are screenshots of my bot with places of interested marked in red. The main things to notice are the concentric regtangles from the middle of the screen. These represent areas that are searched, from the center out, when looking for something on the open screen (e.g. a tree to cut). On the top left you see a box around the actions words, and below that are 2 boxes where an enemy's healthbar appears in combat.
+
+![text](../data/readme/screenshot_open_screen.png)
+
+This next one is a bit hard to see, but it is how we read the action we are about to take. The dots are where we expect the letters to be, and if they match it is the action we desire. This can easily mix up similar actions, but nonetheless proved quite useful in avoiding bad actions. This signal is mixed with finding a desired object in the open screen.
+
+![text](../data/readme/screenshot_action_words.png)
+
+This is an image of the bank and inventory. We Have points for the centor of each bank slot, and at the quantities we use. For the inventory we were able to break down exactly where each slot is, and found that an item looks the exact same in each. So by sampling pixels in a slot (the dots for each space in the inventory) we can tell which item is there. This isn't 100% effective (pizza & anchovie pizza look the same), but it's pretty good. When the bank is open the colors change a bit, so we have regular and bank variants.
+
+![text](../data/readme/screenshot_inventories.png)
+
+Here is a screenshot of the worldmap annotating it as well as the minimap and chatbox. The rectangles on the worldmap were the old way of searching in expanding regions. The dots that for an arc are the new way, which also form a circle on the minimap. This was to move out in a circular spiral as opposed to taking a rectangular section and randomly sampling pixels.
+
+![text](../data/readme/screenshot_worldmap.png)
